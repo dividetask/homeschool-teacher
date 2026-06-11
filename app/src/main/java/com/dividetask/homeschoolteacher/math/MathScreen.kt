@@ -1,0 +1,493 @@
+package com.dividetask.homeschoolteacher.math
+
+import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.dividetask.homeschoolteacher.Tts
+import com.dividetask.homeschoolteacher.lesson.LessonId
+import kotlin.random.Random
+import kotlinx.coroutines.delay
+
+@Composable
+fun MathScreen(
+    viewModel: MathViewModel,
+    onCompleted: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val state by viewModel.state.collectAsStateWithLifecycle()
+    val active by viewModel.activeLesson.collectAsStateWithLifecycle()
+    val problem = state.problem
+    val maxAnswer = when (active) {
+        LessonId.MathPictures -> 9          // addition operands 1..4, max sum 8 (pad to 9)
+        LessonId.Math0,
+        LessonId.HorizontalAddition0,
+        LessonId.NumberLineAddition0 -> 9   // addition operands 0..4, max sum 8 (pad to 9)
+        LessonId.CountingAddition1,
+        LessonId.Math1,
+        LessonId.HorizontalAddition1,
+        LessonId.MathNumberLine -> 18       // addition operands 0..9, max sum 18
+        LessonId.CountingSubtraction0,
+        LessonId.HorizontalSubtraction0,
+        LessonId.VerticalSubtraction0,
+        LessonId.NumberLineSubtraction0 -> 9 // subtraction op1 4..9, op2 0..4, max diff 9
+        else -> 9
+    }
+
+    var inputReady by remember { mutableStateOf(false) }
+    LaunchedEffect(state.problem) {
+        inputReady = false
+        delay(1000)
+        inputReady = true
+    }
+
+    LaunchedEffect(state.feedback, state.problem) {
+        when (state.feedback) {
+            MathFeedback.Correct -> {
+                delay(900)
+                Tts.stopAll()
+                onCompleted()
+            }
+            MathFeedback.Wrong -> {
+                delay(2000)
+                Tts.stopAll()
+                onCompleted()
+            }
+            MathFeedback.Revealed -> {
+                delay(1600)
+                Tts.stopAll()
+                onCompleted()
+            }
+            else -> Unit
+        }
+    }
+
+    Column(
+        modifier = modifier
+            .fillMaxSize()
+            .padding(16.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(16.dp, Alignment.CenterVertically),
+    ) {
+        ScoreRow(correct = state.correctCount, wrong = state.wrongCount)
+
+        when (active) {
+            LessonId.MathPictures,
+            LessonId.CountingAddition1,
+            LessonId.CountingSubtraction0 -> PictureProblem(problem)
+            LessonId.MathNumberLine,
+            LessonId.NumberLineAddition0,
+            LessonId.NumberLineSubtraction0 -> NumberLineProblem(
+                problem = problem,
+                selected = state.selected,
+                feedback = state.feedback,
+            )
+            LessonId.HorizontalAddition0,
+            LessonId.HorizontalAddition1,
+            LessonId.HorizontalSubtraction0 -> HorizontalProblem(
+                problem = problem,
+                selected = state.selected,
+                feedback = state.feedback,
+            )
+            else -> StackedProblem(
+                problem = problem,
+                feedback = state.feedback,
+            )
+        }
+
+        Text(
+            text = when (state.feedback) {
+                MathFeedback.Correct -> "Correct!"
+                MathFeedback.Wrong -> "Not quite — the answer was ${problem.answer}"
+                MathFeedback.Revealed -> "The answer was ${problem.answer}"
+                MathFeedback.None -> "Pick the answer"
+            },
+            fontSize = 16.sp,
+            color = when (state.feedback) {
+                MathFeedback.Correct -> Color(0xFF22C55E)
+                MathFeedback.Wrong -> Color(0xFFEF4444)
+                MathFeedback.Revealed -> Color(0xFFFACC15)
+                MathFeedback.None -> MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f)
+            },
+        )
+
+        ChoiceGrid(
+            selected = state.selected,
+            feedback = state.feedback,
+            correct = problem.answer,
+            onChoose = viewModel::onAnswer,
+            inputEnabled = inputReady,
+            maxAnswer = maxAnswer,
+        )
+
+        TextButton(onClick = viewModel::giveUp) {
+            Text("Give up", fontSize = 14.sp)
+        }
+    }
+}
+
+@Composable
+private fun ScoreRow(correct: Int, wrong: Int) {
+    Row(horizontalArrangement = Arrangement.spacedBy(24.dp)) {
+        ScoreItem("Correct", correct, Color(0xFF22C55E))
+        ScoreItem("Wrong", wrong, Color(0xFFEF4444))
+    }
+}
+
+@Composable
+private fun ScoreItem(label: String, value: Int, color: Color) {
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        Text(
+            text = label,
+            fontSize = 12.sp,
+            color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f),
+        )
+        Text(
+            text = value.toString(),
+            fontSize = 20.sp,
+            fontWeight = FontWeight.Bold,
+            color = color,
+        )
+    }
+}
+
+@Composable
+private fun StackedProblem(
+    problem: MathProblem,
+    feedback: MathFeedback,
+) {
+    val onBg = MaterialTheme.colorScheme.onBackground
+    Column(horizontalAlignment = Alignment.End) {
+        Text(
+            text = " ${problem.left}",
+            fontFamily = FontFamily.Monospace,
+            fontSize = 48.sp,
+            fontWeight = FontWeight.Bold,
+            color = onBg,
+        )
+        Text(
+            text = "${problem.operator.symbol}${problem.right}",
+            fontFamily = FontFamily.Monospace,
+            fontSize = 48.sp,
+            fontWeight = FontWeight.Bold,
+            color = onBg,
+        )
+        Text(
+            text = "──",
+            fontFamily = FontFamily.Monospace,
+            fontSize = 48.sp,
+            fontWeight = FontWeight.Bold,
+            color = onBg,
+        )
+    }
+}
+
+@Composable
+private fun PictureProblem(problem: MathProblem) {
+    val animalA = problem.leftAnimal
+    val animalB = problem.rightAnimal
+    if (animalA == null || animalB == null) {
+        // Fallback if animals weren't populated for some reason.
+        StackedProblem(problem, MathFeedback.None)
+        return
+    }
+    // Decide once per problem whether each group is arranged on one or two
+    // lines, so recompositions don't reshuffle the layout mid-problem.
+    val (splitLeft, splitRight) = remember(problem) {
+        splitGroup(problem.left) to splitGroup(problem.right)
+    }
+    Row(
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier.padding(vertical = 8.dp),
+    ) {
+        AnimalGroup(animal = animalA.emoji, count = problem.left, twoLines = splitLeft)
+        Text(problem.operator.symbol, fontSize = 40.sp, fontWeight = FontWeight.Bold)
+        AnimalGroup(animal = animalB.emoji, count = problem.right, twoLines = splitRight)
+        Text("=", fontSize = 40.sp, fontWeight = FontWeight.Bold)
+        Text("?", fontSize = 40.sp, fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.primary)
+    }
+}
+
+/**
+ * Whether an animal group of [count] emoji should stack on two lines.
+ * Always for big groups (they don't fit on one line and are easier to
+ * count in two rows); occasionally for smaller ones so kids learn the
+ * count doesn't depend on the arrangement.
+ */
+private fun splitGroup(count: Int): Boolean = when {
+    count > 4 -> true
+    count >= 2 -> Random.nextInt(10) < 3
+    else -> false
+}
+
+@Composable
+private fun AnimalGroup(animal: String, count: Int, twoLines: Boolean) {
+    if (!twoLines) {
+        Row(horizontalArrangement = Arrangement.spacedBy(2.dp)) {
+            repeat(count) {
+                Text(text = animal, fontSize = 32.sp)
+            }
+        }
+    } else {
+        // Top row gets the larger half, e.g. 3 -> 2 over 1, 7 -> 4 over 3.
+        val top = (count + 1) / 2
+        Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+            Row(horizontalArrangement = Arrangement.spacedBy(2.dp)) {
+                repeat(top) {
+                    Text(text = animal, fontSize = 32.sp)
+                }
+            }
+            Row(horizontalArrangement = Arrangement.spacedBy(2.dp)) {
+                repeat(count - top) {
+                    Text(text = animal, fontSize = 32.sp)
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun HorizontalProblem(
+    problem: MathProblem,
+    selected: Int?,
+    feedback: MathFeedback,
+) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        modifier = Modifier.padding(vertical = 8.dp),
+    ) {
+        Text("${problem.left}", fontSize = 40.sp, fontWeight = FontWeight.Bold,
+            fontFamily = FontFamily.Monospace)
+        Text(problem.operator.symbol, fontSize = 40.sp, fontWeight = FontWeight.Bold)
+        Text("${problem.right}", fontSize = 40.sp, fontWeight = FontWeight.Bold,
+            fontFamily = FontFamily.Monospace)
+        Text("=", fontSize = 40.sp, fontWeight = FontWeight.Bold)
+        AnswerBox(selected?.toString() ?: "", feedback)
+    }
+}
+
+@Composable
+private fun NumberLineProblem(
+    problem: MathProblem,
+    selected: Int?,
+    feedback: MathFeedback,
+) {
+    val a = problem.left
+    val c = problem.answer
+    // Pad each side with a randomized 1..3 extra ticks so the answer can't
+    // be read off as "the right-most labelled tick". Same random padding
+    // sticks for the lifetime of this problem.
+    val extras = remember(problem) {
+        Random.nextInt(1, 4) to Random.nextInt(1, 4)
+    }
+    val low = (minOf(a, c) - extras.first).coerceAtLeast(0)
+    val high = (maxOf(a, c) + extras.second).coerceAtMost(18)
+
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+        modifier = Modifier.fillMaxWidth(),
+    ) {
+        NumberLine(
+            rangeStart = low,
+            rangeEnd = high,
+            modifier = Modifier
+                .fillMaxWidth()
+                .widthIn(max = 500.dp),
+        )
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            Text("$a", fontSize = 32.sp, fontWeight = FontWeight.Bold,
+                fontFamily = FontFamily.Monospace)
+            Text(problem.operator.symbol, fontSize = 32.sp, fontWeight = FontWeight.Bold)
+            Text("${problem.right}", fontSize = 32.sp, fontWeight = FontWeight.Bold,
+                fontFamily = FontFamily.Monospace)
+            Text("=", fontSize = 32.sp, fontWeight = FontWeight.Bold)
+            AnswerBox(selected?.toString() ?: "", feedback)
+        }
+    }
+}
+
+@Composable
+private fun AnswerBox(text: String, feedback: MathFeedback) {
+    val borderColor = when (feedback) {
+        MathFeedback.Correct -> Color(0xFF22C55E)
+        MathFeedback.Wrong -> Color(0xFFEF4444)
+        MathFeedback.Revealed -> Color(0xFFFACC15)
+        MathFeedback.None -> MaterialTheme.colorScheme.onBackground.copy(alpha = 0.3f)
+    }
+    Box(
+        modifier = Modifier
+            .widthIn(min = 64.dp, max = 96.dp)
+            .heightIn(min = 56.dp)
+            .background(
+                MaterialTheme.colorScheme.surface,
+                shape = RoundedCornerShape(8.dp),
+            )
+            .padding(8.dp),
+        contentAlignment = Alignment.Center,
+    ) {
+        Text(
+            text = text.ifEmpty { " " },
+            fontSize = 32.sp,
+            fontWeight = FontWeight.Bold,
+            fontFamily = FontFamily.Monospace,
+            color = borderColor,
+        )
+    }
+}
+
+@Composable
+private fun NumberLine(
+    rangeStart: Int,
+    rangeEnd: Int,
+    modifier: Modifier = Modifier,
+) {
+    val count = rangeEnd - rangeStart + 1
+    if (count < 2) return
+    val tickColor = MaterialTheme.colorScheme.onBackground
+    Column(modifier = modifier.fillMaxWidth()) {
+        Canvas(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(40.dp),
+        ) {
+            val w = size.width
+            val h = size.height
+            val lineY = h * 0.6f
+            val step = w / (count - 1)
+            val tickHalf = 8.dp.toPx()
+
+            drawLine(
+                color = tickColor,
+                start = Offset(0f, lineY),
+                end = Offset(w, lineY),
+                strokeWidth = 3f,
+            )
+
+            for (i in 0 until count) {
+                val x = i * step
+                drawLine(
+                    color = tickColor,
+                    start = Offset(x, lineY - tickHalf),
+                    end = Offset(x, lineY + tickHalf),
+                    strokeWidth = 2f,
+                )
+            }
+        }
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+        ) {
+            for (i in rangeStart..rangeEnd) {
+                Text(
+                    text = i.toString(),
+                    fontSize = if (count > 10) 9.sp else 11.sp,
+                    fontFamily = FontFamily.Monospace,
+                    color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f),
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun ChoiceGrid(
+    selected: Int?,
+    feedback: MathFeedback,
+    correct: Int,
+    onChoose: (Int) -> Unit,
+    inputEnabled: Boolean,
+    maxAnswer: Int,
+) {
+    val cols = when {
+        maxAnswer <= 9 -> 5
+        maxAnswer <= 18 -> 5
+        else -> 7
+    }
+    val cells = (0..maxAnswer).toList()
+    Column(
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+        modifier = Modifier.widthIn(max = 480.dp).fillMaxWidth(),
+    ) {
+        cells.chunked(cols).forEach { row ->
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                row.forEach { choice ->
+                    val container = when {
+                        feedback == MathFeedback.None -> MaterialTheme.colorScheme.primary
+                        choice == correct -> Color(0xFF22C55E)
+                        choice == selected -> Color(0xFFEF4444)
+                        else -> MaterialTheme.colorScheme.primary.copy(alpha = 0.4f)
+                    }
+                    Button(
+                        onClick = { onChoose(choice) },
+                        enabled = inputEnabled && feedback == MathFeedback.None,
+                        shape = RoundedCornerShape(14.dp),
+                        contentPadding = PaddingValues(2.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = container,
+                            disabledContainerColor = container,
+                            contentColor = Color.White,
+                            disabledContentColor = Color.White,
+                        ),
+                        modifier = Modifier
+                            .weight(1f)
+                            .heightIn(min = 52.dp),
+                    ) {
+                        Text(
+                            text = choice.toString(),
+                            fontSize = if (maxAnswer <= 9) 24.sp else 18.sp,
+                            fontWeight = FontWeight.Bold,
+                        )
+                    }
+                }
+                repeat(cols - row.size) {
+                    Spacer(modifier = Modifier.weight(1f))
+                }
+            }
+        }
+    }
+}
+
+// Numpad and NumpadButton helpers were removed when math switched to
+// single-tap answers across every lesson. ChoiceGrid now handles all
+// answer surfaces, expanding to cover whatever range each lesson needs.

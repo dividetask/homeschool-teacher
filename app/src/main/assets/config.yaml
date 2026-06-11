@@ -1,0 +1,94 @@
+session:
+  # When Random mode is active, the app rotates between lessons.
+  # Each time a lesson is picked, this many problems / games are run
+  # in a row before another lesson is drawn. One value per category,
+  # plus per-lesson overrides below.
+  game_runs_per_round: 1
+  math_runs_per_round: 4
+  reading_runs_per_round: 2
+  # Phonemes runs longer than the Reading default: each problem is a
+  # trio of spoken words.
+  phonemes_runs_per_round: 3
+
+tictactoe:
+  # Seconds to wait after a game ends before automatically starting the
+  # next one (in single mode) or rolling the next lesson (in Random
+  # mode). Set to 0 to advance immediately.
+  auto_restart_seconds: 2
+
+phonemes:
+  # Single-consonant phoneme word bank for Phonemes — Level 0. The lesson
+  # picks one letter at random, draws 3 words from that letter's list,
+  # plays them aloud at three speeds, and asks the learner to tap the
+  # letter. /k/ is mixed (c-words and k-words live under separate keys
+  # since the answer chip is a letter, not a phoneme).
+  b: [ball, bed, bat, book, boy, bag, bug]
+  c: [cat, cup, car, cake]
+  d: [dog, duck, doll, dish, desk, dad, dot]
+  f: [fan, fish, fox, foot, fire, four, frog]
+  g: [goat, gum, girl, game, gate, goose, grape]
+  h: [hat, hen, hop, house, horse, ham, hill]
+  j: [jet, jam, juice, jump, jeep, jar, jelly]
+  k: [kite, king, key, kid]
+  l: [leaf, lion, leg, lake, lamp, lock, log]
+  m: [moon, mom, milk, mat, map, man, mouse]
+  n: [nest, nut, net, nose, name, nail, nine]
+  p: [pig, pen, pot, pie, pan, pup, pop]
+  r: [rat, red, rain, run, rock, ring, robot]
+  s: [sun, sock, soup, seal, six, sit, snake]
+  t: [top, tap, ten, tea, toy, two, tub]
+  v: [van, vet, vine, voice, vase, valley]
+  w: [web, water, wagon, walk, win, wind, wave]
+  y: [yo-yo, yellow, yes, year, yard, yawn]
+  z: [zebra, zoo, zip, zero, zigzag]
+
+sight_words:
+  # Words used by both Sight Words lessons.
+  # Level 0 always asks for the first letter of the word.
+  # Level 1 asks for a random letter of the word.
+  # Per-letter streaks are shared between the two lessons.
+  words:
+    - cat
+    - bat
+    - hat
+    - rat
+    - sat
+    - can
+    - man
+    - ran
+    - pan
+    - dog
+    - log
+    - frog
+    - hog
+    - pig
+    - big
+    - dig
+    - wig
+    - pet
+    - net
+    - wet
+    - vet
+
+rhyming_words:
+  # Each list is a rhyme family. The lesson picks one word at random
+  # from the flattened pool of all words across all families, speaks
+  # it aloud, displays it with the first letter blanked, and asks the
+  # learner which letter is missing. Pass criteria: every word's
+  # first-letter streak is >= 2.
+  groups:
+    - [cat, bat, hat, mat, rat, sat]
+    - [dog, fog, log, jog, hog]
+    - [sun, fun, run, bun, done]
+    - [top, mop, hop, stop, pop]
+    - [pig, big, wig, dig, fig]
+    - [cake, lake, bake, make, shake]
+    - [bell, well, tell, shell, sell]
+    - [car, star, jar, bar, far]
+    - [tree, bee, three, free, see]
+    - [ball, fall, tall, call, wall]
+    - [light, kite, night, fight, might]
+    - [box, fox, socks, rocks, locks]
+    - [pan, fan, man, can, van]
+    - [chair, bear, hair, pair, stair]
+    - [book, hook, look, cook, took]
