@@ -21,7 +21,9 @@ class LessonRouletteTest {
         LessonId.Math0,
         LessonId.HorizontalAddition0,
         LessonId.NumberLineAddition0,
-        LessonId.Phonemes0,
+        // Letter Sounds is the new head of the Reading chain; Phonemes now
+        // sits behind it and is no longer entry-level.
+        LessonId.LetterSounds0,
     )
 
     @Test

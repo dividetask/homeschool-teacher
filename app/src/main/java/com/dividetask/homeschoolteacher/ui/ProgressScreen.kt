@@ -37,6 +37,8 @@ import com.dividetask.homeschoolteacher.lesson.LessonId
 import com.dividetask.homeschoolteacher.lesson.Lessons
 import com.dividetask.homeschoolteacher.math.MathViewModel
 import com.dividetask.homeschoolteacher.reading.Animals
+import com.dividetask.homeschoolteacher.reading.LetterSounds
+import com.dividetask.homeschoolteacher.reading.LetterSoundsViewModel
 import com.dividetask.homeschoolteacher.reading.Phonemes
 import com.dividetask.homeschoolteacher.reading.PhonemesViewModel
 import com.dividetask.homeschoolteacher.reading.ReadingViewModel
@@ -53,6 +55,7 @@ fun ProgressScreen(
     math: MathViewModel,
     binary: BinaryOperationsViewModel,
     multiplication: CountingMultiplicationViewModel,
+    letterSounds: LetterSoundsViewModel,
     phonemes: PhonemesViewModel,
     reading: ReadingViewModel,
     sightWords: SightWordsViewModel,
@@ -81,6 +84,9 @@ fun ProgressScreen(
 
     val phonemeStreaks by phonemes.streaks.collectAsStateWithLifecycle()
     val phonemeState by phonemes.state.collectAsStateWithLifecycle()
+
+    val letterSoundStreaks by letterSounds.streaks.collectAsStateWithLifecycle()
+    val letterSoundState by letterSounds.state.collectAsStateWithLifecycle()
 
     val binaryStreaks by binary.streaksSnapshot.collectAsStateWithLifecycle()
     val binaryState by binary.state.collectAsStateWithLifecycle()
@@ -184,6 +190,24 @@ fun ProgressScreen(
 
         Section(LessonId.Chess3) {
             InfoRow("Correct streak", "$chess3Streak / 8")
+        }
+
+        Section(LessonId.LetterSounds0) {
+            InfoRow("Correct streak", "${letterSoundState.runStreak} / 8")
+            InfoRow("Correct (lifetime)", letterSoundState.correctCount.toString())
+            InfoRow("Wrong (lifetime)", letterSoundState.wrongCount.toString())
+            Text(
+                text = "Passing takes 8 correct in a row AND every letter " +
+                    "right at least twice in a row.",
+                fontSize = 12.sp,
+                color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f),
+            )
+            Text(
+                text = "Streak per letter",
+                fontSize = 12.sp,
+                color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f),
+            )
+            LetterSoundsTable(letterSoundStreaks)
         }
 
         Section(LessonId.Phonemes0) {
@@ -630,6 +654,37 @@ private fun RhymingWordsTable(streaks: Map<String, Int>) {    Column(
                         }
                     }
                 }
+            }
+        }
+    }
+}
+
+@Composable
+private fun LetterSoundsTable(streaks: Map<Char, Int>) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(4.dp),
+    ) {
+        LetterSounds.letters.forEach { letter ->
+            val v = streaks[letter.uppercaseChar()] ?: 0
+            val bg = when {
+                v == 0 -> Color(0xFFEF4444).copy(alpha = 0.35f)
+                v == 1 -> Color(0xFFF59E0B).copy(alpha = 0.35f)
+                else -> Color(0xFF22C55E).copy(alpha = 0.35f)
+            }
+            Box(
+                modifier = Modifier
+                    .clip(RoundedCornerShape(4.dp))
+                    .background(bg)
+                    .padding(horizontal = 8.dp, vertical = 4.dp),
+            ) {
+                Text(
+                    text = "${letter.uppercaseChar()}:$v",
+                    fontSize = 12.sp,
+                    fontFamily = FontFamily.Monospace,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onBackground,
+                )
             }
         }
     }

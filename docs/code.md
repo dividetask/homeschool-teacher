@@ -36,6 +36,8 @@ homeschoolteacher/
 ├── Storage.kt               Thin wrapper over SharedPreferences. All
 │                            persistence flows through here.
 ├── Tts.kt                   Text-to-speech singleton (Android TTS).
+├── ClipPlayer.kt            Bundled-audio-clip player (MediaPlayer),
+│                            used by Letter Sounds to play word clips.
 ├── lesson/
 │   └── LessonSelector.kt    The orchestrator. Knows which lesson is
 │                            active, decides what's next. (The lesson
@@ -65,8 +67,10 @@ homeschoolteacher/
 ├── multiplication/          Lesson: CountingMultiplication0
 │   ├── CountingMultiplicationViewModel.kt
 │   └── CountingMultiplicationScreen.kt
-└── reading/                 Lessons: Phonemes0, Reading0,
-    ├── Phonemes.kt          SightWords0/1, RhymingWords0
+└── reading/                 Lessons: LetterSounds0, Phonemes0,
+    ├── LetterSounds.kt      Reading0, SightWords0/1, RhymingWords0
+    ├── LetterSoundsViewModel.kt / LetterSoundsScreen.kt
+    ├── Phonemes.kt
     ├── PhonemesViewModel.kt / PhonemesScreen.kt
     ├── ReadingViewModel.kt / ReadingScreen.kt
     ├── SightWords.kt / SightWordsViewModel.kt / SightWordsScreen.kt
@@ -95,7 +99,7 @@ enum class LessonId {
     CountingSubtraction0, HorizontalSubtraction0,
     VerticalSubtraction0, NumberLineSubtraction0,
     CountingMultiplication0,
-    Phonemes0, Reading0, SightWords0, SightWords1, RhymingWords0,
+    LetterSounds0, Phonemes0, Reading0, SightWords0, SightWords1, RhymingWords0,
 }
 
 data class LessonDefinition(
@@ -186,6 +190,7 @@ math.startLesson(id)           // MathPictures, Math0, HorizontalAddition0,
                                // VerticalSubtraction0, NumberLineSubtraction0
 binary.startLesson(id)         // BinaryOps0 / BinaryOps1
 multiplication.startLesson()   // CountingMultiplication0
+letterSounds.startLesson()     // LetterSounds0
 phonemes.startLesson()         // Phonemes0
 reading.startLesson()          // Reading0
 sightWords.startLesson(id)     // SightWords0 / SightWords1
@@ -268,6 +273,12 @@ All persisted state lives in one `SharedPreferences` file named
 - `binary.{correct|wrong}`           — lifetime counters.
 - `multiplication.streak.<a>.<b>`    — counting-multiplication grid.
 - `multiplication.{correct|wrong}`   — lifetime counters.
+- `lettersounds.streak.<letter>`     — per-letter consecutive-correct
+                                        streak for Letter Sounds.
+- `lettersounds.runstreak`           — global consecutive-correct run for
+                                        Letter Sounds (the "8 in a row"
+                                        pass gate).
+- `lettersounds.{correct|wrong}`     — lifetime counters.
 - `phonemes.streak.<word>`           — per-word phoneme streak.
 - `phonemes.{correct|wrong}`         — lifetime counters.
 - `reading.streak.<letter>`          — per-animal streak.
@@ -280,7 +291,13 @@ All persisted state lives in one `SharedPreferences` file named
                                         (Chess0..Chess3).
 - `chess.{correct|wrong}`            — lifetime counters (shared across
                                         all chess levels).
-- `migration.v2` / `migration.v3`    — one-shot migration sentinels.
+- `migration.v2` / `migration.v3` /
+  `migration.v4`                     — one-shot migration sentinels. `v4`
+                                        auto-passes Letter Sounds 0 for
+                                        users who already reached Phonemes,
+                                        so inserting it at the head of the
+                                        Reading chain doesn't re-lock their
+                                        progress.
 
 When a runner mutates state, it writes to storage inline (no debouncing
 or batching — SharedPreferences `apply()` is cheap). When a runner is

@@ -13,6 +13,7 @@ class MainActivity : ComponentActivity() {
         AppConfig.load(applicationContext)
         Storage.init(applicationContext)
         Tts.init(applicationContext)
+        ClipPlayer.init(applicationContext)
         enableEdgeToEdge()
         setContent {
             HomeschoolTeacherTheme {

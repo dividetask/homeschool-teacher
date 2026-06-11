@@ -210,6 +210,36 @@ object Storage {
             .apply()
     }
 
+    // --- Letter Sounds ---
+    // Per-letter consecutive-correct streak, keyed by uppercase letter.
+    fun loadLetterSoundStreak(letter: Char): Int =
+        prefs().getInt("lettersounds.streak.$letter", 0)
+
+    fun saveLetterSoundStreak(letter: Char, value: Int) {
+        prefs().edit().putInt("lettersounds.streak.$letter", value).apply()
+    }
+
+    // Global consecutive-correct run across all letters (the "8 in a row"
+    // half of the pass criteria).
+    fun loadLetterSoundsRunStreak(): Int =
+        prefs().getInt("lettersounds.runstreak", 0)
+
+    fun saveLetterSoundsRunStreak(value: Int) {
+        prefs().edit().putInt("lettersounds.runstreak", value).apply()
+    }
+
+    fun loadLetterSoundsCounts(): Pair<Int, Int> {
+        val p = prefs()
+        return p.getInt("lettersounds.correct", 0) to p.getInt("lettersounds.wrong", 0)
+    }
+
+    fun saveLetterSoundsCounts(correct: Int, wrong: Int) {
+        prefs().edit()
+            .putInt("lettersounds.correct", correct)
+            .putInt("lettersounds.wrong", wrong)
+            .apply()
+    }
+
     // --- Phonemes ---
     fun loadPhonemeWordStreak(word: String): Int =
         prefs().getInt("phonemes.streak.$word", 0)
@@ -316,6 +346,22 @@ object Storage {
                 editor.putBoolean("lesson.Phonemes0.passed", true)
             }
             editor.putBoolean("migration.v3", true)
+            editor.apply()
+        }
+
+        if (!p.contains("migration.v4")) {
+            // Letter Sounds — Level 0 was inserted ahead of Phonemes as the
+            // new head of the Reading chain. Existing users who already
+            // reached Phonemes (or beyond) would otherwise have the whole
+            // chain re-locked behind a brand-new lesson. Auto-pass Letter
+            // Sounds for them so their progress stays unlocked.
+            val editor = p.edit()
+            val phonemesPassed = p.getBoolean("lesson.Phonemes0.passed", false)
+            val phonemesCorrect = p.getInt("phonemes.correct", 0)
+            if (phonemesPassed || phonemesCorrect > 0) {
+                editor.putBoolean("lesson.LetterSounds0.passed", true)
+            }
+            editor.putBoolean("migration.v4", true)
             editor.apply()
         }
     }

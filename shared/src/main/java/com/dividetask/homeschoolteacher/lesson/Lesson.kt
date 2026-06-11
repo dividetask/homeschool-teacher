@@ -29,6 +29,7 @@ enum class LessonId {
     VerticalSubtraction0,
     NumberLineSubtraction0,
     CountingMultiplication0,
+    LetterSounds0,
     Phonemes0,
     Reading0,
     SightWords0,
@@ -111,7 +112,12 @@ object Lessons {
         // Counting Multiplication unlocks after the whole Subtraction
         // L0 group is passed.
         LessonDefinition(LessonId.CountingMultiplication0, "Counting Multiplication — Level 0", Category.Math, SUBTRACTION_L0),
-        LessonDefinition(LessonId.Phonemes0, "Phonemes — Level 0", Category.Reading),
+        // Letter Sounds is the head of the Reading chain: a recorded word
+        // clip plays and the learner taps the letter it starts with.
+        // Everything else in Reading now sits behind it (Phonemes requires
+        // it, and the rest follow Phonemes transitively).
+        LessonDefinition(LessonId.LetterSounds0, "Letter Sounds — Level 0", Category.Reading),
+        LessonDefinition(LessonId.Phonemes0, "Phonemes — Level 0", Category.Reading, listOf(LessonId.LetterSounds0)),
         LessonDefinition(LessonId.Reading0, "Animals — Level 0", Category.Reading, listOf(LessonId.Phonemes0)),
         LessonDefinition(LessonId.SightWords0, "Sight Words — Level 0", Category.Reading, listOf(LessonId.Reading0)),
         LessonDefinition(LessonId.SightWords1, "Sight Words — Level 1", Category.Reading, listOf(LessonId.SightWords0)),

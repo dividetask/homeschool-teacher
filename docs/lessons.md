@@ -119,6 +119,17 @@ those three screens.
 Integer array indexed by letter `A..Z`. Tracks consecutive correct
 answers for the Animals lesson.
 
+### `letter_sound_streak[letter]`
+Integer array indexed by letter `A..Z`. Tracks consecutive correct
+answers for the Letter Sounds lesson, per letter. A wrong answer (or
+**Give up**) resets the current letter to zero.
+
+### `letter_sounds_run_streak`
+Single integer: consecutive correct answers across all letters in the
+Letter Sounds lesson. Resets to zero on any wrong answer (or **Give
+up**). Passing requires this to reach 8 *and* every letter's
+`letter_sound_streak` to reach 2.
+
 ### `phoneme_word_streak[word]`
 Integer array indexed by word from the phoneme word bank. A correct
 trio answer increments all three words in the trio; a wrong answer (or
@@ -442,7 +453,8 @@ over the next one.
 | 7        | Vertical Subtraction — Level 0      | Math     | All Addition Difficulty 1 passed  |
 | 7        | Number Line Subtraction — Level 0   | Math     | All Addition Difficulty 1 passed  |
 | 9        | Counting Multiplication — Level 0   | Math     | All Subtraction Difficulty 0 passed |
-| 3        | Phonemes — Level 0                  | Reading  | —                                 |
+| 3        | Letter Sounds — Level 0             | Reading  | —                                 |
+| 3        | Phonemes — Level 0                  | Reading  | Letter Sounds 0                   |
 | 4        | Animals — Level 0                   | Reading  | Phonemes 0                        |
 | 5        | Sight Words — Level 0               | Reading  | Animals 0                         |
 | 5        | Sight Words — Level 1               | Reading  | Sight Words 0                     |
@@ -782,6 +794,34 @@ over the next one.
 - **Pass criteria:** `subtraction_grid[op1][op2] >= 2` for every
   `op1 ∈ 4..9`, `op2 ∈ 0..4` **AND** `win_streak[7][0] >= 4`
 
+### Letter Sounds — Level 0
+- **Game UID:** 3
+- **Subject:** Letter Sounds
+- **Difficulty:** 0
+- **Category:** Reading
+- **Runs per round:** 2 (Reading default)
+- **Unlock conditions:** always (entry-level Reading lesson, and the head
+  of the whole Reading chain).
+- **Screen:** Letter Sound Clip Screen — a large tappable speaker plays a
+  pre-recorded word clip; tapping it replays the clip.
+- **Variables:** `letter_sound_streak`, `letter_sounds_run_streak`.
+- **Audio:** one pre-cut word clip per letter, bundled under
+  `app/src/main/res/raw` as `<x>3.mp3` (e.g. `a3.mp3`). Only the letter
+  A has a clip today; more letters are added by dropping in the clip and
+  appending an entry to `reading/LetterSounds.kt`.
+- **Problem selection:** pick a letter that still has
+  `letter_sound_streak[letter] < 2` where possible; avoid immediately
+  repeating the previous letter when more than one is available. Play
+  that letter's word clip and ask which letter it starts with (A–Z
+  keypad).
+- **Pass criteria (both required):**
+  - `letter_sounds_run_streak >= 8` (eight correct answers in a row), AND
+  - `letter_sound_streak[letter] >= 2` for every letter that has a clip.
+
+  With only one letter available, the run streak is the binding
+  constraint. Any wrong answer (or Give up) resets the run streak and the
+  current letter's streak to 0.
+
 ### Phonemes — Level 0
 - **Game UID:** 3
 - **Subject:** Phonemes
@@ -790,7 +830,7 @@ over the next one.
 - **Runs per round:** 3
 - **Show answer time:** 4 seconds (the answer reveals all three words,
   which take longer to read than a single answer).
-- **Unlock conditions:** always (entry-level Reading lesson).
+- **Unlock conditions:** Letter Sounds — Level 0 passed.
 - **Screen:** Phoneme Trio Screen
 - **Variables:** `phoneme_word_streak`
 - **Word bank:** `app/src/main/assets/config.yaml` under `phonemes` —

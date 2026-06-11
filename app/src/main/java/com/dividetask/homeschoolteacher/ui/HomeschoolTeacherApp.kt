@@ -53,6 +53,8 @@ import com.dividetask.homeschoolteacher.lesson.Lessons
 import com.dividetask.homeschoolteacher.lesson.SelectionMode
 import com.dividetask.homeschoolteacher.math.MathScreen
 import com.dividetask.homeschoolteacher.math.MathViewModel
+import com.dividetask.homeschoolteacher.reading.LetterSoundsScreen
+import com.dividetask.homeschoolteacher.reading.LetterSoundsViewModel
 import com.dividetask.homeschoolteacher.reading.PhonemesScreen
 import com.dividetask.homeschoolteacher.reading.PhonemesViewModel
 import com.dividetask.homeschoolteacher.reading.ReadingScreen
@@ -74,12 +76,13 @@ fun HomeschoolTeacherApp() {
     val math: MathViewModel = viewModel()
     val binary: BinaryOperationsViewModel = viewModel()
     val multiplication: CountingMultiplicationViewModel = viewModel()
+    val letterSounds: LetterSoundsViewModel = viewModel()
     val phonemes: PhonemesViewModel = viewModel()
     val reading: ReadingViewModel = viewModel()
     val sightWords: SightWordsViewModel = viewModel()
     val rhymingWords: RhymingWordsViewModel = viewModel()
     val selector: LessonSelector = viewModel(
-        factory = LessonSelectorFactory(game, chess, math, binary, multiplication, phonemes, reading, sightWords, rhymingWords),
+        factory = LessonSelectorFactory(game, chess, math, binary, multiplication, letterSounds, phonemes, reading, sightWords, rhymingWords),
     )
 
     val mode by selector.mode.collectAsStateWithLifecycle()
@@ -186,6 +189,7 @@ fun HomeschoolTeacherApp() {
                         math = math,
                         binary = binary,
                         multiplication = multiplication,
+                        letterSounds = letterSounds,
                         phonemes = phonemes,
                         reading = reading,
                         sightWords = sightWords,
@@ -237,6 +241,11 @@ fun HomeschoolTeacherApp() {
                         )
                         LessonId.CountingMultiplication0 -> CountingMultiplicationScreen(
                             viewModel = multiplication,
+                            onCompleted = selector::onLessonInstanceCompleted,
+                            modifier = Modifier.fillMaxWidth(),
+                        )
+                        LessonId.LetterSounds0 -> LetterSoundsScreen(
+                            viewModel = letterSounds,
                             onCompleted = selector::onLessonInstanceCompleted,
                             modifier = Modifier.fillMaxWidth(),
                         )
