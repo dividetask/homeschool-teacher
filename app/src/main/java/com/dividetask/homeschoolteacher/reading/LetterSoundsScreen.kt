@@ -61,15 +61,16 @@ fun LetterSoundsScreen(
         onDispose { ClipPlayer.stopAll() }
     }
 
-    // Show-answer hold, then advance. Correct is brief; a wrong or revealed
-    // answer lingers a little longer so the learner registers the letter.
+    // Once an answer lands, play the letter clip (e.g. a1.mp3) as
+    // reinforcement, hold so it can be heard, then advance.
     LaunchedEffect(state.feedback, state.problem) {
         val hold = when (state.feedback) {
             LetterSoundsFeedback.None -> return@LaunchedEffect
-            LetterSoundsFeedback.Correct -> 1200L
-            LetterSoundsFeedback.Wrong -> 2000L
-            LetterSoundsFeedback.Revealed -> 1600L
+            LetterSoundsFeedback.Correct -> 2000L
+            LetterSoundsFeedback.Wrong -> 2400L
+            LetterSoundsFeedback.Revealed -> 2200L
         }
+        ClipPlayer.play(problem.answerClipRes)
         delay(hold)
         ClipPlayer.stopAll()
         onCompleted()

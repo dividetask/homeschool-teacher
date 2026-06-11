@@ -13,8 +13,10 @@ enum class LetterSoundsFeedback { None, Correct, Wrong, Revealed }
 
 data class LetterSoundsProblem(
     val letter: Char,
-    /** Raw resource id of the word clip to play for this letter. */
+    /** Raw resource id of the word clip played as the question. */
     val clipRes: Int,
+    /** Raw resource id of the letter clip played back after answering. */
+    val answerClipRes: Int,
 )
 
 data class LetterSoundsState(
@@ -156,7 +158,7 @@ class LetterSoundsViewModel : ViewModel() {
         val entries = LetterSounds.entries
         if (entries.isEmpty()) {
             // No clips bundled — degrade to a no-op problem rather than crash.
-            return LetterSoundsProblem('A', 0)
+            return LetterSoundsProblem('A', clipRes = 0, answerClipRes = 0)
         }
         // Prioritise letters still below the per-letter target.
         val needsWork = entries.filter {
@@ -169,7 +171,11 @@ class LetterSoundsViewModel : ViewModel() {
             basePool
         }
         val picked = finalPool[Random.nextInt(finalPool.size)]
-        return LetterSoundsProblem(letter = picked.letter, clipRes = picked.wordClipRes)
+        return LetterSoundsProblem(
+            letter = picked.letter,
+            clipRes = picked.wordClipRes,
+            answerClipRes = picked.answerClipRes,
+        )
     }
 
     companion object {

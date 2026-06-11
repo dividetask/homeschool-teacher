@@ -805,15 +805,20 @@ over the next one.
 - **Screen:** Letter Sound Clip Screen — a large tappable speaker plays a
   pre-recorded word clip; tapping it replays the clip.
 - **Variables:** `letter_sound_streak`, `letter_sounds_run_streak`.
-- **Audio:** one pre-cut word clip per letter, bundled under
-  `app/src/main/res/raw` as `<x>3.mp3` (e.g. `a3.mp3`). Only the letter
-  A has a clip today; more letters are added by dropping in the clip and
-  appending an entry to `reading/LetterSounds.kt`.
+- **Audio:** two pre-cut clips per letter, bundled under
+  `app/src/main/res/raw`: `<x>3.mp3` (the word, played as the question)
+  and `<x>1.mp3` (the letter, played back after the learner answers).
+  E.g. `a3.mp3` / `a1.mp3`. Only the letter A has clips today; more
+  letters are added by dropping in both clips and appending an entry to
+  `reading/LetterSounds.kt`.
 - **Problem selection:** pick a letter that still has
   `letter_sound_streak[letter] < 2` where possible; avoid immediately
   repeating the previous letter when more than one is available. Play
   that letter's word clip and ask which letter it starts with (A–Z
   keypad).
+- **Show answer:** after any answer (correct, wrong, or Give up) the
+  letter clip (`<x>1.mp3`) plays as reinforcement before the lesson
+  advances.
 - **Pass criteria (both required):**
   - `letter_sounds_run_streak >= 8` (eight correct answers in a row), AND
   - `letter_sound_streak[letter] >= 2` for every letter that has a clip.
