@@ -96,7 +96,7 @@ fun ProgressScreen(
 
     val subtractionStreaks by math.subtractionGrid.collectAsStateWithLifecycle()
 
-    // Per-lesson math streak (cells AND streak >= 8 are both required to
+    // Per-lesson math streak (cells AND streak >= 4 are both required to
     // pass — the user calls this out explicitly).
     val mathLessonStreaks: Map<LessonId, Int> = listOf(
         LessonId.MathPictures,
@@ -225,7 +225,7 @@ fun ProgressScreen(
         // streak (N/8). Passing a math lesson takes both that streak AND
         // every cell in the lesson's slice ≥ 2.
         Section(LessonId.MathPictures) {
-            InfoRow("Correct streak", "${mathLessonStreaks[LessonId.MathPictures]} / 8")
+            InfoRow("Correct streak", "${mathLessonStreaks[LessonId.MathPictures]} / 4")
             Text(
                 text = "Uses the 1..4 corner of the addition streak grid.",
                 fontSize = 12.sp,
@@ -234,7 +234,7 @@ fun ProgressScreen(
         }
 
         Section(LessonId.Math0) {
-            InfoRow("Correct streak", "${mathLessonStreaks[LessonId.Math0]} / 8")
+            InfoRow("Correct streak", "${mathLessonStreaks[LessonId.Math0]} / 4")
             InfoRow("Correct (lifetime)", mathState.correctCount.toString())
             InfoRow("Wrong (lifetime)", mathState.wrongCount.toString())
             Text(
@@ -249,27 +249,27 @@ fun ProgressScreen(
         }
 
         Section(LessonId.HorizontalAddition0) {
-            InfoRow("Correct streak", "${mathLessonStreaks[LessonId.HorizontalAddition0]} / 8")
+            InfoRow("Correct streak", "${mathLessonStreaks[LessonId.HorizontalAddition0]} / 4")
         }
 
         Section(LessonId.NumberLineAddition0) {
-            InfoRow("Correct streak", "${mathLessonStreaks[LessonId.NumberLineAddition0]} / 8")
+            InfoRow("Correct streak", "${mathLessonStreaks[LessonId.NumberLineAddition0]} / 4")
         }
 
         Section(LessonId.CountingAddition1) {
-            InfoRow("Correct streak", "${mathLessonStreaks[LessonId.CountingAddition1]} / 8")
+            InfoRow("Correct streak", "${mathLessonStreaks[LessonId.CountingAddition1]} / 4")
         }
 
         Section(LessonId.Math1) {
-            InfoRow("Correct streak", "${mathLessonStreaks[LessonId.Math1]} / 8")
+            InfoRow("Correct streak", "${mathLessonStreaks[LessonId.Math1]} / 4")
         }
 
         Section(LessonId.HorizontalAddition1) {
-            InfoRow("Correct streak", "${mathLessonStreaks[LessonId.HorizontalAddition1]} / 8")
+            InfoRow("Correct streak", "${mathLessonStreaks[LessonId.HorizontalAddition1]} / 4")
         }
 
         Section(LessonId.MathNumberLine) {
-            InfoRow("Correct streak", "${mathLessonStreaks[LessonId.MathNumberLine]} / 8")
+            InfoRow("Correct streak", "${mathLessonStreaks[LessonId.MathNumberLine]} / 4")
         }
 
         Section(LessonId.BinaryOps0) {
@@ -293,7 +293,7 @@ fun ProgressScreen(
         }
 
         Section(LessonId.CountingSubtraction0) {
-            InfoRow("Correct streak", "${mathLessonStreaks[LessonId.CountingSubtraction0]} / 8")
+            InfoRow("Correct streak", "${mathLessonStreaks[LessonId.CountingSubtraction0]} / 4")
             Text(
                 text = "Subtraction streak grid (rows = op1 ∈ 4..9, " +
                     "columns = op2 ∈ 0..4). All four subtraction variants " +
@@ -305,15 +305,15 @@ fun ProgressScreen(
         }
 
         Section(LessonId.HorizontalSubtraction0) {
-            InfoRow("Correct streak", "${mathLessonStreaks[LessonId.HorizontalSubtraction0]} / 8")
+            InfoRow("Correct streak", "${mathLessonStreaks[LessonId.HorizontalSubtraction0]} / 4")
         }
 
         Section(LessonId.VerticalSubtraction0) {
-            InfoRow("Correct streak", "${mathLessonStreaks[LessonId.VerticalSubtraction0]} / 8")
+            InfoRow("Correct streak", "${mathLessonStreaks[LessonId.VerticalSubtraction0]} / 4")
         }
 
         Section(LessonId.NumberLineSubtraction0) {
-            InfoRow("Correct streak", "${mathLessonStreaks[LessonId.NumberLineSubtraction0]} / 8")
+            InfoRow("Correct streak", "${mathLessonStreaks[LessonId.NumberLineSubtraction0]} / 4")
         }
 
         Section(LessonId.CountingMultiplication0) {

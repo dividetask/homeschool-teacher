@@ -44,7 +44,7 @@ class LetterSoundsViewModel : ViewModel() {
 
     // Per-letter consecutive-correct streak, keyed by uppercase letter.
     private val streakMap: MutableMap<Char, Int> = LetterSounds.letters
-        .associate { it.uppercaseChar() to Storage.loadLetterSoundStreak(it.uppercaseChar()) }
+        .associate { it.uppercaseChar() to Storage.loadWinStreak("LetterSounds0.${it.uppercaseChar()}") }
         .toMutableMap()
 
     private val _streaks = MutableStateFlow(streakMap.toMap())
@@ -54,7 +54,7 @@ class LetterSoundsViewModel : ViewModel() {
     val passed: StateFlow<Boolean> = _passed.asStateFlow()
 
     // Global consecutive-correct run across all letters.
-    private var runStreak: Int = Storage.loadLetterSoundsRunStreak()
+    private var runStreak: Int = Storage.loadWinStreak("LetterSounds0.run")
 
     private val _state: MutableStateFlow<LetterSoundsState>
     val state: StateFlow<LetterSoundsState>
@@ -91,11 +91,11 @@ class LetterSoundsViewModel : ViewModel() {
 
         val newLetterStreak = if (correct) (streakMap[key] ?: 0) + 1 else 0
         streakMap[key] = newLetterStreak
-        Storage.saveLetterSoundStreak(key, newLetterStreak)
+        Storage.saveWinStreak("LetterSounds0.$key", newLetterStreak)
         _streaks.value = streakMap.toMap()
 
         runStreak = if (correct) runStreak + 1 else 0
-        Storage.saveLetterSoundsRunStreak(runStreak)
+        Storage.saveWinStreak("LetterSounds0.run", runStreak)
 
         evaluatePassedFlag()
         _state.update {
@@ -116,10 +116,10 @@ class LetterSoundsViewModel : ViewModel() {
             current.feedback == LetterSoundsFeedback.Revealed) return
         val key = current.problem.letter.uppercaseChar()
         streakMap[key] = 0
-        Storage.saveLetterSoundStreak(key, 0)
+        Storage.saveWinStreak("LetterSounds0.$key", 0)
         _streaks.value = streakMap.toMap()
         runStreak = 0
-        Storage.saveLetterSoundsRunStreak(0)
+        Storage.saveWinStreak("LetterSounds0.run", 0)
         _state.update {
             it.copy(
                 feedback = LetterSoundsFeedback.Revealed,

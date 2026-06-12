@@ -22,7 +22,7 @@ data class ReadingState(
 class ReadingViewModel : ViewModel() {
 
     private val letterStreaks: MutableMap<Char, Int> = Animals.all
-        .associate { it.letter to Storage.loadReadingStreak(it.letter) }
+        .associate { it.letter to Storage.loadWinStreak("Reading0.${it.letter}") }
         .toMutableMap()
 
     private val _streaks = MutableStateFlow(letterStreaks.toMap())
@@ -68,7 +68,7 @@ class ReadingViewModel : ViewModel() {
         } else {
             letterStreaks[animalLetter] = 0
         }
-        Storage.saveReadingStreak(animalLetter, letterStreaks[animalLetter] ?: 0)
+        Storage.saveWinStreak("Reading0.$animalLetter", letterStreaks[animalLetter] ?: 0)
         _streaks.value = letterStreaks.toMap()
         evaluatePassedFlag()
 
@@ -89,7 +89,7 @@ class ReadingViewModel : ViewModel() {
             current.feedback == ReadingFeedback.Revealed) return
         val animalLetter = current.animal.letter
         letterStreaks[animalLetter] = 0
-        Storage.saveReadingStreak(animalLetter, 0)
+        Storage.saveWinStreak("Reading0.$animalLetter", 0)
         _streaks.value = letterStreaks.toMap()
         _state.update {
             it.copy(

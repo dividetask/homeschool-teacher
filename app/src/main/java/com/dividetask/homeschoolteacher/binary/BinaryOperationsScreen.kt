@@ -162,7 +162,7 @@ private fun BinaryEquation(
             subscript = true,
         )
         BinaryLine(
-            leading = "${problem.operator.symbol} ",
+            leading = "${problem.operator.verbalName} ",
             digits = problem.op2Binary,
             color = onBg,
             subscript = true,

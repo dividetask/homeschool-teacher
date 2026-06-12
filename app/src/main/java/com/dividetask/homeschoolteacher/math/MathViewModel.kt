@@ -39,7 +39,7 @@ data class MathState(
 )
 
 /** Threshold for the per-lesson consecutive-correct streak gate. */
-private const val LESSON_STREAK_TARGET = 8
+private const val LESSON_STREAK_TARGET = 4
 
 private val SUPPORTED_LESSONS = setOf(
     // Addition L0
@@ -145,7 +145,7 @@ class MathViewModel : ViewModel() {
     // Independent of the cell grids — passing requires both.
     private val lessonStreaks: MutableMap<LessonId, MutableStateFlow<Int>> =
         SUPPORTED_LESSONS.associateWith {
-            MutableStateFlow(Storage.loadMathLessonStreak(it))
+            MutableStateFlow(Storage.loadWinStreak(it.name))
         }.toMutableMap()
 
     private val _activeLesson = MutableStateFlow(LessonId.MathPictures)
@@ -204,7 +204,7 @@ class MathViewModel : ViewModel() {
         // Per-lesson consecutive-correct streak.
         val lessonStreakFlow = lessonStreaks.getValue(lesson)
         lessonStreakFlow.value = if (correct) lessonStreakFlow.value + 1 else 0
-        Storage.saveMathLessonStreak(lesson, lessonStreakFlow.value)
+        Storage.saveWinStreak(lesson.name, lessonStreakFlow.value)
 
         evaluatePassedFlags()
 
@@ -233,7 +233,7 @@ class MathViewModel : ViewModel() {
         // Giving up resets the lesson's consecutive-correct streak too.
         val lessonStreakFlow = lessonStreaks.getValue(lesson)
         lessonStreakFlow.value = 0
-        Storage.saveMathLessonStreak(lesson, 0)
+        Storage.saveWinStreak(lesson.name, 0)
 
         _state.update {
             it.copy(

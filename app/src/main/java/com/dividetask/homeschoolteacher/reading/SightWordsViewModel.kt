@@ -36,7 +36,7 @@ class SightWordsViewModel : ViewModel() {
     // mastering the first letter of "cat" counts toward Level 1 as well.
     private val streakMap: MutableMap<String, IntArray> = SightWords.all
         .associateWith { word ->
-            IntArray(word.length) { pos -> Storage.loadSightWordStreak(word, pos) }
+            IntArray(word.length) { pos -> Storage.loadWinStreak("SightWords.$word.$pos") }
         }.toMutableMap()
 
     private val _streaks = MutableStateFlow(streakSnapshot())
@@ -93,7 +93,7 @@ class SightWordsViewModel : ViewModel() {
         } else {
             arr[position] = 0
         }
-        Storage.saveSightWordStreak(word, position, arr[position])
+        Storage.saveWinStreak("SightWords.$word.$position", arr[position])
         _streaks.value = streakSnapshot()
         evaluatePassedFlags()
         _state.update {
@@ -115,7 +115,7 @@ class SightWordsViewModel : ViewModel() {
         val position = current.problem.missingIndex
         val arr = streakMap.getValue(word)
         arr[position] = 0
-        Storage.saveSightWordStreak(word, position, 0)
+        Storage.saveWinStreak("SightWords.$word.$position", 0)
         _streaks.value = streakSnapshot()
         _state.update {
             it.copy(

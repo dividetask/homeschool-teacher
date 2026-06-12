@@ -90,18 +90,19 @@ object Lessons {
         LessonDefinition(LessonId.Math0, "Vertical Addition — Level 0", Category.Math),
         LessonDefinition(LessonId.HorizontalAddition0, "Horizontal Addition — Level 0", Category.Math),
         LessonDefinition(LessonId.NumberLineAddition0, "Number Line Addition — Level 0", Category.Math),
-        // Addition — Level 1 group. Same four presentations at the
-        // wider 0..9 range. Each L1 variant requires all four L0
-        // variants to be passed (cells AND every L0 lesson's own
-        // streak), so we use a multi-parent gate rather than picking a
-        // single representative.
-        LessonDefinition(LessonId.CountingAddition1, "Counting Addition — Level 1", Category.Math, ADDITION_L0),
-        LessonDefinition(LessonId.Math1, "Vertical Addition — Level 1", Category.Math, ADDITION_L0),
-        LessonDefinition(LessonId.HorizontalAddition1, "Horizontal Addition — Level 1", Category.Math, ADDITION_L0),
-        LessonDefinition(LessonId.MathNumberLine, "Number Line Addition — Level 1", Category.Math, ADDITION_L0),
-        // Binary unlocks once the whole Addition L0 group is passed.
+        // Addition — Level 1 group. Same four presentations at the wider
+        // range. Number Line Addition 1 is the gateway: it opens as soon
+        // as Number Line Addition 0 is passed, and the other three L1
+        // variants then require all four Addition L0 variants AND Number
+        // Line Addition 1 to be passed.
+        LessonDefinition(LessonId.MathNumberLine, "Number Line Addition — Level 1", Category.Math, listOf(LessonId.NumberLineAddition0)),
+        LessonDefinition(LessonId.CountingAddition1, "Counting Addition — Level 1", Category.Math, ADDITION_L0 + LessonId.MathNumberLine),
+        LessonDefinition(LessonId.Math1, "Vertical Addition — Level 1", Category.Math, ADDITION_L0 + LessonId.MathNumberLine),
+        LessonDefinition(LessonId.HorizontalAddition1, "Horizontal Addition — Level 1", Category.Math, ADDITION_L0 + LessonId.MathNumberLine),
+        // Binary unlocks once the whole Addition L0 group is passed;
+        // Level 1 additionally requires Binary 0.
         LessonDefinition(LessonId.BinaryOps0, "Binary — Level 0", Category.Math, ADDITION_L0),
-        LessonDefinition(LessonId.BinaryOps1, "Binary — Level 1", Category.Math, listOf(LessonId.BinaryOps0)),
+        LessonDefinition(LessonId.BinaryOps1, "Binary — Level 1", Category.Math, ADDITION_L0 + LessonId.BinaryOps0),
         // Subtraction — Level 0 group. Four parallel presentations of
         // op1 - op2 with op1 ∈ 4..9, op2 ∈ 0..4 (answer always
         // non-negative). All gated on the full Addition L1 group.

@@ -254,50 +254,46 @@ All persisted state lives in one `SharedPreferences` file named
                                         whether its parents are passed.
                                         Does not mark the lesson as
                                         passed.
-- `ttt.streak.<LessonId>`            — non-loss streak per TTT lesson.
+- `win_streak.<key>`                 — THE single streak store. Every
+                                        consecutive-correct / non-loss
+                                        streak lives here under one
+                                        namespace; `<key>` is the
+                                        `LessonId` (games & math), or
+                                        `<LessonId>.<letter|word|...>` for
+                                        the per-item reading lessons
+                                        (`SightWords.<word>.<pos>` is shared
+                                        by both Sight Words levels;
+                                        `LetterSounds0.run` is the across-
+                                        letters run). Set/save through
+                                        `Storage.loadWinStreak/saveWinStreak`.
 - `ttt.{player|cpu|draw}Score`       — aggregate scoreboard.
-- `math.streak.<x>.<y>`              — 16×16 cell grid shared by every
-                                        addition variant (Counting,
-                                        Vertical, Horizontal, Number
-                                        Line) at both difficulty levels.
-- `math.lessonstreak.<LessonId>`     — per-lesson consecutive-correct
-                                        streak. Cells alone aren't
-                                        enough to pass a math lesson:
-                                        each variant must independently
-                                        hit 8 in a row in its own screen.
+- `math.streak.<x>.<y>`              — 16×16 addition cell *grid* (a
+                                        coverage map, NOT a win streak),
+                                        shared by every addition variant
+                                        (Counting, Vertical, Horizontal,
+                                        Number Line) at both difficulties.
 - `math.{correct|wrong}`             — lifetime counters.
-- `subtraction.streak.<x>.<y>`       — 16×16 cell grid shared by every
-                                        subtraction variant (cells track
-                                        op1 − op2 correctness).
-- `binary.streak.<lvl>.<op>.<a>.<b>` — binary AND/OR/XOR streak cells.
+- `subtraction.streak.<x>.<y>`       — 16×16 subtraction cell grid (shared
+                                        by every subtraction variant).
+- `binary.streak.<lvl>.<op>.<a>.<b>` — binary AND/OR/XOR coverage grid.
 - `binary.{correct|wrong}`           — lifetime counters.
 - `multiplication.streak.<a>.<b>`    — counting-multiplication grid.
 - `multiplication.{correct|wrong}`   — lifetime counters.
-- `lettersounds.streak.<letter>`     — per-letter consecutive-correct
-                                        streak for Letter Sounds.
-- `lettersounds.runstreak`           — global consecutive-correct run for
-                                        Letter Sounds (the "8 in a row"
-                                        pass gate).
 - `lettersounds.{correct|wrong}`     — lifetime counters.
-- `phonemes.streak.<word>`           — per-word phoneme streak.
 - `phonemes.{correct|wrong}`         — lifetime counters.
-- `reading.streak.<letter>`          — per-animal streak.
 - `reading.{correct|wrong}`          — lifetime counters.
-- `sightwords.streak.<word>.<pos>`   — per-(word, position) streak.
 - `sightwords.{correct|wrong}`       — lifetime counters.
-- `rhymingwords.streak.<word>`       — per-word streak.
 - `rhymingwords.{correct|wrong}`     — lifetime counters.
-- `chess.streak.<LessonId>`          — per-lesson correct-move streak
-                                        (Chess0..Chess3).
 - `chess.{correct|wrong}`            — lifetime counters (shared across
                                         all chess levels).
-- `migration.v2` / `migration.v3` /
-  `migration.v4`                     — one-shot migration sentinels. `v4`
+- `migration.v2` … `migration.v5`    — one-shot migration sentinels. `v4`
                                         auto-passes Letter Sounds 0 for
-                                        users who already reached Phonemes,
-                                        so inserting it at the head of the
-                                        Reading chain doesn't re-lock their
-                                        progress.
+                                        users who already reached Phonemes;
+                                        `v5` folds every old per-feature
+                                        streak key (`ttt.streak.*`,
+                                        `chess.streak.*`,
+                                        `math.lessonstreak.*`, the reading
+                                        streaks, …) into `win_streak.*`.
 
 When a runner mutates state, it writes to storage inline (no debouncing
 or batching — SharedPreferences `apply()` is cheap). When a runner is

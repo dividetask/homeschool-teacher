@@ -61,7 +61,7 @@ multiple levels of the same game family (e.g. `win_streak[game][level]`).
 | 0   | Tic Tac Toe    |
 | 1   | Chess          |
 | 2   | Addition       |
-| 3   | Phonemes       |
+| 3   | Letter Sounds / Phonemes |
 | 4   | Animals        |
 | 5   | Sight Words    |
 | 6   | Rhyming Words  |
@@ -74,10 +74,24 @@ multiple levels of the same game family (e.g. `win_streak[game][level]`).
 Single canonical description of every stored variable. Lesson
 definitions reference these by name. All defaults are zero unless noted.
 
-### `win_streak[game][level]`
-Integer 2D array. Records win streak (or consecutive correct answers,
-for games where every problem has a single answer) for each
-(Game UID, level) pair. Resets to zero on any loss or mistake.
+### `win_streak[game][slot]`
+The single variable that tracks **every** consecutive-correct / non-loss
+streak in the app. Indexed by Game UID and a per-streak slot. A correct
+answer / non-loss increments the slot; any wrong answer, loss, or
+**Give up** resets it to zero. The slot's meaning depends on the game:
+
+- **Games & math** — slot = difficulty level. The four math screens that
+  share a Subject + Difficulty each keep their **own** slot, so they are
+  passed independently; read e.g. `win_streak[2][1]` as "that screen's
+  Level 1 slot", not one shared counter.
+- **Animals & Letter Sounds** — slot = letter (`A → 0 … Z → 25`).
+- **Phonemes & Rhyming Words** — slot = word.
+- **Sight Words** — slot = `(word, position)`, shared between Levels 0
+  and 1.
+- **Letter Sounds** additionally keeps `win_streak[3][run]`, the
+  across-all-letters run.
+
+All slots default to zero and persist across restarts.
 
 ### `binary_grid[level][operator][op1][op2]`
 Integer 4D array. `level ∈ 0..1`; `operator ∈ {AND, OR, XOR}` (stored
@@ -401,12 +415,12 @@ over the next one.
 | 2        | Horizontal Addition — Level 0       | Math     | —                                 |
 | 2        | Vertical Addition — Level 0         | Math     | —                                 |
 | 2        | Number Line Addition — Level 0      | Math     | —                                 |
-| 2        | Counting Addition — Level 1          | Math     | All Addition Difficulty 0 passed  |
-| 2        | Horizontal Addition — Level 1       | Math     | All Addition Difficulty 0 passed  |
-| 2        | Vertical Addition — Level 1         | Math     | All Addition Difficulty 0 passed  |
-| 2        | Number Line Addition — Level 1      | Math     | All Addition Difficulty 0 passed  |
+| 2        | Number Line Addition — Level 1      | Math     | Number Line Addition 0 passed     |
+| 2        | Counting Addition — Level 1          | Math     | All Addition Diff 0 + Number Line Addition 1 |
+| 2        | Horizontal Addition — Level 1       | Math     | All Addition Diff 0 + Number Line Addition 1 |
+| 2        | Vertical Addition — Level 1         | Math     | All Addition Diff 0 + Number Line Addition 1 |
 | 8        | Binary — Level 0                    | Math     | All Addition Difficulty 0 passed  |
-| 8        | Binary — Level 1                    | Math     | All Binary Difficulty 0 passed    |
+| 8        | Binary — Level 1                    | Math     | All Addition Diff 0 + Binary 0    |
 | 7        | Counting Subtraction — Level 0      | Math     | All Addition Difficulty 1 passed  |
 | 7        | Horizontal Subtraction — Level 0    | Math     | All Addition Difficulty 1 passed  |
 | 7        | Vertical Subtraction — Level 0      | Math     | All Addition Difficulty 1 passed  |
@@ -524,12 +538,12 @@ over the next one.
 - **Runs per round:** 4
 - **Unlock conditions:** always.
 - **Screen:** Counting Equation Screen (addition operator)
-- **Variables:** `counting_addition_grid`, `win_streak[2][0]`
+- **Variables:** `addition_grid`, `win_streak[2][0]`
 - **Random variables:**
   - `op1, op2 ∈ 0..4`
 - **Problem selection:** standard math-grid selection
   (see Rules § Random problem selection (math grid))
-- **Pass criteria:** `counting_addition_grid[op1][op2] >= 2` for
+- **Pass criteria:** `addition_grid[op1][op2] >= 2` for
   every `op1, op2 ∈ 0..4` **AND** `win_streak[2][0] >= 4`
 
 ### Horizontal Addition — Level 0
@@ -583,14 +597,14 @@ over the next one.
 - **Difficulty:** 1
 - **Category:** Math
 - **Runs per round:** 4
-- **Unlock conditions:** All Addition Difficulty 0 passed and Number Line Addition 1 passed.
-  Addition 0, and Number Line Addition 1).
+- **Unlock conditions:** All Addition Difficulty 0 passed and Number
+  Line Addition 1 passed.
 - **Screen:** Counting Equation Screen (addition operator)
-- **Variables:** `counting_addition_grid`, `win_streak[2][1]`
+- **Variables:** `addition_grid`, `win_streak[Counting Addition 1]`
 - **Random variables:**
   - `op1, op2 ∈ 0..8`
 - **Problem selection:** standard math-grid selection
-- **Pass criteria:** `counting_addition_grid[op1][op2] >= 2` for every
+- **Pass criteria:** `addition_grid[op1][op2] >= 2` for every
   `op1, op2 ∈ 0..8` **AND** `win_streak[2][1] >= 4`
 
 ### Horizontal Addition — Level 1
@@ -646,7 +660,7 @@ over the next one.
 - **Runs per round:** 4
 - **Unlock conditions:** All Addition Difficulty 0 passed.
 - **Screen:** Binary Vertical Equation Screen (`bits = 1`)
-- **Variables:** `binary_grid`, `win_streak[8][0]`
+- **Variables:** `binary_grid`
 - **Random variables:**
   - `operator ∈ {AND, OR, XOR}` chosen uniformly at random
   - `op1, op2 ∈ 0..1`
@@ -664,7 +678,7 @@ over the next one.
 - **Runs per round:** 4
 - **Unlock conditions:** All Addition Difficulty 0 passed and Binary 0 passed.
 - **Screen:** Binary Vertical Equation Screen (`bits = 3`)
-- **Variables:** `binary_grid`, `win_streak[8][1]`
+- **Variables:** `binary_grid`
 - **Random variables:**
   - `operator ∈ {AND, OR, XOR}` chosen uniformly at random
   - `op1, op2 ∈ 0..7` (rendered as zero-padded 3-bit binary)
@@ -682,7 +696,7 @@ over the next one.
 - **Runs per round:** 4
 - **Unlock conditions:** All Subtraction Difficulty 0 passed.
 - **Screen:** Counting Multiplication Screen
-- **Variables:** `multiplication_grid`, `win_streak[9][0]`
+- **Variables:** `multiplication_grid`
 - **Random variables:**
   - `op1, op2 ∈ 0..4` (max product 16)
   - A random animal emoji per problem (independent of streak)
@@ -700,11 +714,11 @@ over the next one.
 - **Runs per round:** 4
 - **Unlock conditions:** All Addition Difficulty 1 passed.
 - **Screen:** Counting Equation Screen (subtraction operator)
-- **Variables:** `counting_subtraction_grid`, `win_streak[7][0]`
+- **Variables:** `subtraction_grid`, `win_streak[7][0]`
 - **Random variables:**
   - `op1 ∈ 4..9`, `op2 ∈ 0..4`
 - **Problem selection:** standard math-grid selection
-- **Pass criteria:** `counting_subtraction_grid[op1][op2] >= 2` for
+- **Pass criteria:** `subtraction_grid[op1][op2] >= 2` for
   every `op1 ∈ 4..9`, `op2 ∈ 0..4` **AND** `win_streak[7][0] >= 4`
 
 ### Horizontal Subtraction — Level 0
@@ -762,7 +776,8 @@ over the next one.
   of the whole Reading chain).
 - **Screen:** Letter Sound Clip Screen — a large tappable speaker plays a
   pre-recorded word clip; tapping it replays the clip.
-- **Variables:** `letter_sound_streak`, `letter_sounds_run_streak`.
+- **Variables:** `win_streak[3]` — a per-letter slot plus the `run` slot
+  (`win_streak[3][run]`).
 - **Audio:** two pre-cut clips per letter, bundled under
   `app/src/main/res/raw`: `<x>3.mp3` (the word, played as the question)
   and `<x>1.mp3` (the letter, played back after the learner answers).
@@ -770,7 +785,7 @@ over the next one.
   letters are added by dropping in both clips and appending an entry to
   `reading/LetterSounds.kt`.
 - **Problem selection:** pick a letter that still has
-  `letter_sound_streak[letter] < 2` where possible; avoid immediately
+  `win_streak[3][letter] < 2` where possible; avoid immediately
   repeating the previous letter when more than one is available. Play
   that letter's word clip and ask which letter it starts with (A–Z
   keypad).
@@ -778,8 +793,8 @@ over the next one.
   letter clip (`<x>1.mp3`) plays as reinforcement before the lesson
   advances.
 - **Pass criteria (both required):**
-  - `letter_sounds_run_streak >= 8` (eight correct answers in a row), AND
-  - `letter_sound_streak[letter] >= 2` for every letter that has a clip.
+  - `win_streak[3][run] >= 8` (eight correct answers in a row), AND
+  - `win_streak[3][letter] >= 2` for every letter that has a clip.
 
   With only one letter available, the run streak is the binding
   constraint. Any wrong answer (or Give up) resets the run streak and the
@@ -795,17 +810,18 @@ over the next one.
   which take longer to read than a single answer).
 - **Unlock conditions:** Letter Sounds — Level 0 passed.
 - **Screen:** Phoneme Trio Screen
-- **Variables:** `phoneme_word_streak`
+- **Variables:** `win_streak[3]` (one slot per word; the Game UID 3 slot
+  space is shared with Letter Sounds, keyed separately per lesson)
 - **Word bank:** `app/src/main/assets/config.yaml` under `phonemes` —
   19 letter groups: b, c, d, f, g, h, j, k, l, m, n, p, r, s, t, v, w,
   y, z. (`/k/` is split into c-words and k-words because the answer is
   a letter, not a phoneme. `/ng/` and `/zh/` are excluded because they
   don't appear word-initially in English.)
 - **Problem selection:** group words by first letter; prefer a letter
-  whose words still have at least one `phoneme_word_streak[word] < 2`
+  whose words still have at least one `win_streak[3][word] < 2`
   (10% wildcard for uniformly random letter); draw 3 random words from
   that letter's list.
-- **Pass criteria:** `phoneme_word_streak[word] >= 2` for every word
+- **Pass criteria:** `win_streak[3][word] >= 2` for every word
   in the bank.
 
 ### Animals — Level 0
@@ -837,8 +853,8 @@ over the next one.
 - **Random variables:**
   - `position = 0` (only the first letter is ever blanked)
 - **Problem selection:** per-word list selection over the word bank.
-- **Pass criteria:** `win_streak[5][letter] >= 2` for every mapped
-  letter. letters are mapped with A -> 0, B -> 1, etc
+- **Pass criteria:** `win_streak[5][word][0] >= 2` for every word
+  (the first-letter slot of each word).
 
 
 ### Sight Words — Level 1
@@ -849,13 +865,14 @@ over the next one.
 - **Runs per round:** 2
 - **Unlock conditions:** Sight Words — Level 0 passed.
 - **Screen:** Word Display Screen
-- **Variables:** `sight_word_streak`
+- **Variables:** `win_streak[5]` (per `(word, position)`; shared with
+  Level 0)
 - **Word bank:** same as Level 0
 - **Random variables:**
   - `position` chosen uniformly at random within the word
 - **Problem selection:** per-word list selection over the set of
   `(word, position)` pairs.
-- **Pass criteria:** `sight_word_streak[word][p] >= 2` for every word
+- **Pass criteria:** `win_streak[5][word][p] >= 2` for every word
   and every letter position `p` of every word.
 
 ### Rhyming Words — Level 0
@@ -866,13 +883,13 @@ over the next one.
 - **Runs per round:** 2
 - **Unlock conditions:** Sight Words — Level 1 passed.
 - **Screen:** Word Display Screen
-- **Variables:** `rhyming_word_streak`
+- **Variables:** `win_streak[6]` (one slot per word)
 - **Word bank:** `app/src/main/assets/config.yaml` under
   `rhyming_words.groups`
 - **Random variables:**
   - `position = 0`
 - **Problem selection:** per-word list selection.
-- **Pass criteria:** `rhyming_word_streak[word] >= 2` for every word.
+- **Pass criteria:** `win_streak[6][word] >= 2` for every word.
 
 ## Unlocking
 
@@ -943,9 +960,10 @@ session:
 
 ## Persistence
 
-All variables described in the Variables section — `win_streak`,
-`chess_correct_streak`, the two addition grids, the two subtraction
-grids, the animal / phoneme / sight-word / rhyming-word streaks, plus
-`lesson_passed` and `lesson_manual_unlock` — are written to the
-device's app-local storage and reloaded on launch. They survive
-closing the app, killing it from recents, and rebooting the device.
+All variables described in the Variables section — the single
+`win_streak` (every consecutive-correct / non-loss streak in the app),
+`addition_grid`, `subtraction_grid`, `multiplication_grid`,
+`binary_grid`, plus `lesson_passed` and `lesson_manual_unlock` — are
+written to the device's app-local storage and reloaded on launch. They
+survive closing the app, killing it from recents, and rebooting the
+device.

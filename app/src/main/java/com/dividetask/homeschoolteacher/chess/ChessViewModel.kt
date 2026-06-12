@@ -45,7 +45,7 @@ class ChessViewModel : ViewModel() {
 
     private val streakFlows: MutableMap<LessonId, MutableStateFlow<Int>> =
         SUPPORTED_LESSONS.associateWith {
-            MutableStateFlow(Storage.loadChessStreak(it))
+            MutableStateFlow(Storage.loadWinStreak(it.name))
         }.toMutableMap()
 
     private val passedFlows: MutableMap<LessonId, MutableStateFlow<Boolean>> =
@@ -124,7 +124,7 @@ class ChessViewModel : ViewModel() {
         if (s.feedback == ChessFeedback.Correct || s.feedback == ChessFeedback.Revealed) return
         val active = _activeLesson.value
         streakFlows.getValue(active).value = 0
-        Storage.saveChessStreak(active, 0)
+        Storage.saveWinStreak(active.name, 0)
         val reveal = s.puzzle.capturable.firstOrNull()
         _state.update {
             it.copy(
@@ -141,7 +141,7 @@ class ChessViewModel : ViewModel() {
         val active = _activeLesson.value
         val newStreak = streakFlows.getValue(active).value + 1
         streakFlows.getValue(active).value = newStreak
-        Storage.saveChessStreak(active, newStreak)
+        Storage.saveWinStreak(active.name, newStreak)
         if (newStreak >= 8 && !passedFlows.getValue(active).value &&
             !Storage.loadLessonManualOverride(active)) {
             passedFlows.getValue(active).value = true
@@ -160,7 +160,7 @@ class ChessViewModel : ViewModel() {
     private fun markWrong(index: Int) {
         val active = _activeLesson.value
         streakFlows.getValue(active).value = 0
-        Storage.saveChessStreak(active, 0)
+        Storage.saveWinStreak(active.name, 0)
         _state.update {
             it.copy(
                 selectedPlayer = false,

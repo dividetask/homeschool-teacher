@@ -26,7 +26,7 @@ data class RhymingWordsState(
 class RhymingWordsViewModel : ViewModel() {
 
     private val streakMap: MutableMap<String, Int> = RhymingWords.all
-        .associateWith { Storage.loadRhymingWordStreak(it) }
+        .associateWith { Storage.loadWinStreak("RhymingWords0.$it") }
         .toMutableMap()
 
     private val _streaks = MutableStateFlow(streakMap.toMap())
@@ -71,7 +71,7 @@ class RhymingWordsViewModel : ViewModel() {
         } else {
             streakMap[word] = 0
         }
-        Storage.saveRhymingWordStreak(word, streakMap[word] ?: 0)
+        Storage.saveWinStreak("RhymingWords0.$word", streakMap[word] ?: 0)
         _streaks.value = streakMap.toMap()
         evaluatePassedFlag()
         _state.update {
@@ -91,7 +91,7 @@ class RhymingWordsViewModel : ViewModel() {
             current.feedback == RhymingWordsFeedback.Revealed) return
         val word = current.problem.word
         streakMap[word] = 0
-        Storage.saveRhymingWordStreak(word, 0)
+        Storage.saveWinStreak("RhymingWords0.$word", 0)
         _streaks.value = streakMap.toMap()
         _state.update {
             it.copy(

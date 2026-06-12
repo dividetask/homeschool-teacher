@@ -27,7 +27,7 @@ data class PhonemesState(
 class PhonemesViewModel : ViewModel() {
 
     private val streakMap: MutableMap<String, Int> = Phonemes.all
-        .associateWith { Storage.loadPhonemeWordStreak(it) }
+        .associateWith { Storage.loadWinStreak("Phonemes0.$it") }
         .toMutableMap()
 
     private val _streaks = MutableStateFlow(streakMap.toMap())
@@ -71,7 +71,7 @@ class PhonemesViewModel : ViewModel() {
         problem.words.forEach { word ->
             val newValue = if (correct) (streakMap[word] ?: 0) + 1 else 0
             streakMap[word] = newValue
-            Storage.savePhonemeWordStreak(word, newValue)
+            Storage.saveWinStreak("Phonemes0.$word", newValue)
         }
         _streaks.value = streakMap.toMap()
         evaluatePassedFlag()
@@ -93,7 +93,7 @@ class PhonemesViewModel : ViewModel() {
         // Same "reset all three" penalty as a wrong answer.
         current.problem.words.forEach { word ->
             streakMap[word] = 0
-            Storage.savePhonemeWordStreak(word, 0)
+            Storage.saveWinStreak("Phonemes0.$word", 0)
         }
         _streaks.value = streakMap.toMap()
         _state.update {
