@@ -79,10 +79,6 @@ Integer 2D array. Records win streak (or consecutive correct answers,
 for games where every problem has a single answer) for each
 (Game UID, level) pair. Resets to zero on any loss or mistake.
 
-### `chess_correct_streak[level]`
-Integer array indexed by chess level. Tracks consecutive correct chess
-captures. Resets to zero on any incorrect move.
-
 ### `binary_grid[level][operator][op1][op2]`
 Integer 4D array. `level ∈ 0..1`; `operator ∈ {AND, OR, XOR}` (stored
 as 0, 1, 2 in that order); `op1` and `op2` indexed `0..7`. Level 0 only
@@ -93,54 +89,17 @@ Integer 2D array, `op1` and `op2` indexed `0..9`. Default zero. Cell
 tracks correct answers for the matching multiplication problem when
 shown via the Counting Multiplication Screen.
 
-### `counting_addition_grid[op1][op2]`
-Integer 2D array, `op1` and `op2` indexed `0..9` (length 10 each). Cell
-tracks correct answers for the matching addition problem when shown via
-the Counting Equation Screen.
-
 ### `addition_grid[op1][op2]`
 Integer 2D array, `op1` and `op2` indexed `0..19` (length 20 each). Cell
 tracks correct answers for the matching addition problem when shown via
 the Vertical, Horizontal, or Number Line equation screens. Shared
 across those three screens.
 
-### `counting_subtraction_grid[op1][op2]`
-Integer 2D array, `op1` and `op2` indexed `0..9`. Cell tracks correct
-answers for the matching subtraction problem (`op1 − op2`) when shown
-via the Counting Equation Screen.
-
 ### `subtraction_grid[op1][op2]`
 Integer 2D array, `op1` and `op2` indexed `0..19`. Cell tracks correct
 answers for the matching subtraction problem when shown via the
 Vertical, Horizontal, or Number Line equation screens. Shared across
 those three screens.
-
-### `animal_streak[letter]`
-Integer array indexed by letter `A..Z`. Tracks consecutive correct
-answers for the Animals lesson.
-
-### `letter_sound_streak[letter]`
-Integer array indexed by letter `A..Z`. Tracks consecutive correct
-answers for the Letter Sounds lesson, per letter. A wrong answer (or
-**Give up**) resets the current letter to zero.
-
-### `letter_sounds_run_streak`
-Single integer: consecutive correct answers across all letters in the
-Letter Sounds lesson. Resets to zero on any wrong answer (or **Give
-up**). Passing requires this to reach 8 *and* every letter's
-`letter_sound_streak` to reach 2.
-
-### `phoneme_word_streak[word]`
-Integer array indexed by word from the phoneme word bank. A correct
-trio answer increments all three words in the trio; a wrong answer (or
-**Give up**) resets all three to zero.
-
-### `sight_word_streak[word][position]`
-Integer 2D array. First index is the word; second index is the letter
-position within the word.
-
-### `rhyming_word_streak[word]`
-Integer array indexed by word from the rhyming-word pool.
 
 ### `lesson_passed[lesson]`
 Boolean, one per lesson. Sticky: once a lesson's pass criteria are met
@@ -512,8 +471,8 @@ over the next one.
 - **Pieces:** queen (random colour); capturable pawn ≥ 1;
   non-capturable pawn ≥ 1
 - **Movement:** queen (see Rules § Chess piece movement)
-- **Variables:** `chess_correct_streak[0]`
-- **Pass criteria:** `chess_correct_streak[0] >= 8`
+- **Variables:** `win_streak[1][0]`
+- **Pass criteria:** `win_streak[1][0] >= 8`
 
 ### Chess — Level 1
 - **Game UID:** 1
@@ -526,8 +485,8 @@ over the next one.
 - **Pieces:** queen (random colour); capturable opposite-colour pawn
   ≥ 1; non-capturable opposite-colour pawn ≥ 1; friendly pawn ≥ 1
 - **Movement:** queen
-- **Variables:** `chess_correct_streak[1]`
-- **Pass criteria:** `chess_correct_streak[1] >= 8`
+- **Variables:** `win_streak[1][1]`
+- **Pass criteria:** `win_streak[1][1] >= 8`
 
 ### Chess — Level 2
 - **Game UID:** 1
@@ -540,8 +499,8 @@ over the next one.
 - **Pieces:** rook (random colour); capturable opposite-colour pawn
   ≥ 1; non-capturable opposite-colour pawn ≥ 1; friendly pawn ≥ 1
 - **Movement:** rook
-- **Variables:** `chess_correct_streak[2]`
-- **Pass criteria:** `chess_correct_streak[2] >= 8`
+- **Variables:** `win_streak[1][2]`
+- **Pass criteria:** `win_streak[1][2] >= 8`
 
 ### Chess — Level 3
 - **Game UID:** 1
@@ -554,8 +513,8 @@ over the next one.
 - **Pieces:** bishop (random colour); capturable opposite-colour pawn
   ≥ 1; non-capturable opposite-colour pawn ≥ 1; friendly pawn ≥ 1
 - **Movement:** bishop
-- **Variables:** `chess_correct_streak[3]`
-- **Pass criteria:** `chess_correct_streak[3] >= 8`
+- **Variables:** `win_streak[1][3]`
+- **Pass criteria:** `win_streak[1][3] >= 8`
 
 ### Counting Addition — Level 0
 - **Game UID:** 2
@@ -624,9 +583,8 @@ over the next one.
 - **Difficulty:** 1
 - **Category:** Math
 - **Runs per round:** 4
-- **Unlock conditions:** All Addition Difficulty 0 passed
-  (i.e. Counting Addition 0, Horizontal Addition 0, Vertical
-  Addition 0, and Number Line Addition 0).
+- **Unlock conditions:** All Addition Difficulty 0 passed and Number Line Addition 1 passed.
+  Addition 0, and Number Line Addition 1).
 - **Screen:** Counting Equation Screen (addition operator)
 - **Variables:** `counting_addition_grid`, `win_streak[2][1]`
 - **Random variables:**
@@ -641,7 +599,7 @@ over the next one.
 - **Difficulty:** 1
 - **Category:** Math
 - **Runs per round:** 4
-- **Unlock conditions:** All Addition Difficulty 0 passed.
+- **Unlock conditions:** All Addition Difficulty 0 passed and Number Line Addition 1 passed.
 - **Screen:** Horizontal Equation Screen (addition operator)
 - **Variables:** `addition_grid`, `win_streak[2][1]`
 - **Random variables:**
@@ -656,7 +614,7 @@ over the next one.
 - **Difficulty:** 1
 - **Category:** Math
 - **Runs per round:** 4
-- **Unlock conditions:** All Addition Difficulty 0 passed.
+- **Unlock conditions:** All Addition Difficulty 0 passed and Number Line Addition 1 passed.
 - **Screen:** Vertical Equation Screen (addition operator)
 - **Variables:** `addition_grid`, `win_streak[2][1]`
 - **Random variables:**
@@ -671,7 +629,7 @@ over the next one.
 - **Difficulty:** 1
 - **Category:** Math
 - **Runs per round:** 4
-- **Unlock conditions:** All Addition Difficulty 0 passed.
+- **Unlock conditions:** Number Line Addition 0 passed.
 - **Screen:** Number Line Equation Screen (addition operator)
 - **Variables:** `addition_grid`, `win_streak[2][1]`
 - **Random variables:**
@@ -704,7 +662,7 @@ over the next one.
 - **Difficulty:** 1
 - **Category:** Math
 - **Runs per round:** 4
-- **Unlock conditions:** All Binary Difficulty 0 passed.
+- **Unlock conditions:** All Addition Difficulty 0 passed and Binary 0 passed.
 - **Screen:** Binary Vertical Equation Screen (`bits = 3`)
 - **Variables:** `binary_grid`, `win_streak[8][1]`
 - **Random variables:**
@@ -858,12 +816,12 @@ over the next one.
 - **Runs per round:** 2
 - **Unlock conditions:** Phonemes — Level 0 passed.
 - **Screen:** Animal Picture Screen
-- **Variables:** `animal_streak`
+- **Variables:** `win_streak[4]`
 - **Problem selection:** per-word list selection
   (see Rules § Random problem selection (per-word list)) over the set
   of letters with a mapped animal emoji.
-- **Pass criteria:** `animal_streak[letter] >= 2` for every mapped
-  letter.
+- **Pass criteria:** `win_streak[4][letter] >= 2` for every mapped
+  letter. letters are mapped with A -> 0, B -> 1, etc
 
 ### Sight Words — Level 0
 - **Game UID:** 5
@@ -873,13 +831,15 @@ over the next one.
 - **Runs per round:** 2
 - **Unlock conditions:** Animals — Level 0 passed.
 - **Screen:** Word Display Screen
-- **Variables:** `sight_word_streak`
+- **Variables:** `win_streak[5]`
 - **Word bank:** `app/src/main/assets/config.yaml` under
   `sight_words.words`
 - **Random variables:**
   - `position = 0` (only the first letter is ever blanked)
 - **Problem selection:** per-word list selection over the word bank.
-- **Pass criteria:** `sight_word_streak[word][0] >= 2` for every word.
+- **Pass criteria:** `win_streak[5][letter] >= 2` for every mapped
+  letter. letters are mapped with A -> 0, B -> 1, etc
+
 
 ### Sight Words — Level 1
 - **Game UID:** 5
