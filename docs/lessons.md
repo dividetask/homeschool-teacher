@@ -233,19 +233,21 @@ answers, then they are revealed alongside the green/red feedback. A
 
 ### Counting Multiplication Screen
 The equation displayed on its own line followed by `op2` groups, each
-containing `op1` copies of a randomly-picked animal emoji. Groups
-flow left-to-right and wrap to additional lines as needed; a single
-group is never split across a line. Example for `op1 = 2`, `op2 = 4`:
+containing `op1` copies of a randomly-picked animal emoji. **Each group
+is drawn inside its own rounded box, with a wide gap between boxes**, so
+the "this many groups of this many" structure is clear. Groups flow
+left-to-right and wrap to additional lines as needed; a single group is
+never split across a line. Example for `op1 = 2`, `op2 = 4`:
 
 ```
 2 × 4 = ?
-🐱🐱   🐱🐱   🐱🐱   🐱🐱
+[🐱🐱]  [🐱🐱]  [🐱🐱]  [🐱🐱]
 ```
 
 For products that don't fit on one line (e.g. `4 × 4 = 16`), the
-groups wrap onto two or three lines while staying visually grouped.
-When either operand is 0 the area shows "(no 🐱)" instead of empty
-space.
+boxed groups wrap onto two or three lines while staying visually
+grouped. When either operand is 0 the area shows "(no 🐱)" instead of
+empty space.
 
 **Answer surface:** Numeric Grid (0..max).
 

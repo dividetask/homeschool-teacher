@@ -1,5 +1,6 @@
 package com.dividetask.homeschoolteacher.multiplication
 
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
@@ -148,9 +149,10 @@ private fun ScoreItem(label: String, value: Int, color: Color) {
 }
 
 /**
- * Render `op2` groups, each containing `op1` copies of [emoji]. Groups
- * flow left-to-right and wrap to additional lines as needed so a long
- * product like 4 × 4 = 16 stays readable on a phone. A single group is
+ * Render `op2` groups, each containing `op1` copies of [emoji]. Each group
+ * is drawn inside its own rounded box with a wide gap between boxes, so a
+ * child can clearly see "this many groups of this many". Groups flow
+ * left-to-right and wrap to additional lines as needed; a single group is
  * never broken across a line because each group is its own [Row].
  */
 @OptIn(ExperimentalLayoutApi::class)
@@ -172,11 +174,21 @@ private fun AnimalGroups(
     }
     FlowRow(
         modifier = modifier.padding(vertical = 4.dp),
-        horizontalArrangement = Arrangement.spacedBy(16.dp, Alignment.CenterHorizontally),
-        verticalArrangement = Arrangement.spacedBy(8.dp),
+        horizontalArrangement = Arrangement.spacedBy(24.dp, Alignment.CenterHorizontally),
+        verticalArrangement = Arrangement.spacedBy(20.dp),
     ) {
         repeat(op2) {
-            Row(horizontalArrangement = Arrangement.spacedBy(2.dp)) {
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(4.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier
+                    .border(
+                        width = 2.dp,
+                        color = MaterialTheme.colorScheme.primary,
+                        shape = RoundedCornerShape(14.dp),
+                    )
+                    .padding(horizontal = 10.dp, vertical = 8.dp),
+            ) {
                 repeat(op1) {
                     Text(text = emoji, fontSize = 28.sp)
                 }
