@@ -781,9 +781,8 @@ over the next one.
 - **Audio:** two pre-cut clips per letter, bundled under
   `app/src/main/res/raw`: `<x>3.mp3` (the word, played as the question)
   and `<x>1.mp3` (the letter, played back after the learner answers).
-  E.g. `a3.mp3` / `a1.mp3`. Only the letter A has clips today; more
-  letters are added by dropping in both clips and appending an entry to
-  `reading/LetterSounds.kt`.
+  E.g. `a3.mp3` / `a1.mp3`. The whole alphabet A–Z is present; the letter
+  set is the list in `reading/LetterSounds.kt`.
 - **Problem selection:** pick a letter that still has
   `win_streak[3][letter] < 2` where possible; avoid immediately
   repeating the previous letter when more than one is available. Play
@@ -796,8 +795,7 @@ over the next one.
   - `win_streak[3][run] >= 8` (eight correct answers in a row), AND
   - `win_streak[3][letter] >= 2` for every letter that has a clip.
 
-  With only one letter available, the run streak is the binding
-  constraint. Any wrong answer (or Give up) resets the run streak and the
+  Any wrong answer (or Give up) resets both the run streak and the
   current letter's streak to 0.
 
 ### Phonemes — Level 0
