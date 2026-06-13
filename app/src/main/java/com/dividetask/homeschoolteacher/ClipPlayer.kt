@@ -23,13 +23,17 @@ object ClipPlayer {
         if (appContext == null) appContext = context.applicationContext
     }
 
-    /** Play [resId] from the start, replacing any clip already playing. */
+    /**
+     * Play [resId] from the start, replacing any clip already playing.
+     * Returns the clip's length in milliseconds (0 if it couldn't be
+     * played), so callers can wait long enough to let it finish.
+     */
     @Synchronized
-    fun play(resId: Int) {
+    fun play(resId: Int): Int {
         release()
-        if (resId == 0) return
-        val ctx = appContext ?: return
-        val mp = MediaPlayer.create(ctx, resId) ?: return
+        if (resId == 0) return 0
+        val ctx = appContext ?: return 0
+        val mp = MediaPlayer.create(ctx, resId) ?: return 0
         mp.setOnCompletionListener { done ->
             synchronized(this) {
                 if (player === done) {
@@ -40,6 +44,7 @@ object ClipPlayer {
         }
         player = mp
         mp.start()
+        return mp.duration.coerceAtLeast(0)
     }
 
     /** Stop and release the current clip, if any. */

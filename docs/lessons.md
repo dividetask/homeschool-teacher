@@ -791,8 +791,9 @@ over the next one.
   that letter's word clip and ask which letter it starts with (A–Z
   keypad).
 - **Show answer:** after any answer (correct, wrong, or Give up) the
-  letter clip (`<x>1.mp3`) plays as reinforcement before the lesson
-  advances.
+  letter clip (`<x>1.mp3`) plays as reinforcement. The lesson waits for
+  the clip to finish in full (plus a short buffer, and never less than the
+  usual feedback hold) before advancing, so it is never cut off.
 - **Pass criteria (both required):**
   - `win_streak[3][run] >= 8` (eight correct answers in a row), AND
   - `win_streak[3][letter] >= 2` for every letter that has a clip.

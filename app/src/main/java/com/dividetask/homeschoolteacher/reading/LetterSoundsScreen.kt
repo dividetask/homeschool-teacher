@@ -62,16 +62,19 @@ fun LetterSoundsScreen(
     }
 
     // Once an answer lands, play the letter clip (e.g. a1.mp3) as
-    // reinforcement, hold so it can be heard, then advance.
+    // reinforcement, hold until it has fully played (a fixed minimum keeps
+    // the feedback visible for the shortest clips), then advance.
     LaunchedEffect(state.feedback, state.problem) {
-        val hold = when (state.feedback) {
+        val minHold = when (state.feedback) {
             LetterSoundsFeedback.None -> return@LaunchedEffect
             LetterSoundsFeedback.Correct -> 2000L
             LetterSoundsFeedback.Wrong -> 2400L
             LetterSoundsFeedback.Revealed -> 2200L
         }
-        ClipPlayer.play(problem.answerClipRes)
-        delay(hold)
+        val clipMs = ClipPlayer.play(problem.answerClipRes).toLong()
+        // Wait for the whole clip (plus a short buffer) but never less than
+        // the minimum, so the learner always hears it end to end.
+        delay(maxOf(minHold, clipMs + 600L))
         ClipPlayer.stopAll()
         onCompleted()
     }
