@@ -227,6 +227,29 @@ object Storage {
             .apply()
     }
 
+    // --- Counting Multiplication — operands (Level 1) ---
+    // Coverage grid for "which two numbers are being multiplied"; cells
+    // track correct identifications of (op1, op2). Separate from the
+    // Level 0 product grid above.
+    fun loadMultiplicationOperandsStreak(op1: Int, op2: Int): Int =
+        prefs().getInt("multoperands.streak.$op1.$op2", 0)
+
+    fun saveMultiplicationOperandsStreak(op1: Int, op2: Int, value: Int) {
+        prefs().edit().putInt("multoperands.streak.$op1.$op2", value).apply()
+    }
+
+    fun loadMultiplicationOperandsCounts(): Pair<Int, Int> {
+        val p = prefs()
+        return p.getInt("multoperands.correct", 0) to p.getInt("multoperands.wrong", 0)
+    }
+
+    fun saveMultiplicationOperandsCounts(correct: Int, wrong: Int) {
+        prefs().edit()
+            .putInt("multoperands.correct", correct)
+            .putInt("multoperands.wrong", wrong)
+            .apply()
+    }
+
     // --- Binary Operations ---
     // streak[level][operator][op1][op2] -- level 0 only uses op1,op2 ∈ 0..1.
     fun loadBinaryStreak(level: Int, operator: Int, op1: Int, op2: Int): Int =

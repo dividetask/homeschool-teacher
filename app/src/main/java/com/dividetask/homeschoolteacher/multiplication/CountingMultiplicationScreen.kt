@@ -157,7 +157,7 @@ private fun ScoreItem(label: String, value: Int, color: Color) {
  */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-private fun AnimalGroups(
+internal fun AnimalGroups(
     op1: Int,
     op2: Int,
     emoji: String,

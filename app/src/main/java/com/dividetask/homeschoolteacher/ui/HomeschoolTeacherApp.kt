@@ -44,6 +44,8 @@ import com.dividetask.homeschoolteacher.binary.BinaryOperationsViewModel
 import com.dividetask.homeschoolteacher.chess.ChessScreen
 import com.dividetask.homeschoolteacher.multiplication.CountingMultiplicationScreen
 import com.dividetask.homeschoolteacher.multiplication.CountingMultiplicationViewModel
+import com.dividetask.homeschoolteacher.multiplication.MultiplicationOperandsScreen
+import com.dividetask.homeschoolteacher.multiplication.MultiplicationOperandsViewModel
 import com.dividetask.homeschoolteacher.chess.ChessViewModel
 import com.dividetask.homeschoolteacher.lesson.Category
 import com.dividetask.homeschoolteacher.lesson.LessonId
@@ -76,13 +78,14 @@ fun HomeschoolTeacherApp() {
     val math: MathViewModel = viewModel()
     val binary: BinaryOperationsViewModel = viewModel()
     val multiplication: CountingMultiplicationViewModel = viewModel()
+    val multiplicationOperands: MultiplicationOperandsViewModel = viewModel()
     val letterSounds: LetterSoundsViewModel = viewModel()
     val phonemes: PhonemesViewModel = viewModel()
     val reading: ReadingViewModel = viewModel()
     val sightWords: SightWordsViewModel = viewModel()
     val rhymingWords: RhymingWordsViewModel = viewModel()
     val selector: LessonSelector = viewModel(
-        factory = LessonSelectorFactory(game, chess, math, binary, multiplication, letterSounds, phonemes, reading, sightWords, rhymingWords),
+        factory = LessonSelectorFactory(game, chess, math, binary, multiplication, multiplicationOperands, letterSounds, phonemes, reading, sightWords, rhymingWords),
     )
 
     val mode by selector.mode.collectAsStateWithLifecycle()
@@ -189,6 +192,7 @@ fun HomeschoolTeacherApp() {
                         math = math,
                         binary = binary,
                         multiplication = multiplication,
+                        multiplicationOperands = multiplicationOperands,
                         letterSounds = letterSounds,
                         phonemes = phonemes,
                         reading = reading,
@@ -241,6 +245,11 @@ fun HomeschoolTeacherApp() {
                         )
                         LessonId.CountingMultiplication0 -> CountingMultiplicationScreen(
                             viewModel = multiplication,
+                            onCompleted = selector::onLessonInstanceCompleted,
+                            modifier = Modifier.fillMaxWidth(),
+                        )
+                        LessonId.CountingMultiplication1 -> MultiplicationOperandsScreen(
+                            viewModel = multiplicationOperands,
                             onCompleted = selector::onLessonInstanceCompleted,
                             modifier = Modifier.fillMaxWidth(),
                         )

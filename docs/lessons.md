@@ -103,6 +103,12 @@ Integer 2D array, `op1` and `op2` indexed `0..9`. Default zero. Cell
 tracks correct answers for the matching multiplication problem when
 shown via the Counting Multiplication Screen.
 
+### `multiplication_operands_grid[op1][op2]`
+Integer 2D array, `op1` and `op2` indexed `1..4`. Cell tracks correct
+identifications of the two operands in Counting Multiplication Level 1
+(separate from `multiplication_grid`, which tracks products in Level 0).
+Default zero.
+
 ### `addition_grid[op1][op2]`
 Integer 2D array, `op1` and `op2` indexed `0..19` (length 20 each). Cell
 tracks correct answers for the matching addition problem when shown via
@@ -287,6 +293,13 @@ Full alphabet keypad of 26 single-tap buttons arranged in rows of 7
 (letters A–Z, last row padded with spacers). Used by every reading
 screen. Tapping a letter submits it as the answer.
 
+### Operand Picker
+Row of single-tap buttons `1..4` used by Counting Multiplication Level 1.
+The displayed equation has two blanks (`▢ × ▢`); the first tap fills the
+left blank, the second fills the right blank and submits. The answer is
+order-independent. A **Clear** button resets the picks before the second
+tap.
+
 ### Binary Keypad (N slots)
 Two answer buttons (`0` and `1`) plus a `Back` button. The current
 input is shown above the keypad as `N` slots filled left-to-right;
@@ -428,6 +441,7 @@ over the next one.
 | 7        | Vertical Subtraction — Level 0      | Math     | All Addition Difficulty 1 passed  |
 | 7        | Number Line Subtraction — Level 0   | Math     | All Addition Difficulty 1 passed  |
 | 9        | Counting Multiplication — Level 0   | Math     | All Subtraction Difficulty 0 passed |
+| 9        | Counting Multiplication — Level 1   | Math     | Counting Multiplication 0 passed  |
 | 3        | Letter Sounds — Level 0             | Reading  | —                                 |
 | 3        | Phonemes — Level 0                  | Reading  | Letter Sounds 0                   |
 | 4        | Animals — Level 0                   | Reading  | Phonemes 0                        |
@@ -707,6 +721,30 @@ over the next one.
   `(op1, op2)` cell space.
 - **Pass criteria:** `multiplication_grid[op1][op2] >= 2` for every
   `op1, op2 ∈ 0..4`.
+
+### Counting Multiplication — Level 1
+- **Game UID:** 9
+- **Subject:** Multiplication
+- **Difficulty:** 1
+- **Category:** Math
+- **Runs per round:** 4
+- **Unlock conditions:** Counting Multiplication — Level 0 passed.
+- **Screen:** Counting Multiplication Screen (same boxed animal groups),
+  but the operands are hidden and the answer surface is the Operand
+  Picker (below) instead of the numeric grid. The product is never shown.
+- **Variables:** `multiplication_operands_grid` — a separate coverage
+  grid from Level 0, cells indexed `(op1, op2) ∈ 1..4`.
+- **Random variables:**
+  - `op1, op2 ∈ 1..4` (**never 0**)
+  - A random animal emoji per problem
+- **Answer surface:** Operand Picker — buttons `1..4`; the first tap fills
+  the first operand blank, the second tap fills the second and submits.
+  The answer is **order-independent** (a × b ≡ b × a). A **Clear** button
+  undoes the first pick before submitting.
+- **Problem selection:** standard math-grid selection over the
+  `(op1, op2) ∈ 1..4` cell space.
+- **Pass criteria:** `multiplication_operands_grid[op1][op2] >= 2` for
+  every `op1, op2 ∈ 1..4`.
 
 ### Counting Subtraction — Level 0
 - **Game UID:** 7

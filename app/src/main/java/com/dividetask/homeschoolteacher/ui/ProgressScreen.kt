@@ -4,6 +4,8 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -32,6 +34,7 @@ import com.dividetask.homeschoolteacher.binary.BinaryOperationsViewModel
 import com.dividetask.homeschoolteacher.binary.BinaryOperator
 import com.dividetask.homeschoolteacher.chess.ChessViewModel
 import com.dividetask.homeschoolteacher.multiplication.CountingMultiplicationViewModel
+import com.dividetask.homeschoolteacher.multiplication.MultiplicationOperandsViewModel
 import com.dividetask.homeschoolteacher.lesson.LessonDefinition
 import com.dividetask.homeschoolteacher.lesson.LessonId
 import com.dividetask.homeschoolteacher.lesson.Lessons
@@ -55,6 +58,7 @@ fun ProgressScreen(
     math: MathViewModel,
     binary: BinaryOperationsViewModel,
     multiplication: CountingMultiplicationViewModel,
+    multiplicationOperands: MultiplicationOperandsViewModel,
     letterSounds: LetterSoundsViewModel,
     phonemes: PhonemesViewModel,
     reading: ReadingViewModel,
@@ -93,6 +97,9 @@ fun ProgressScreen(
 
     val multiplicationStreaks by multiplication.streaks.collectAsStateWithLifecycle()
     val multiplicationState by multiplication.state.collectAsStateWithLifecycle()
+
+    val operandsStreaks by multiplicationOperands.streaks.collectAsStateWithLifecycle()
+    val operandsState by multiplicationOperands.state.collectAsStateWithLifecycle()
 
     val subtractionStreaks by math.subtractionGrid.collectAsStateWithLifecycle()
 
@@ -325,6 +332,18 @@ fun ProgressScreen(
                 color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f),
             )
             MultiplicationStreakGrid(multiplicationStreaks)
+        }
+
+        Section(LessonId.CountingMultiplication1) {
+            InfoRow("Correct (lifetime)", operandsState.correctCount.toString())
+            InfoRow("Wrong (lifetime)", operandsState.wrongCount.toString())
+            Text(
+                text = "Identify the operands — grid for op1 × op2 " +
+                    "(op1, op2 ∈ 1..4)",
+                fontSize = 12.sp,
+                color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f),
+            )
+            MultiplicationStreakGrid(operandsStreaks, minOperand = 1)
         }
 
         Section(LessonId.Reading0) {
@@ -659,11 +678,13 @@ private fun RhymingWordsTable(streaks: Map<String, Int>) {    Column(
     }
 }
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun LetterSoundsTable(streaks: Map<Char, Int>) {
-    Row(
+    FlowRow(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(4.dp),
+        verticalArrangement = Arrangement.spacedBy(4.dp),
     ) {
         LetterSounds.letters.forEach { letter ->
             val v = streaks[letter.uppercaseChar()] ?: 0
@@ -734,7 +755,7 @@ private fun PhonemesTable(streaks: Map<String, Int>) {    Column(
 }
 
 @Composable
-private fun MultiplicationStreakGrid(streaks: List<List<Int>>) {
+private fun MultiplicationStreakGrid(streaks: List<List<Int>>, minOperand: Int = 0) {
     if (streaks.isEmpty()) return
     val maxOperand = 4
     Column(
@@ -746,17 +767,17 @@ private fun MultiplicationStreakGrid(streaks: List<List<Int>>) {
             horizontalArrangement = Arrangement.spacedBy(2.dp),
         ) {
             Box(modifier = Modifier.heightIn(min = 22.dp).padding(end = 2.dp))
-            (0..maxOperand).forEach { c ->
+            (minOperand..maxOperand).forEach { c ->
                 HeaderCell(c.toString(), modifier = Modifier.weight(1f))
             }
         }
-        (0..maxOperand).forEach { r ->
+        (minOperand..maxOperand).forEach { r ->
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(2.dp),
             ) {
                 HeaderCell(r.toString())
-                (0..maxOperand).forEach { c ->
+                (minOperand..maxOperand).forEach { c ->
                     StreakCell(
                         streaks.getOrNull(r)?.getOrNull(c) ?: 0,
                         modifier = Modifier.weight(1f),

@@ -64,9 +64,10 @@ homeschoolteacher/
 ├── binary/                  Lessons: BinaryOps0, BinaryOps1
 │   ├── BinaryOperationsViewModel.kt
 │   └── BinaryOperationsScreen.kt
-├── multiplication/          Lesson: CountingMultiplication0
-│   ├── CountingMultiplicationViewModel.kt
-│   └── CountingMultiplicationScreen.kt
+├── multiplication/          Lessons: CountingMultiplication0/1
+│   ├── CountingMultiplicationViewModel.kt / CountingMultiplicationScreen.kt
+│   └── MultiplicationOperandsViewModel.kt / MultiplicationOperandsScreen.kt
+│                            (Level 1: pick the two operands)
 └── reading/                 Lessons: LetterSounds0, Phonemes0,
     ├── LetterSounds.kt      Reading0, SightWords0/1, RhymingWords0
     ├── LetterSoundsViewModel.kt / LetterSoundsScreen.kt
@@ -190,6 +191,7 @@ math.startLesson(id)           // MathPictures, Math0, HorizontalAddition0,
                                // VerticalSubtraction0, NumberLineSubtraction0
 binary.startLesson(id)         // BinaryOps0 / BinaryOps1
 multiplication.startLesson()   // CountingMultiplication0
+multiplicationOperands.startLesson() // CountingMultiplication1
 letterSounds.startLesson()     // LetterSounds0
 phonemes.startLesson()         // Phonemes0
 reading.startLesson()          // Reading0
@@ -277,8 +279,12 @@ All persisted state lives in one `SharedPreferences` file named
                                         by every subtraction variant).
 - `binary.streak.<lvl>.<op>.<a>.<b>` — binary AND/OR/XOR coverage grid.
 - `binary.{correct|wrong}`           — lifetime counters.
-- `multiplication.streak.<a>.<b>`    — counting-multiplication grid.
+- `multiplication.streak.<a>.<b>`    — counting-multiplication (product)
+                                        coverage grid (Level 0).
 - `multiplication.{correct|wrong}`   — lifetime counters.
+- `multoperands.streak.<a>.<b>`      — Level 1 "identify the operands"
+                                        coverage grid (op1, op2 ∈ 1..4).
+- `multoperands.{correct|wrong}`     — lifetime counters.
 - `lettersounds.{correct|wrong}`     — lifetime counters.
 - `phonemes.{correct|wrong}`         — lifetime counters.
 - `reading.{correct|wrong}`          — lifetime counters.

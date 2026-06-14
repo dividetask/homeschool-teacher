@@ -8,6 +8,7 @@ import com.dividetask.homeschoolteacher.Storage
 import com.dividetask.homeschoolteacher.binary.BinaryOperationsViewModel
 import com.dividetask.homeschoolteacher.chess.ChessViewModel
 import com.dividetask.homeschoolteacher.multiplication.CountingMultiplicationViewModel
+import com.dividetask.homeschoolteacher.multiplication.MultiplicationOperandsViewModel
 import com.dividetask.homeschoolteacher.math.MathViewModel
 import com.dividetask.homeschoolteacher.reading.LetterSoundsViewModel
 import com.dividetask.homeschoolteacher.reading.PhonemesViewModel
@@ -35,6 +36,7 @@ class LessonSelector(
     private val math: MathViewModel,
     private val binary: BinaryOperationsViewModel,
     private val multiplication: CountingMultiplicationViewModel,
+    private val multiplicationOperands: MultiplicationOperandsViewModel,
     private val letterSounds: LetterSoundsViewModel,
     private val phonemes: PhonemesViewModel,
     private val reading: ReadingViewModel,
@@ -76,6 +78,7 @@ class LessonSelector(
         LessonId.VerticalSubtraction0,
         LessonId.NumberLineSubtraction0,
         LessonId.CountingMultiplication0,
+        LessonId.CountingMultiplication1,
         LessonId.LetterSounds0,
         LessonId.Phonemes0,
         LessonId.Reading0,
@@ -94,6 +97,7 @@ class LessonSelector(
         LessonId.VerticalSubtraction0, LessonId.NumberLineSubtraction0 -> math.passed(id)
         LessonId.BinaryOps0, LessonId.BinaryOps1 -> binary.passed(id)
         LessonId.CountingMultiplication0 -> multiplication.passed
+        LessonId.CountingMultiplication1 -> multiplicationOperands.passed
         LessonId.LetterSounds0 -> letterSounds.passed
         LessonId.Phonemes0 -> phonemes.passed
         LessonId.Reading0 -> reading.passed
@@ -208,6 +212,7 @@ class LessonSelector(
             LessonId.NumberLineSubtraction0 -> math.startLesson(id)
             LessonId.BinaryOps0, LessonId.BinaryOps1 -> binary.startLesson(id)
             LessonId.CountingMultiplication0 -> multiplication.startLesson()
+            LessonId.CountingMultiplication1 -> multiplicationOperands.startLesson()
             LessonId.LetterSounds0 -> letterSounds.startLesson()
             LessonId.Phonemes0 -> phonemes.startLesson()
             LessonId.Reading0 -> reading.startLesson()
@@ -239,6 +244,7 @@ class LessonSelector(
             LessonId.NumberLineSubtraction0 -> math.setPassed(id, value)
             LessonId.BinaryOps0, LessonId.BinaryOps1 -> binary.setPassed(id, value)
             LessonId.CountingMultiplication0 -> multiplication.setPassed(value)
+            LessonId.CountingMultiplication1 -> multiplicationOperands.setPassed(value)
             LessonId.LetterSounds0 -> letterSounds.setPassed(value)
             LessonId.Phonemes0 -> phonemes.setPassed(value)
             LessonId.Reading0 -> reading.setPassed(value)
@@ -254,6 +260,7 @@ class LessonSelectorFactory(
     private val math: MathViewModel,
     private val binary: BinaryOperationsViewModel,
     private val multiplication: CountingMultiplicationViewModel,
+    private val multiplicationOperands: MultiplicationOperandsViewModel,
     private val letterSounds: LetterSoundsViewModel,
     private val phonemes: PhonemesViewModel,
     private val reading: ReadingViewModel,
@@ -262,6 +269,6 @@ class LessonSelectorFactory(
 ) : ViewModelProvider.Factory {
     @Suppress("UNCHECKED_CAST")
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
-        return LessonSelector(ttt, chess, math, binary, multiplication, letterSounds, phonemes, reading, sightWords, rhymingWords) as T
+        return LessonSelector(ttt, chess, math, binary, multiplication, multiplicationOperands, letterSounds, phonemes, reading, sightWords, rhymingWords) as T
     }
 }
