@@ -77,7 +77,7 @@ object Lessons {
         LessonDefinition(LessonId.TicTacToe0, "Tic Tac Toe — Level 0", Category.Game),
         LessonDefinition(LessonId.TicTacToe1, "Tic Tac Toe — Level 1", Category.Game, listOf(LessonId.TicTacToe0)),
         LessonDefinition(LessonId.TicTacToe2, "Tic Tac Toe — Level 2", Category.Game, listOf(LessonId.TicTacToe1)),
-        LessonDefinition(LessonId.Chess0, "Chess — Level 0", Category.Game, listOf(LessonId.TicTacToe1)),
+        LessonDefinition(LessonId.Chess0, "Chess — Level 0", Category.Game, listOf(LessonId.TicTacToe0)),
         LessonDefinition(LessonId.Chess1, "Chess — Level 1", Category.Game, listOf(LessonId.Chess0)),
         LessonDefinition(LessonId.Chess2, "Chess — Level 2", Category.Game, listOf(LessonId.Chess1)),
         LessonDefinition(LessonId.Chess3, "Chess — Level 3", Category.Game, listOf(LessonId.Chess2)),

@@ -422,7 +422,7 @@ over the next one.
 | 0        | Tic Tac Toe — Level 0               | Game     | —                                 |
 | 0        | Tic Tac Toe — Level 1               | Game     | Tic Tac Toe 0                     |
 | 0        | Tic Tac Toe — Level 2               | Game     | Tic Tac Toe 1                     |
-| 1        | Chess — Level 0                     | Game     | Tic Tac Toe 1                     |
+| 1        | Chess — Level 0                     | Game     | Tic Tac Toe 0                     |
 | 1        | Chess — Level 1                     | Game     | Chess 0                           |
 | 1        | Chess — Level 2                     | Game     | Chess 1                           |
 | 1        | Chess — Level 3                     | Game     | Chess 2                           |
@@ -496,7 +496,7 @@ over the next one.
 - **Difficulty:** 0
 - **Category:** Game
 - **Runs per round:** 1
-- **Unlock conditions:** Tic Tac Toe — Level 1 passed.
+- **Unlock conditions:** Tic Tac Toe — Level 0 passed.
 - **Screen:** Chess Board Screen
 - **Pieces:** queen (random colour); capturable pawn ≥ 1;
   non-capturable pawn ≥ 1
