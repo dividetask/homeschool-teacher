@@ -45,7 +45,8 @@ homeschoolteacher/
 ├── ui/
 │   ├── HomeschoolTeacherApp.kt   Top-level composable. Drawer, top
 │   │                             bar, dispatch to the right screen.
-│   ├── ProficiencyBar.kt    The "Games X  Math X  Reading X" header.
+│   ├── ProficiencyBar.kt    Passed-count-per-category header. No longer
+│   │                        rendered (kept for reference).
 │   ├── ProgressScreen.kt    Debug/inspection screen + manual
 │   │                        lock/unlock switches.
 │   └── theme/Theme.kt       Material3 color scheme.
@@ -343,8 +344,6 @@ accepted for backwards compatibility.
   list is taller than most screens.
 - A `TopAppBar` whose title is the current lesson's `title` (or
   "Progress" when in Progress mode).
-- The `ProficiencyBar` row, which shows the count of passed lessons in
-  each category.
 - The active screen dispatched off `currentLesson` — one `when`
   branch per runner (TTT, Chess, Math, Binary, Multiplication,
   Phonemes, Animals, Sight Words, Rhyming Words).

@@ -47,7 +47,6 @@ import com.dividetask.homeschoolteacher.multiplication.CountingMultiplicationVie
 import com.dividetask.homeschoolteacher.multiplication.MultiplicationOperandsScreen
 import com.dividetask.homeschoolteacher.multiplication.MultiplicationOperandsViewModel
 import com.dividetask.homeschoolteacher.chess.ChessViewModel
-import com.dividetask.homeschoolteacher.lesson.Category
 import com.dividetask.homeschoolteacher.lesson.LessonId
 import com.dividetask.homeschoolteacher.lesson.LessonSelector
 import com.dividetask.homeschoolteacher.lesson.LessonSelectorFactory
@@ -92,12 +91,6 @@ fun HomeschoolTeacherApp() {
     val current by selector.currentLesson.collectAsStateWithLifecycle()
     val passed by selector.passedMap.collectAsStateWithLifecycle()
     val manualUnlock by selector.manualUnlockMap.collectAsStateWithLifecycle()
-
-    val proficiency = Proficiency(
-        games = countPassed(passed, Category.Game),
-        math = countPassed(passed, Category.Math),
-        reading = countPassed(passed, Category.Reading),
-    )
 
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     val scope = rememberCoroutineScope()
@@ -185,7 +178,6 @@ fun HomeschoolTeacherApp() {
             modifier = Modifier.fillMaxSize(),
         ) { padding ->
             Column(modifier = Modifier.padding(padding).fillMaxSize()) {
-                ProficiencyBar(proficiency)
                 if (mode == SelectionMode.Progress) {
                     ProgressScreen(
                         game = game,
@@ -285,9 +277,6 @@ fun HomeschoolTeacherApp() {
         }
     }
 }
-
-private fun countPassed(passed: Map<LessonId, Boolean>, category: Category): Int =
-    Lessons.all.count { it.category == category && passed[it.id] == true }
 
 /**
  * Hamburger icon that opens the menu only after being held for `holdMillis`.

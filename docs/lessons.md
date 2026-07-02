@@ -13,10 +13,6 @@ present problems, reads and writes one or more defined **variables**,
 and is considered done when its **pass criteria** are met. Lessons may
 be locked until one or more parent lessons are passed.
 
-The proficiency header at the top of every screen shows one number per
-category — `Games X    Math X    Reading X` — equal to the count of
-passed lessons within that category.
-
 All stored variables persist across app restarts.
 
 ## Categories
