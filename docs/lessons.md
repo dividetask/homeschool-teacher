@@ -188,18 +188,23 @@ The two operands stacked, with the operator on the second line:
 **Answer surface:** single-tap grid covering every possible answer.
 
 ### Number Line Equation Screen
-A horizontal number line drawn above the equation. The line shows
-integer tick marks from `min(X, sum) − 1..3` to `max(X, sum) + 1..3`
-(clamped to the valid sum range; the padding is randomized per problem
-so the answer can't be inferred from the right-most labelled tick). No
-markers on the line itself — the learner has to count ticks. Equation
-below:
+A horizontal number line drawn above the equation, with the equation
+below (`X op Y = ?`). The number line:
 
-```
-X + Y = ?
-```
+- **always starts at 0** and runs to `next_multiple_of_ten(answer + 10)`
+  — so the answer sits comfortably inside the range, never at the edge;
+- **labels every integer** with a tick;
+- **scrolls horizontally** — the learner drags it left/right with a
+  finger (it is wider than the screen);
+- **is markable** — tapping a number toggles a mark (a filled dot) on it,
+  as a skip-counting aid. Marks are visual only (they don't affect
+  correctness) and clear when the next problem appears.
 
-**Answer surface:** single-tap grid covering every possible answer.
+The answer itself is still entered on the equation's answer surface (the
+number line is a counting aid, not the answer input).
+
+**Answer surface:** the single-tap grid (Level 0) or the Number Pad
+(Level 1 multiplication), as specified per lesson.
 
 ### Tic Tac Toe Board Screen
 Standard 3×3 board. The learner taps an empty cell to place their mark;
@@ -831,8 +836,8 @@ counting-multiplication grids.
 - **Unlock conditions:** all three symbolic Multiplication Level 0 lessons
   passed (Horizontal, Vertical, and Number Line Multiplication 0).
 - **Screen:** the matching Horizontal / Vertical / Number Line Equation
-  Screen (`×`). The Number Line screen labels ticks sparsely when the
-  range is wide (products reach 81), so the line stays readable.
+  Screen (`×`). The Number Line screen scrolls (it runs 0 to the answer +
+  10, rounded to the next ten — up to 90 for the largest products).
 - **Variables:** `multiplication_equation_grid` (the same grid as Level 0,
   now covering the `0..9` slice), plus each lesson's own `win_streak`.
 - **Random variables:** `op1, op2 ∈ 0..9` (max product 81).

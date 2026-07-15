@@ -1,7 +1,8 @@
 package com.dividetask.homeschoolteacher.math
 
-import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -13,7 +14,11 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -23,12 +28,12 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
@@ -37,7 +42,6 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.dividetask.homeschoolteacher.Tts
 import com.dividetask.homeschoolteacher.lesson.LessonId
-import kotlin.math.ceil
 import kotlin.random.Random
 import kotlinx.coroutines.delay
 
@@ -141,7 +145,6 @@ fun MathScreen(
                 problem = problem,
                 answerText = answerText,
                 feedback = state.feedback,
-                maxTick = maxAnswer,
             )
             LessonId.HorizontalAddition0,
             LessonId.HorizontalAddition1,
@@ -348,36 +351,27 @@ private fun NumberLineProblem(
     problem: MathProblem,
     answerText: String,
     feedback: MathFeedback,
-    maxTick: Int,
 ) {
-    val a = problem.left
-    val c = problem.answer
-    // Pad each side with a randomized 1..3 extra ticks so the answer can't
-    // be read off as "the right-most labelled tick". Same random padding
-    // sticks for the lifetime of this problem.
-    val extras = remember(problem) {
-        Random.nextInt(1, 4) to Random.nextInt(1, 4)
-    }
-    val low = (minOf(a, c) - extras.first).coerceAtLeast(0)
-    val high = (maxOf(a, c) + extras.second).coerceAtMost(maxTick)
+    // The line always starts at 0 and runs to the answer + 10, rounded up
+    // to the next multiple of ten — so the answer sits comfortably inside
+    // the range rather than at the far edge.
+    val highest = nextMultipleOfTen(problem.answer + 10)
 
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(8.dp),
         modifier = Modifier.fillMaxWidth(),
     ) {
-        NumberLine(
-            rangeStart = low,
-            rangeEnd = high,
-            modifier = Modifier
-                .fillMaxWidth()
-                .widthIn(max = 500.dp),
+        ScrollableNumberLine(
+            highest = highest,
+            resetKey = problem,
+            modifier = Modifier.fillMaxWidth(),
         )
         Row(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {
-            Text("$a", fontSize = 32.sp, fontWeight = FontWeight.Bold,
+            Text("${problem.left}", fontSize = 32.sp, fontWeight = FontWeight.Bold,
                 fontFamily = FontFamily.Monospace)
             Text(problem.operator.symbol, fontSize = 32.sp, fontWeight = FontWeight.Bold)
             Text("${problem.right}", fontSize = 32.sp, fontWeight = FontWeight.Bold,
@@ -387,6 +381,9 @@ private fun NumberLineProblem(
         }
     }
 }
+
+/** Smallest multiple of ten that is >= [x]. */
+private fun nextMultipleOfTen(x: Int): Int = ((x + 9) / 10) * 10
 
 @Composable
 private fun AnswerBox(text: String, feedback: MathFeedback) {
@@ -417,65 +414,66 @@ private fun AnswerBox(text: String, feedback: MathFeedback) {
     }
 }
 
+/**
+ * Horizontally-scrollable number line from 0 to [highest], every integer
+ * labelled. The learner drags to scroll and taps a number to toggle a mark
+ * on it (a counting aid — marks are visual only and reset each problem).
+ * [resetKey] should change per problem so the marks and scroll position
+ * clear when a new problem appears.
+ */
 @Composable
-private fun NumberLine(
-    rangeStart: Int,
-    rangeEnd: Int,
+private fun ScrollableNumberLine(
+    highest: Int,
+    resetKey: Any,
     modifier: Modifier = Modifier,
 ) {
-    val count = rangeEnd - rangeStart + 1
-    if (count < 2) return
-    // Keep labels readable when the range is wide (multiplication to 81):
-    // label roughly every Nth tick so at most ~12 numbers show.
-    val labelEvery = maxOf(1, ceil(count / 12.0).toInt())
-    val tickColor = MaterialTheme.colorScheme.onBackground
-    Column(modifier = modifier.fillMaxWidth()) {
-        Canvas(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(40.dp),
-        ) {
-            val w = size.width
-            val h = size.height
-            val lineY = h * 0.6f
-            val cell = w / count
-            val tickHalf = 8.dp.toPx()
+    val marks = remember(resetKey) { mutableStateListOf<Int>() }
+    val scroll = rememberScrollState()
+    LaunchedEffect(resetKey) { scroll.scrollTo(0) }
 
-            drawLine(
-                color = tickColor,
-                start = Offset(cell / 2, lineY),
-                end = Offset(w - cell / 2, lineY),
-                strokeWidth = 3f,
-            )
+    val lineColor = MaterialTheme.colorScheme.onBackground
+    val markColor = MaterialTheme.colorScheme.primary
+    val cellWidth = 34.dp
 
-            for (i in 0 until count) {
-                val x = cell * i + cell / 2
-                val labelled = i % labelEvery == 0 || i == count - 1
-                drawLine(
-                    color = tickColor,
-                    start = Offset(x, lineY - tickHalf),
-                    end = Offset(x, lineY + if (labelled) tickHalf else tickHalf * 0.5f),
-                    strokeWidth = if (labelled) 2.5f else 1.5f,
-                )
-            }
-        }
-        Row(modifier = Modifier.fillMaxWidth()) {
-            for (i in rangeStart..rangeEnd) {
-                val idx = i - rangeStart
-                val show = idx % labelEvery == 0 || i == rangeEnd
-                Box(
-                    modifier = Modifier.weight(1f),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    if (show) {
-                        Text(
-                            text = i.toString(),
-                            fontSize = if (count > 10) 9.sp else 11.sp,
-                            fontFamily = FontFamily.Monospace,
-                            color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f),
+    Row(
+        modifier = modifier
+            .horizontalScroll(scroll)
+            .padding(vertical = 4.dp),
+    ) {
+        for (n in 0..highest) {
+            val marked = marks.contains(n)
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                modifier = Modifier
+                    .width(cellWidth)
+                    .clickable { if (marked) marks.remove(n) else marks.add(n) },
+            ) {
+                // Mark dot (space reserved so the row height stays steady).
+                Box(modifier = Modifier.size(12.dp), contentAlignment = Alignment.Center) {
+                    if (marked) {
+                        Box(
+                            modifier = Modifier
+                                .size(12.dp)
+                                .background(markColor, CircleShape),
                         )
                     }
                 }
+                // Axis: a full-width horizontal segment (segments of adjacent
+                // cells join into one line) crossed by a centred tick.
+                Box(
+                    modifier = Modifier.fillMaxWidth().height(16.dp),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Box(Modifier.fillMaxWidth().height(2.dp).background(lineColor))
+                    Box(Modifier.width(2.dp).height(12.dp).background(lineColor))
+                }
+                Text(
+                    text = n.toString(),
+                    fontSize = 12.sp,
+                    fontFamily = FontFamily.Monospace,
+                    fontWeight = if (marked) FontWeight.Bold else FontWeight.Normal,
+                    color = if (marked) markColor else lineColor.copy(alpha = 0.7f),
+                )
             }
         }
     }
