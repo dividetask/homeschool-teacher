@@ -302,6 +302,13 @@ Full alphabet keypad of 26 single-tap buttons arranged in rows of 7
 (letters A–Z, last row padded with spacers). Used by every reading
 screen. Tapping a letter submits it as the answer.
 
+### Number Pad
+Calculator-style pad — digits `1..9`, then a **⌫ (Back) / 0 / Enter**
+row — with a readout above showing the digits entered so far. The learner
+types the answer and presses **Enter** to submit; **⌫** deletes the last
+digit. Used where the answer range is too large for a comfortable tap grid
+(multiplication products up to 81, so answers are at most two digits).
+
 ### Operand Picker
 Row of single-tap buttons `1..4` used by Counting Multiplication Level 1.
 The displayed equation has two blanks (`▢ × ▢`); the first tap fills the
@@ -454,6 +461,9 @@ over the next one.
 | 9        | Horizontal Multiplication — Level 0 | Math     | Counting Multiplication 1 passed  |
 | 9        | Vertical Multiplication — Level 0   | Math     | Counting Multiplication 1 passed  |
 | 9        | Number Line Multiplication — Level 0| Math     | Counting Multiplication 1 passed  |
+| 9        | Horizontal Multiplication — Level 1 | Math     | All symbolic Multiplication Diff 0 passed |
+| 9        | Vertical Multiplication — Level 1   | Math     | All symbolic Multiplication Diff 0 passed |
+| 9        | Number Line Multiplication — Level 1| Math     | All symbolic Multiplication Diff 0 passed |
 | 3        | Letter Sounds — Level 0             | Reading  | —                                 |
 | 3        | Phonemes — Level 0                  | Reading  | Letter Sounds 0                   |
 | 4        | Animals — Level 0                   | Reading  | Phonemes 0                        |
@@ -811,6 +821,29 @@ The three share one `multiplication_equation_grid` (product coverage) but
 each keeps its own streak, so they pass independently — mirroring the
 Addition / Subtraction Level 0 groups. This grid is separate from the
 counting-multiplication grids.
+
+### Horizontal / Vertical / Number Line Multiplication — Level 1
+- **Game UID:** 9
+- **Subject:** Multiplication
+- **Difficulty:** 1
+- **Category:** Math
+- **Runs per round:** 4
+- **Unlock conditions:** all three symbolic Multiplication Level 0 lessons
+  passed (Horizontal, Vertical, and Number Line Multiplication 0).
+- **Screen:** the matching Horizontal / Vertical / Number Line Equation
+  Screen (`×`). The Number Line screen labels ticks sparsely when the
+  range is wide (products reach 81), so the line stays readable.
+- **Variables:** `multiplication_equation_grid` (the same grid as Level 0,
+  now covering the `0..9` slice), plus each lesson's own `win_streak`.
+- **Random variables:** `op1, op2 ∈ 0..9` (max product 81).
+- **Answer surface:** **Number Pad** — the learner types the product and
+  presses **Enter** (products up to 81 are too many for a tap grid).
+- **Problem selection:** standard math-grid selection over `0..9`.
+- **Pass criteria:** `multiplication_equation_grid[op1][op2] >= 2` for
+  every `op1, op2 ∈ 0..9` **AND** `win_streak >= 4` (per lesson).
+
+Like Level 0, the three presentations share the grid and pass
+independently.
 
 ### Counting Subtraction — Level 0
 - **Game UID:** 7

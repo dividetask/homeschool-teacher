@@ -62,6 +62,10 @@ private val SUPPORTED_LESSONS = setOf(
     LessonId.HorizontalMultiplication0,
     LessonId.VerticalMultiplication0,
     LessonId.NumberLineMultiplication0,
+    // Multiplication equations Level 1 (type the product), operands 0..9
+    LessonId.HorizontalMultiplication1,
+    LessonId.VerticalMultiplication1,
+    LessonId.NumberLineMultiplication1,
 )
 
 private fun lessonOperator(id: LessonId): MathOperator = when (id) {
@@ -71,7 +75,10 @@ private fun lessonOperator(id: LessonId): MathOperator = when (id) {
     LessonId.NumberLineSubtraction0 -> MathOperator.Minus
     LessonId.HorizontalMultiplication0,
     LessonId.VerticalMultiplication0,
-    LessonId.NumberLineMultiplication0 -> MathOperator.Times
+    LessonId.NumberLineMultiplication0,
+    LessonId.HorizontalMultiplication1,
+    LessonId.VerticalMultiplication1,
+    LessonId.NumberLineMultiplication1 -> MathOperator.Times
     else -> MathOperator.Plus
 }
 
@@ -98,6 +105,9 @@ private fun lessonLeftRange(id: LessonId): IntRange = when (id) {
     LessonId.HorizontalMultiplication0,
     LessonId.VerticalMultiplication0,
     LessonId.NumberLineMultiplication0 -> 0..4
+    LessonId.HorizontalMultiplication1,
+    LessonId.VerticalMultiplication1,
+    LessonId.NumberLineMultiplication1 -> 0..9
     else -> 0..4
 }
 
@@ -118,6 +128,9 @@ private fun lessonRightRange(id: LessonId): IntRange = when (id) {
     LessonId.HorizontalMultiplication0,
     LessonId.VerticalMultiplication0,
     LessonId.NumberLineMultiplication0 -> 0..4
+    LessonId.HorizontalMultiplication1,
+    LessonId.VerticalMultiplication1,
+    LessonId.NumberLineMultiplication1 -> 0..9
     else -> 0..4
 }
 

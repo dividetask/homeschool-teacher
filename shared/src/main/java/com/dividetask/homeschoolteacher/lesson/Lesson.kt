@@ -33,6 +33,9 @@ enum class LessonId {
     HorizontalMultiplication0,
     VerticalMultiplication0,
     NumberLineMultiplication0,
+    HorizontalMultiplication1,
+    VerticalMultiplication1,
+    NumberLineMultiplication1,
     LetterSounds0,
     Phonemes0,
     Reading0,
@@ -74,6 +77,11 @@ object Lessons {
         LessonId.HorizontalSubtraction0,
         LessonId.VerticalSubtraction0,
         LessonId.NumberLineSubtraction0,
+    )
+    private val MULTIPLICATION_EQ_L0 = listOf(
+        LessonId.HorizontalMultiplication0,
+        LessonId.VerticalMultiplication0,
+        LessonId.NumberLineMultiplication0,
     )
 
     val definitions: Map<LessonId, LessonDefinition> = listOf(
@@ -127,6 +135,13 @@ object Lessons {
         LessonDefinition(LessonId.HorizontalMultiplication0, "Horizontal Multiplication — Level 0", Category.Math, listOf(LessonId.CountingMultiplication1)),
         LessonDefinition(LessonId.VerticalMultiplication0, "Vertical Multiplication — Level 0", Category.Math, listOf(LessonId.CountingMultiplication1)),
         LessonDefinition(LessonId.NumberLineMultiplication0, "Number Line Multiplication — Level 0", Category.Math, listOf(LessonId.CountingMultiplication1)),
+        // Level 1: same three presentations at operands 0..9 (products to
+        // 81). The answer is typed on a number pad (Enter to submit) rather
+        // than tapped from a grid. Unlock once all three Level 0 symbolic
+        // multiplication lessons are passed.
+        LessonDefinition(LessonId.HorizontalMultiplication1, "Horizontal Multiplication — Level 1", Category.Math, MULTIPLICATION_EQ_L0),
+        LessonDefinition(LessonId.VerticalMultiplication1, "Vertical Multiplication — Level 1", Category.Math, MULTIPLICATION_EQ_L0),
+        LessonDefinition(LessonId.NumberLineMultiplication1, "Number Line Multiplication — Level 1", Category.Math, MULTIPLICATION_EQ_L0),
         // Letter Sounds is the head of the Reading chain: a recorded word
         // clip plays and the learner taps the letter it starts with.
         // Everything else in Reading now sits behind it (Phonemes requires

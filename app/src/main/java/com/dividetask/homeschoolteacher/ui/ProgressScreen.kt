@@ -115,6 +115,8 @@ fun ProgressScreen(
         LessonId.VerticalSubtraction0, LessonId.NumberLineSubtraction0,
         LessonId.HorizontalMultiplication0, LessonId.VerticalMultiplication0,
         LessonId.NumberLineMultiplication0,
+        LessonId.HorizontalMultiplication1, LessonId.VerticalMultiplication1,
+        LessonId.NumberLineMultiplication1,
     ).associateWith { id ->
         // collectAsStateWithLifecycle inside a loop isn't possible here,
         // so we read the StateFlow's current value. The grid + lifetime
@@ -367,6 +369,25 @@ fun ProgressScreen(
 
         Section(LessonId.NumberLineMultiplication0) {
             InfoRow("Correct streak", "${mathLessonStreaks[LessonId.NumberLineMultiplication0]} / 4")
+        }
+
+        Section(LessonId.HorizontalMultiplication1) {
+            InfoRow("Correct streak", "${mathLessonStreaks[LessonId.HorizontalMultiplication1]} / 4")
+            Text(
+                text = "Level 1: operands 0..9 (products to 81), answer typed " +
+                    "on the number pad. Shares the multiplication grid above " +
+                    "(0..9 slice); each Level 1 screen keeps its own streak.",
+                fontSize = 12.sp,
+                color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f),
+            )
+        }
+
+        Section(LessonId.VerticalMultiplication1) {
+            InfoRow("Correct streak", "${mathLessonStreaks[LessonId.VerticalMultiplication1]} / 4")
+        }
+
+        Section(LessonId.NumberLineMultiplication1) {
+            InfoRow("Correct streak", "${mathLessonStreaks[LessonId.NumberLineMultiplication1]} / 4")
         }
 
         Section(LessonId.Reading0) {
