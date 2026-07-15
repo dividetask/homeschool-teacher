@@ -259,15 +259,22 @@ and a subscript `₂` after each operand and the answer line to indicate
 base 2:
 
 ```
-  0₂              110₂
-& 1₂      or    & 011₂
-──              ─────
-  ?₂              ???₂
+    0₂                110₂
+AND 1₂      or    AND 011₂
+  ──                ─────
+    ?₂                ???₂
 ```
 
-Each operand is zero-padded to `bits` digits. The operator symbol is
-`&` (AND), `|` (OR), or `^` (XOR). The answer slots fill left-to-right
-as the learner taps digits; while empty they render as `_`.
+Each operand is zero-padded to `bits` digits. The operator is spelled
+out as the word `AND`, `OR`, or `XOR`. The answer slots fill
+left-to-right as the learner taps digits; while empty they render as `_`.
+
+A **cheat sheet** sits at the top of the screen showing the single-bit
+truth table for **the current operator only** — the four `a OP b = r`
+rows for `a, b ∈ {0, 1}`. When the problem's operator is AND it shows the
+AND rows; OR shows the OR rows; XOR shows the XOR rows. For Level 0 these
+four rows are every possible question; for Level 1 they are the per-column
+rule to apply to each of the three bits.
 
 **Answer surface:** Binary Keypad with `bits` slots.
 
