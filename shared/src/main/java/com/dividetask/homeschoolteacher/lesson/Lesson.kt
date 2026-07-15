@@ -30,6 +30,9 @@ enum class LessonId {
     NumberLineSubtraction0,
     CountingMultiplication0,
     CountingMultiplication1,
+    HorizontalMultiplication0,
+    VerticalMultiplication0,
+    NumberLineMultiplication0,
     LetterSounds0,
     Phonemes0,
     Reading0,
@@ -117,6 +120,13 @@ object Lessons {
         // Level 1 keeps the same boxed groups but asks which two numbers are
         // being multiplied (operands, not the product); operands 1..4.
         LessonDefinition(LessonId.CountingMultiplication1, "Counting Multiplication — Level 1", Category.Math, listOf(LessonId.CountingMultiplication0)),
+        // Symbolic multiplication (tap the product) in three presentations,
+        // operands 0..4. They share one product-coverage grid but each keeps
+        // its own streak, so they pass independently. Unlock after the two
+        // counting-multiplication lessons.
+        LessonDefinition(LessonId.HorizontalMultiplication0, "Horizontal Multiplication — Level 0", Category.Math, listOf(LessonId.CountingMultiplication1)),
+        LessonDefinition(LessonId.VerticalMultiplication0, "Vertical Multiplication — Level 0", Category.Math, listOf(LessonId.CountingMultiplication1)),
+        LessonDefinition(LessonId.NumberLineMultiplication0, "Number Line Multiplication — Level 0", Category.Math, listOf(LessonId.CountingMultiplication1)),
         // Letter Sounds is the head of the Reading chain: a recorded word
         // clip plays and the learner taps the letter it starts with.
         // Everything else in Reading now sits behind it (Phonemes requires

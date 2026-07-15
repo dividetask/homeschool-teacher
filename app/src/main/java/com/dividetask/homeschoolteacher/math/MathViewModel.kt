@@ -11,7 +11,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlin.random.Random
 
-enum class MathOperator(val symbol: String) { Plus("+"), Minus("−") }
+enum class MathOperator(val symbol: String) { Plus("+"), Minus("−"), Times("×") }
 
 data class MathProblem(
     val left: Int,
@@ -25,6 +25,7 @@ data class MathProblem(
     val answer: Int get() = when (operator) {
         MathOperator.Plus -> left + right
         MathOperator.Minus -> left - right
+        MathOperator.Times -> left * right
     }
 }
 
@@ -57,6 +58,10 @@ private val SUPPORTED_LESSONS = setOf(
     LessonId.HorizontalSubtraction0,
     LessonId.VerticalSubtraction0,
     LessonId.NumberLineSubtraction0,
+    // Multiplication equations (tap the product), operands 0..4
+    LessonId.HorizontalMultiplication0,
+    LessonId.VerticalMultiplication0,
+    LessonId.NumberLineMultiplication0,
 )
 
 private fun lessonOperator(id: LessonId): MathOperator = when (id) {
@@ -64,6 +69,9 @@ private fun lessonOperator(id: LessonId): MathOperator = when (id) {
     LessonId.HorizontalSubtraction0,
     LessonId.VerticalSubtraction0,
     LessonId.NumberLineSubtraction0 -> MathOperator.Minus
+    LessonId.HorizontalMultiplication0,
+    LessonId.VerticalMultiplication0,
+    LessonId.NumberLineMultiplication0 -> MathOperator.Times
     else -> MathOperator.Plus
 }
 
@@ -87,6 +95,9 @@ private fun lessonLeftRange(id: LessonId): IntRange = when (id) {
     LessonId.HorizontalSubtraction0,
     LessonId.VerticalSubtraction0,
     LessonId.NumberLineSubtraction0 -> 4..9
+    LessonId.HorizontalMultiplication0,
+    LessonId.VerticalMultiplication0,
+    LessonId.NumberLineMultiplication0 -> 0..4
     else -> 0..4
 }
 
@@ -104,6 +115,9 @@ private fun lessonRightRange(id: LessonId): IntRange = when (id) {
     LessonId.HorizontalSubtraction0,
     LessonId.VerticalSubtraction0,
     LessonId.NumberLineSubtraction0 -> 0..4
+    LessonId.HorizontalMultiplication0,
+    LessonId.VerticalMultiplication0,
+    LessonId.NumberLineMultiplication0 -> 0..4
     else -> 0..4
 }
 
@@ -125,11 +139,18 @@ class MathViewModel : ViewModel() {
     // op1 - op2 correctness.
     private val subtractionStreaks: Array<IntArray> = Storage.loadSubtractionStreaks()
 
+    // Multiplication (product) cell grid, shared by the Horizontal /
+    // Vertical / Number Line multiplication presentations.
+    private val multiplicationStreaks: Array<IntArray> = Storage.loadMultiplicationGridStreaks()
+
     private val _additionGridFlow = MutableStateFlow(snapshot(additionStreaks))
     val streaks: StateFlow<List<List<Int>>> = _additionGridFlow.asStateFlow()
 
     private val _subtractionGridFlow = MutableStateFlow(snapshot(subtractionStreaks))
     val subtractionGrid: StateFlow<List<List<Int>>> = _subtractionGridFlow.asStateFlow()
+
+    private val _multiplicationGridFlow = MutableStateFlow(snapshot(multiplicationStreaks))
+    val multiplicationGrid: StateFlow<List<List<Int>>> = _multiplicationGridFlow.asStateFlow()
 
     private val passedFlow: MutableMap<LessonId, MutableStateFlow<Boolean>> =
         SUPPORTED_LESSONS.associateWith {
@@ -283,12 +304,14 @@ class MathViewModel : ViewModel() {
     private fun gridFor(op: MathOperator): Array<IntArray> = when (op) {
         MathOperator.Plus -> additionStreaks
         MathOperator.Minus -> subtractionStreaks
+        MathOperator.Times -> multiplicationStreaks
     }
 
     private fun saveCellStreak(op: MathOperator, a: Int, b: Int, value: Int) {
         when (op) {
             MathOperator.Plus -> Storage.saveMathStreak(a, b, value)
             MathOperator.Minus -> Storage.saveSubtractionStreak(a, b, value)
+            MathOperator.Times -> Storage.saveMultiplicationGridStreak(a, b, value)
         }
     }
 
@@ -296,6 +319,7 @@ class MathViewModel : ViewModel() {
         when (op) {
             MathOperator.Plus -> _additionGridFlow.value = snapshot(additionStreaks)
             MathOperator.Minus -> _subtractionGridFlow.value = snapshot(subtractionStreaks)
+            MathOperator.Times -> _multiplicationGridFlow.value = snapshot(multiplicationStreaks)
         }
     }
 

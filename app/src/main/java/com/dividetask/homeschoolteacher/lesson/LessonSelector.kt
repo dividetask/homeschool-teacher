@@ -79,6 +79,9 @@ class LessonSelector(
         LessonId.NumberLineSubtraction0,
         LessonId.CountingMultiplication0,
         LessonId.CountingMultiplication1,
+        LessonId.HorizontalMultiplication0,
+        LessonId.VerticalMultiplication0,
+        LessonId.NumberLineMultiplication0,
         LessonId.LetterSounds0,
         LessonId.Phonemes0,
         LessonId.Reading0,
@@ -94,7 +97,9 @@ class LessonSelector(
         LessonId.NumberLineAddition0, LessonId.CountingAddition1, LessonId.Math1,
         LessonId.HorizontalAddition1, LessonId.MathNumberLine,
         LessonId.CountingSubtraction0, LessonId.HorizontalSubtraction0,
-        LessonId.VerticalSubtraction0, LessonId.NumberLineSubtraction0 -> math.passed(id)
+        LessonId.VerticalSubtraction0, LessonId.NumberLineSubtraction0,
+        LessonId.HorizontalMultiplication0, LessonId.VerticalMultiplication0,
+        LessonId.NumberLineMultiplication0 -> math.passed(id)
         LessonId.BinaryOps0, LessonId.BinaryOps1 -> binary.passed(id)
         LessonId.CountingMultiplication0 -> multiplication.passed
         LessonId.CountingMultiplication1 -> multiplicationOperands.passed
@@ -209,7 +214,10 @@ class LessonSelector(
             LessonId.CountingSubtraction0,
             LessonId.HorizontalSubtraction0,
             LessonId.VerticalSubtraction0,
-            LessonId.NumberLineSubtraction0 -> math.startLesson(id)
+            LessonId.NumberLineSubtraction0,
+            LessonId.HorizontalMultiplication0,
+            LessonId.VerticalMultiplication0,
+            LessonId.NumberLineMultiplication0 -> math.startLesson(id)
             LessonId.BinaryOps0, LessonId.BinaryOps1 -> binary.startLesson(id)
             LessonId.CountingMultiplication0 -> multiplication.startLesson()
             LessonId.CountingMultiplication1 -> multiplicationOperands.startLesson()
@@ -241,7 +249,10 @@ class LessonSelector(
             LessonId.CountingSubtraction0,
             LessonId.HorizontalSubtraction0,
             LessonId.VerticalSubtraction0,
-            LessonId.NumberLineSubtraction0 -> math.setPassed(id, value)
+            LessonId.NumberLineSubtraction0,
+            LessonId.HorizontalMultiplication0,
+            LessonId.VerticalMultiplication0,
+            LessonId.NumberLineMultiplication0 -> math.setPassed(id, value)
             LessonId.BinaryOps0, LessonId.BinaryOps1 -> binary.setPassed(id, value)
             LessonId.CountingMultiplication0 -> multiplication.setPassed(value)
             LessonId.CountingMultiplication1 -> multiplicationOperands.setPassed(value)

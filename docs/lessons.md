@@ -99,6 +99,12 @@ Integer 2D array, `op1` and `op2` indexed `0..9`. Default zero. Cell
 tracks correct answers for the matching multiplication problem when
 shown via the Counting Multiplication Screen.
 
+### `multiplication_equation_grid[op1][op2]`
+Integer 2D array, `op1` and `op2` indexed `0..4`. Product-coverage grid
+shared by the Horizontal / Vertical / Number Line multiplication screens
+(tap-the-product lessons). Separate from `multiplication_grid` (the
+counting/product lesson) and `multiplication_operands_grid`. Default zero.
+
 ### `multiplication_operands_grid[op1][op2]`
 Integer 2D array, `op1` and `op2` indexed `1..4`. Cell tracks correct
 identifications of the two operands in Counting Multiplication Level 1
@@ -445,6 +451,9 @@ over the next one.
 | 7        | Number Line Subtraction — Level 0   | Math     | All Addition Difficulty 1 passed  |
 | 9        | Counting Multiplication — Level 0   | Math     | All Subtraction Difficulty 0 passed |
 | 9        | Counting Multiplication — Level 1   | Math     | Counting Multiplication 0 passed  |
+| 9        | Horizontal Multiplication — Level 0 | Math     | Counting Multiplication 1 passed  |
+| 9        | Vertical Multiplication — Level 0   | Math     | Counting Multiplication 1 passed  |
+| 9        | Number Line Multiplication — Level 0| Math     | Counting Multiplication 1 passed  |
 | 3        | Letter Sounds — Level 0             | Reading  | —                                 |
 | 3        | Phonemes — Level 0                  | Reading  | Letter Sounds 0                   |
 | 4        | Animals — Level 0                   | Reading  | Phonemes 0                        |
@@ -748,6 +757,60 @@ over the next one.
   `(op1, op2) ∈ 1..4` cell space.
 - **Pass criteria:** `multiplication_operands_grid[op1][op2] >= 2` for
   every `op1, op2 ∈ 1..4`.
+
+### Horizontal Multiplication — Level 0
+- **Game UID:** 9
+- **Subject:** Multiplication
+- **Difficulty:** 0
+- **Category:** Math
+- **Runs per round:** 4
+- **Unlock conditions:** Counting Multiplication — Level 1 passed.
+- **Screen:** Horizontal Equation Screen (`×` operator)
+- **Variables:** `multiplication_equation_grid`, `win_streak[9][Horizontal]`
+- **Random variables:**
+  - `op1, op2 ∈ 0..4` (max product 16)
+- **Answer surface:** Numeric Grid (0..16)
+- **Problem selection:** standard math-grid selection
+- **Pass criteria:** `multiplication_equation_grid[op1][op2] >= 2` for
+  every `op1, op2 ∈ 0..4` **AND** `win_streak >= 4`
+
+### Vertical Multiplication — Level 0
+- **Game UID:** 9
+- **Subject:** Multiplication
+- **Difficulty:** 0
+- **Category:** Math
+- **Runs per round:** 4
+- **Unlock conditions:** Counting Multiplication — Level 1 passed.
+- **Screen:** Vertical Equation Screen (`×` operator)
+- **Variables:** `multiplication_equation_grid`, `win_streak[9][Vertical]`
+- **Random variables:**
+  - `op1, op2 ∈ 0..4`
+- **Answer surface:** Numeric Grid (0..16)
+- **Problem selection:** standard math-grid selection
+- **Pass criteria:** `multiplication_equation_grid[op1][op2] >= 2` for
+  every `op1, op2 ∈ 0..4` **AND** `win_streak >= 4`
+
+### Number Line Multiplication — Level 0
+- **Game UID:** 9
+- **Subject:** Multiplication
+- **Difficulty:** 0
+- **Category:** Math
+- **Runs per round:** 4
+- **Unlock conditions:** Counting Multiplication — Level 1 passed.
+- **Screen:** Number Line Equation Screen (`×` operator) — the line spans
+  the product's neighbourhood; the learner still taps the product.
+- **Variables:** `multiplication_equation_grid`, `win_streak[9][NumberLine]`
+- **Random variables:**
+  - `op1, op2 ∈ 0..4`
+- **Answer surface:** Numeric Grid (0..16)
+- **Problem selection:** standard math-grid selection
+- **Pass criteria:** `multiplication_equation_grid[op1][op2] >= 2` for
+  every `op1, op2 ∈ 0..4` **AND** `win_streak >= 4`
+
+The three share one `multiplication_equation_grid` (product coverage) but
+each keeps its own streak, so they pass independently — mirroring the
+Addition / Subtraction Level 0 groups. This grid is separate from the
+counting-multiplication grids.
 
 ### Counting Subtraction — Level 0
 - **Game UID:** 7

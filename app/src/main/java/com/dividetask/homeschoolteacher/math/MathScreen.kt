@@ -62,6 +62,9 @@ fun MathScreen(
         LessonId.HorizontalSubtraction0,
         LessonId.VerticalSubtraction0,
         LessonId.NumberLineSubtraction0 -> 9 // subtraction op1 4..9, op2 0..4, max diff 9
+        LessonId.HorizontalMultiplication0,
+        LessonId.VerticalMultiplication0,
+        LessonId.NumberLineMultiplication0 -> 16 // multiplication operands 0..4, max product 16
         else -> 9
     }
 
@@ -108,14 +111,16 @@ fun MathScreen(
             LessonId.CountingSubtraction0 -> PictureProblem(problem)
             LessonId.MathNumberLine,
             LessonId.NumberLineAddition0,
-            LessonId.NumberLineSubtraction0 -> NumberLineProblem(
+            LessonId.NumberLineSubtraction0,
+            LessonId.NumberLineMultiplication0 -> NumberLineProblem(
                 problem = problem,
                 selected = state.selected,
                 feedback = state.feedback,
             )
             LessonId.HorizontalAddition0,
             LessonId.HorizontalAddition1,
-            LessonId.HorizontalSubtraction0 -> HorizontalProblem(
+            LessonId.HorizontalSubtraction0,
+            LessonId.HorizontalMultiplication0 -> HorizontalProblem(
                 problem = problem,
                 selected = state.selected,
                 feedback = state.feedback,

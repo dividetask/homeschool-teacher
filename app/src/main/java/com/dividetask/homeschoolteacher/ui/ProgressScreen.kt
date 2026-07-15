@@ -102,6 +102,7 @@ fun ProgressScreen(
     val operandsState by multiplicationOperands.state.collectAsStateWithLifecycle()
 
     val subtractionStreaks by math.subtractionGrid.collectAsStateWithLifecycle()
+    val multEquationStreaks by math.multiplicationGrid.collectAsStateWithLifecycle()
 
     // Per-lesson math streak (cells AND streak >= 4 are both required to
     // pass — the user calls this out explicitly).
@@ -112,6 +113,8 @@ fun ProgressScreen(
         LessonId.MathNumberLine,
         LessonId.CountingSubtraction0, LessonId.HorizontalSubtraction0,
         LessonId.VerticalSubtraction0, LessonId.NumberLineSubtraction0,
+        LessonId.HorizontalMultiplication0, LessonId.VerticalMultiplication0,
+        LessonId.NumberLineMultiplication0,
     ).associateWith { id ->
         // collectAsStateWithLifecycle inside a loop isn't possible here,
         // so we read the StateFlow's current value. The grid + lifetime
@@ -344,6 +347,26 @@ fun ProgressScreen(
                 color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f),
             )
             MultiplicationStreakGrid(operandsStreaks, minOperand = 1)
+        }
+
+        Section(LessonId.HorizontalMultiplication0) {
+            InfoRow("Correct streak", "${mathLessonStreaks[LessonId.HorizontalMultiplication0]} / 4")
+            Text(
+                text = "Multiplication (product) grid, op1 × op2 ∈ 0..4. " +
+                    "Shared by the three symbolic multiplication screens; " +
+                    "each also keeps its own streak.",
+                fontSize = 12.sp,
+                color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f),
+            )
+            MultiplicationStreakGrid(multEquationStreaks)
+        }
+
+        Section(LessonId.VerticalMultiplication0) {
+            InfoRow("Correct streak", "${mathLessonStreaks[LessonId.VerticalMultiplication0]} / 4")
+        }
+
+        Section(LessonId.NumberLineMultiplication0) {
+            InfoRow("Correct streak", "${mathLessonStreaks[LessonId.NumberLineMultiplication0]} / 4")
         }
 
         Section(LessonId.Reading0) {

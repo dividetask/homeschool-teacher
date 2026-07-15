@@ -286,6 +286,10 @@ All persisted state lives in one `SharedPreferences` file named
 - `multoperands.streak.<a>.<b>`      — Level 1 "identify the operands"
                                         coverage grid (op1, op2 ∈ 1..4).
 - `multoperands.{correct|wrong}`     — lifetime counters.
+- `multgrid.streak.<a>.<b>`          — product-coverage grid for the
+                                        Horizontal / Vertical / Number Line
+                                        multiplication screens (shared by
+                                        all three; lives in MathViewModel).
 - `lettersounds.{correct|wrong}`     — lifetime counters.
 - `phonemes.{correct|wrong}`         — lifetime counters.
 - `reading.{correct|wrong}`          — lifetime counters.

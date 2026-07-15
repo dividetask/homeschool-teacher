@@ -111,6 +111,23 @@ object Storage {
         prefs().edit().putInt("subtraction.streak.$a.$b", value).apply()
     }
 
+    // --- Math (Multiplication equations) ---
+    // Product-coverage grid shared by the Horizontal / Vertical / Number
+    // Line multiplication presentations (tap-the-product lessons). Separate
+    // from the counting-multiplication grid (`multiplication.streak`).
+    fun loadMultiplicationGridStreaks(): Array<IntArray> {
+        val p = prefs()
+        val out = Array(16) { IntArray(16) }
+        for (a in 0..15) for (b in 0..15) {
+            out[a][b] = p.getInt("multgrid.streak.$a.$b", 0)
+        }
+        return out
+    }
+
+    fun saveMultiplicationGridStreak(a: Int, b: Int, value: Int) {
+        prefs().edit().putInt("multgrid.streak.$a.$b", value).apply()
+    }
+
     // --- Tic Tac Toe ---
     fun loadTttScores(): Triple<Int, Int, Int> {
         val p = prefs()
