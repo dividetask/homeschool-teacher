@@ -1,33 +1,74 @@
-Downloading https://services.gradle.org/distributions/gradle-8.11.1-bin.zip
-.............10%.............20%.............30%.............40%.............50%.............60%.............70%.............80%.............90%.............100%
+Invalid Java installation found at '/home/brett/.gradle/.tmp/jdks/OpenJDK17U-jdk_x64_linux_hotspot_1711551657416251184638.tmp' (provisioned toolchain) auto-detected auto-provisioned. It will be re-checked in the next build. This might have performance impact if it keeps failing. Run the 'javaToolchains' task for more details.
+Checking the license for package Android SDK Platform 35 in /home/brett/Android/Sdk/licenses
+License for package Android SDK Platform 35 accepted.
+Preparing "Install Android SDK Platform 35 (revision 2)".
+"Install Android SDK Platform 35 (revision 2)" ready.
+Installing Android SDK Platform 35 in /home/brett/Android/Sdk/platforms/android-35
+"Install Android SDK Platform 35 (revision 2)" complete.
+"Install Android SDK Platform 35 (revision 2)" finished.
 
-Welcome to Gradle 8.11.1!
+The Kotlin Gradle plugin was loaded multiple times in different subprojects, which is not supported and may break the build. 
+This might happen in subprojects that apply the Kotlin plugins with the Gradle 'plugins { ... }' DSL if they specify explicit versions, even if the versions are equal.
+Please add the Kotlin plugin to the common parent project or the root project, then remove the versions in the subprojects.
+If the parent project does not need the plugin, add 'apply false' to the plugin line.
+See: https://docs.gradle.org/current/userguide/plugins.html#sec:subprojects_plugins_dsl
+The Kotlin plugin was loaded in the following projects: ':app', ':shared'
+> Task :shared:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :app:preBuild UP-TO-DATE
+> Task :app:preDebugBuild UP-TO-DATE
+> Task :app:mergeDebugNativeDebugMetadata NO-SOURCE
+> Task :app:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :shared:processResources NO-SOURCE
+> Task :shared:compileKotlin
+> Task :shared:compileJava NO-SOURCE
+> Task :shared:classes UP-TO-DATE
+> Task :shared:jar
+> Task :app:generateDebugResValues
+> Task :app:checkDebugAarMetadata
+> Task :app:mapDebugSourceSetPaths
+> Task :app:generateDebugResources
+> Task :app:packageDebugResources
+> Task :app:mergeDebugResources
+> Task :app:createDebugCompatibleScreenManifests
+> Task :app:extractDeepLinksDebug
+> Task :app:parseDebugLocalResources
+> Task :app:processDebugMainManifest
+> Task :app:processDebugManifest
+> Task :app:javaPreCompileDebug
+> Task :app:mergeDebugShaders
+> Task :app:compileDebugShaders NO-SOURCE
+> Task :app:generateDebugAssets UP-TO-DATE
+> Task :app:mergeDebugAssets
+> Task :app:desugarDebugFileDependencies
+> Task :app:compressDebugAssets
+> Task :app:mergeDebugJniLibFolders
+> Task :app:checkDebugDuplicateClasses
+> Task :app:mergeDebugNativeLibs
+> Task :app:validateSigningDebug
 
-Here are the highlights of this release:
- - Parallel load and store for Configuration Cache
- - Java compilation errors at the end of the build output
- - Consolidated report for warnings and deprecations
+> Task :app:stripDebugDebugSymbols
+Unable to strip the following libraries, packaging them as they are: libandroidx.graphics.path.so.
 
-For more details see https://docs.gradle.org/8.11.1/release-notes.html
+> Task :app:writeDebugAppMetadata
+> Task :app:writeDebugSigningConfigVersions
+> Task :app:processDebugManifestForPackage
+> Task :app:mergeLibDexDebug
+> Task :app:processDebugResources
+> Task :app:mergeExtDexDebug
 
-Starting a Gradle Daemon (subsequent builds will be faster)
+> Task :app:compileDebugKotlin
+w: file:///home/brett/Projects/homeschool-teacher/app/src/main/java/com/dividetask/homeschoolteacher/chess/ChessScreen.kt:248:46 Condition is always 'true'.
 
-FAILURE: Build failed with an exception.
+> Task :app:compileDebugJavaWithJavac NO-SOURCE
+> Task :app:dexBuilderDebug
+> Task :app:mergeDebugGlobalSynthetics
+> Task :app:processDebugJavaRes
+> Task :app:mergeProjectDexDebug
+> Task :app:mergeDebugJavaResource
+> Task :app:packageDebug
+> Task :app:createDebugApkListingFileRedirect
+> Task :app:assembleDebug
+w: Detected multiple Kotlin daemon sessions at 
 
-* What went wrong:
-Could not determine the dependencies of task ':app:packageDebug'.
-> Could not create task ':app:compileDebugJavaWithJavac'.
-   > Failed to calculate the value of task ':app:compileDebugJavaWithJavac' property 'javaCompiler'.
-      > Cannot find a Java installation on your machine matching this tasks requirements: {languageVersion=21, vendor=any vendor, implementation=vendor-specific} for LINUX on x86_64.
-         > No locally installed toolchains match and toolchain auto-provisioning is not enabled.
-
-* Try:
-> Learn more about toolchain auto-detection at https://docs.gradle.org/8.11.1/userguide/toolchains.html#sec:auto_detection.
-> Run with --stacktrace option to get the stack trace.
-> Run with --info or --debug option to get more log output.
-> Run with --scan to get full insights.
-> Get more help at https://help.gradle.org.
-
-BUILD FAILED in 1m 4s
-BUILD FAILED (exit 1) — no new APK. See the Gradle output above;
-re-run with --stacktrace or --info (append to TASK) for more detail.
+BUILD SUCCESSFUL in 1m 11s
+37 actionable tasks: 37 executed
