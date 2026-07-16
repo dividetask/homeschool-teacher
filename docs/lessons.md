@@ -463,9 +463,9 @@ over the next one.
 | 7        | Number Line Subtraction — Level 0   | Math     | All Addition Difficulty 1 passed  |
 | 9        | Counting Multiplication — Level 0   | Math     | All Subtraction Difficulty 0 passed |
 | 9        | Counting Multiplication — Level 1   | Math     | Counting Multiplication 0 passed  |
-| 9        | Horizontal Multiplication — Level 0 | Math     | Counting Multiplication 1 passed  |
-| 9        | Vertical Multiplication — Level 0   | Math     | Counting Multiplication 1 passed  |
-| 9        | Number Line Multiplication — Level 0| Math     | Counting Multiplication 1 passed  |
+| 9        | Number Line Multiplication — Level 0| Math     | Counting Multiplication 0 passed  |
+| 9        | Horizontal Multiplication — Level 0 | Math     | Number Line Multiplication 0 passed |
+| 9        | Vertical Multiplication — Level 0   | Math     | Number Line Multiplication 0 passed |
 | 9        | Horizontal Multiplication — Level 1 | Math     | All symbolic Multiplication Diff 0 passed |
 | 9        | Vertical Multiplication — Level 1   | Math     | All symbolic Multiplication Diff 0 passed |
 | 9        | Number Line Multiplication — Level 1| Math     | All symbolic Multiplication Diff 0 passed |
@@ -779,7 +779,7 @@ over the next one.
 - **Difficulty:** 0
 - **Category:** Math
 - **Runs per round:** 4
-- **Unlock conditions:** Counting Multiplication — Level 1 passed.
+- **Unlock conditions:** Number Line Multiplication — Level 0 passed.
 - **Screen:** Horizontal Equation Screen (`×` operator)
 - **Variables:** `multiplication_equation_grid`, `win_streak[9][Horizontal]`
 - **Random variables:**
@@ -795,7 +795,7 @@ over the next one.
 - **Difficulty:** 0
 - **Category:** Math
 - **Runs per round:** 4
-- **Unlock conditions:** Counting Multiplication — Level 1 passed.
+- **Unlock conditions:** Number Line Multiplication — Level 0 passed.
 - **Screen:** Vertical Equation Screen (`×` operator)
 - **Variables:** `multiplication_equation_grid`, `win_streak[9][Vertical]`
 - **Random variables:**
@@ -811,9 +811,9 @@ over the next one.
 - **Difficulty:** 0
 - **Category:** Math
 - **Runs per round:** 4
-- **Unlock conditions:** Counting Multiplication — Level 1 passed.
-- **Screen:** Number Line Equation Screen (`×` operator) — the line spans
-  the product's neighbourhood; the learner still taps the product.
+- **Unlock conditions:** Counting Multiplication — Level 0 passed.
+- **Screen:** Number Line Equation Screen (`×` operator) — the scrollable,
+  markable line from 0; the learner still taps the product.
 - **Variables:** `multiplication_equation_grid`, `win_streak[9][NumberLine]`
 - **Random variables:**
   - `op1, op2 ∈ 0..4`

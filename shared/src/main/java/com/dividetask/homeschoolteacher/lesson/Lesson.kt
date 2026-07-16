@@ -123,18 +123,21 @@ object Lessons {
         LessonDefinition(LessonId.VerticalSubtraction0, "Vertical Subtraction — Level 0", Category.Math, ADDITION_L1),
         LessonDefinition(LessonId.NumberLineSubtraction0, "Number Line Subtraction — Level 0", Category.Math, ADDITION_L1),
         // Counting Multiplication unlocks after the whole Subtraction
-        // L0 group is passed.
+        // L0 group is passed. The Level 0 presentations then run in a fixed
+        // order: Counting 0 first, then Number Line 0, then the remaining
+        // two (Horizontal / Vertical). Counting 1 (identify the operands)
+        // opens alongside Number Line 0, off Counting 0.
         LessonDefinition(LessonId.CountingMultiplication0, "Counting Multiplication — Level 0", Category.Math, SUBTRACTION_L0),
         // Level 1 keeps the same boxed groups but asks which two numbers are
         // being multiplied (operands, not the product); operands 1..4.
         LessonDefinition(LessonId.CountingMultiplication1, "Counting Multiplication — Level 1", Category.Math, listOf(LessonId.CountingMultiplication0)),
-        // Symbolic multiplication (tap the product) in three presentations,
-        // operands 0..4. They share one product-coverage grid but each keeps
-        // its own streak, so they pass independently. Unlock after the two
-        // counting-multiplication lessons.
-        LessonDefinition(LessonId.HorizontalMultiplication0, "Horizontal Multiplication — Level 0", Category.Math, listOf(LessonId.CountingMultiplication1)),
-        LessonDefinition(LessonId.VerticalMultiplication0, "Vertical Multiplication — Level 0", Category.Math, listOf(LessonId.CountingMultiplication1)),
-        LessonDefinition(LessonId.NumberLineMultiplication0, "Number Line Multiplication — Level 0", Category.Math, listOf(LessonId.CountingMultiplication1)),
+        // Number Line Multiplication 0 is offered only after Counting 0.
+        LessonDefinition(LessonId.NumberLineMultiplication0, "Number Line Multiplication — Level 0", Category.Math, listOf(LessonId.CountingMultiplication0)),
+        // The rest of the Level 0 presentations are offered only after
+        // Number Line 0. They share one product-coverage grid but each keeps
+        // its own streak, so they pass independently.
+        LessonDefinition(LessonId.HorizontalMultiplication0, "Horizontal Multiplication — Level 0", Category.Math, listOf(LessonId.NumberLineMultiplication0)),
+        LessonDefinition(LessonId.VerticalMultiplication0, "Vertical Multiplication — Level 0", Category.Math, listOf(LessonId.NumberLineMultiplication0)),
         // Level 1: same three presentations at operands 0..9 (products to
         // 81). The answer is typed on a number pad (Enter to submit) rather
         // than tapped from a grid. Unlock once all three Level 0 symbolic
