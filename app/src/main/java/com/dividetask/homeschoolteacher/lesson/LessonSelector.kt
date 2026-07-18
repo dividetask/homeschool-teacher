@@ -16,6 +16,7 @@ import com.dividetask.homeschoolteacher.reading.ReadingViewModel
 import com.dividetask.homeschoolteacher.reading.RhymingWordsViewModel
 import com.dividetask.homeschoolteacher.reading.SightWordsViewModel
 import com.dividetask.homeschoolteacher.tictactoe.GameViewModel
+import com.dividetask.homeschoolteacher.tictactoe.TttPuzzleViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -32,6 +33,7 @@ enum class SelectionMode {
 
 class LessonSelector(
     private val ttt: GameViewModel,
+    private val tttPuzzle: TttPuzzleViewModel,
     private val chess: ChessViewModel,
     private val math: MathViewModel,
     private val binary: BinaryOperationsViewModel,
@@ -59,6 +61,7 @@ class LessonSelector(
         LessonId.TicTacToe0,
         LessonId.TicTacToe1,
         LessonId.TicTacToe2,
+        LessonId.TicTacToeWinBlock,
         LessonId.Chess0,
         LessonId.Chess1,
         LessonId.Chess2,
@@ -95,6 +98,7 @@ class LessonSelector(
 
     private fun passedFlowFor(id: LessonId): StateFlow<Boolean> = when (id) {
         LessonId.TicTacToe0, LessonId.TicTacToe1, LessonId.TicTacToe2 -> ttt.passed(id)
+        LessonId.TicTacToeWinBlock -> tttPuzzle.passed
         LessonId.Chess0, LessonId.Chess1, LessonId.Chess2, LessonId.Chess3 -> chess.passed(id)
         LessonId.MathPictures, LessonId.Math0, LessonId.HorizontalAddition0,
         LessonId.NumberLineAddition0, LessonId.CountingAddition1, LessonId.Math1,
@@ -204,6 +208,7 @@ class LessonSelector(
             LessonId.TicTacToe0,
             LessonId.TicTacToe1,
             LessonId.TicTacToe2 -> ttt.startLesson(id)
+            LessonId.TicTacToeWinBlock -> tttPuzzle.startLesson()
             LessonId.Chess0,
             LessonId.Chess1,
             LessonId.Chess2,
@@ -242,6 +247,7 @@ class LessonSelector(
             LessonId.TicTacToe0,
             LessonId.TicTacToe1,
             LessonId.TicTacToe2 -> ttt.setPassed(id, value)
+            LessonId.TicTacToeWinBlock -> tttPuzzle.setPassed(value)
             LessonId.Chess0,
             LessonId.Chess1,
             LessonId.Chess2,
@@ -278,6 +284,7 @@ class LessonSelector(
 
 class LessonSelectorFactory(
     private val ttt: GameViewModel,
+    private val tttPuzzle: TttPuzzleViewModel,
     private val chess: ChessViewModel,
     private val math: MathViewModel,
     private val binary: BinaryOperationsViewModel,
@@ -291,6 +298,6 @@ class LessonSelectorFactory(
 ) : ViewModelProvider.Factory {
     @Suppress("UNCHECKED_CAST")
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
-        return LessonSelector(ttt, chess, math, binary, multiplication, multiplicationOperands, letterSounds, phonemes, reading, sightWords, rhymingWords) as T
+        return LessonSelector(ttt, tttPuzzle, chess, math, binary, multiplication, multiplicationOperands, letterSounds, phonemes, reading, sightWords, rhymingWords) as T
     }
 }

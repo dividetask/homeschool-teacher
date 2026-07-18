@@ -10,6 +10,7 @@ enum class LessonId {
     TicTacToe0,
     TicTacToe1,
     TicTacToe2,
+    TicTacToeWinBlock,
     Chess0,
     Chess1,
     Chess2,
@@ -88,6 +89,9 @@ object Lessons {
         LessonDefinition(LessonId.TicTacToe0, "Tic Tac Toe — Level 0", Category.Game),
         LessonDefinition(LessonId.TicTacToe1, "Tic Tac Toe — Level 1", Category.Game, listOf(LessonId.TicTacToe0)),
         LessonDefinition(LessonId.TicTacToe2, "Tic Tac Toe — Level 2", Category.Game, listOf(LessonId.TicTacToe1)),
+        // Single-move puzzle: the board is one move from a decision — take
+        // the winning move, or block the opponent's. Any other move loses.
+        LessonDefinition(LessonId.TicTacToeWinBlock, "Tic Tac Toe — Win or Block", Category.Game, listOf(LessonId.TicTacToe2)),
         LessonDefinition(LessonId.Chess0, "Chess — Level 0", Category.Game, listOf(LessonId.TicTacToe0)),
         LessonDefinition(LessonId.Chess1, "Chess — Level 1", Category.Game, listOf(LessonId.Chess0)),
         LessonDefinition(LessonId.Chess2, "Chess — Level 2", Category.Game, listOf(LessonId.Chess1)),

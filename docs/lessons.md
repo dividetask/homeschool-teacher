@@ -211,6 +211,12 @@ Standard 3×3 board. The learner taps an empty cell to place their mark;
 the CPU then plays. Game ends on a win, draw, or loss. The CPU rule
 varies by lesson.
 
+### Tic Tac Toe Puzzle Screen
+Standard 3×3 board, but pre-filled with a single-move puzzle position and
+no CPU turn. The learner taps one empty cell; that resolves the puzzle
+(correct = the win or block, anything else = a loss), the correct/ wrong
+cells are outlined, and the next puzzle is dealt. Used by "Win or Block".
+
 ### Chess Board Screen
 8×8 board with one player piece, a number of capturable pawns, a
 number of non-capturable pawns, and optionally one or more friendly
@@ -443,6 +449,7 @@ over the next one.
 | 0        | Tic Tac Toe — Level 0               | Game     | —                                 |
 | 0        | Tic Tac Toe — Level 1               | Game     | Tic Tac Toe 0                     |
 | 0        | Tic Tac Toe — Level 2               | Game     | Tic Tac Toe 1                     |
+| 0        | Tic Tac Toe — Win or Block          | Game     | Tic Tac Toe 2                     |
 | 1        | Chess — Level 0                     | Game     | Tic Tac Toe 0                     |
 | 1        | Chess — Level 1                     | Game     | Chess 0                           |
 | 1        | Chess — Level 2                     | Game     | Chess 1                           |
@@ -516,6 +523,26 @@ over the next one.
   move.
 - **Variables:** `win_streak[0][2]`
 - **Pass criteria:** `win_streak[0][2] >= 8`
+
+### Tic Tac Toe — Win or Block
+- **Game UID:** 0
+- **Subject:** Tic Tac Toe
+- **Category:** Game
+- **Runs per round:** 1
+- **Unlock conditions:** Tic Tac Toe — Level 2 passed.
+- **Screen:** Tic Tac Toe Puzzle Screen — a single pre-set board; no CPU
+  turn, no "New Game" button.
+- **Setup:** the board is generated so it is the learner's move (they are
+  X, X/O counts equal) and **exactly one side has a winning move**: either
+  X can complete three-in-a-row, or O threatens to and X must block. The
+  other side has no winning move. There is exactly one correct cell (the
+  win or the block).
+- **Rules:** tapping the correct cell is a **Correct**; **any other tap is
+  a loss** (Wrong). After answering, the correct cell is outlined (green if
+  taken, yellow if missed) and a wrong tap is outlined red, then the next
+  puzzle appears.
+- **Variables:** `win_streak[0][WinOrBlock]`
+- **Pass criteria:** `win_streak >= 8` (eight correct in a row).
 
 ### Chess — Level 0
 - **Game UID:** 1

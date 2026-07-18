@@ -50,10 +50,12 @@ import com.dividetask.homeschoolteacher.reading.RhymingWordsViewModel
 import com.dividetask.homeschoolteacher.reading.SightWords
 import com.dividetask.homeschoolteacher.reading.SightWordsViewModel
 import com.dividetask.homeschoolteacher.tictactoe.GameViewModel
+import com.dividetask.homeschoolteacher.tictactoe.TttPuzzleViewModel
 
 @Composable
 fun ProgressScreen(
     game: GameViewModel,
+    tttPuzzle: TttPuzzleViewModel,
     chess: ChessViewModel,
     math: MathViewModel,
     binary: BinaryOperationsViewModel,
@@ -73,6 +75,7 @@ fun ProgressScreen(
     val ttt0Streak by game.streak(LessonId.TicTacToe0).collectAsStateWithLifecycle()
     val ttt1Streak by game.streak(LessonId.TicTacToe1).collectAsStateWithLifecycle()
     val ttt2Streak by game.streak(LessonId.TicTacToe2).collectAsStateWithLifecycle()
+    val puzzleState by tttPuzzle.state.collectAsStateWithLifecycle()
 
     val mathStreaks by math.streaks.collectAsStateWithLifecycle()
     val mathState by math.state.collectAsStateWithLifecycle()
@@ -180,6 +183,18 @@ fun ProgressScreen(
 
         Section(LessonId.TicTacToe2) {
             InfoRow("Non-loss streak", "$ttt2Streak / 8")
+        }
+
+        Section(LessonId.TicTacToeWinBlock) {
+            InfoRow("Correct streak", "${puzzleState.streak} / 8")
+            InfoRow("Correct (lifetime)", puzzleState.correctCount.toString())
+            InfoRow("Wrong (lifetime)", puzzleState.wrongCount.toString())
+            Text(
+                text = "Single-move puzzle: take the winning move or block " +
+                    "the opponent's. Any other move is a loss.",
+                fontSize = 12.sp,
+                color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f),
+            )
         }
 
         InfoRow("TTT player wins", tttGame.playerScore.toString())

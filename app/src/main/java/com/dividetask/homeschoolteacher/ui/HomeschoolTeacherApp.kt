@@ -66,6 +66,8 @@ import com.dividetask.homeschoolteacher.reading.SightWordsScreen
 import com.dividetask.homeschoolteacher.reading.SightWordsViewModel
 import com.dividetask.homeschoolteacher.tictactoe.GameScreen
 import com.dividetask.homeschoolteacher.tictactoe.GameViewModel
+import com.dividetask.homeschoolteacher.tictactoe.TttPuzzleScreen
+import com.dividetask.homeschoolteacher.tictactoe.TttPuzzleViewModel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
@@ -73,6 +75,7 @@ import kotlinx.coroutines.launch
 @Composable
 fun HomeschoolTeacherApp() {
     val game: GameViewModel = viewModel()
+    val tttPuzzle: TttPuzzleViewModel = viewModel()
     val chess: ChessViewModel = viewModel()
     val math: MathViewModel = viewModel()
     val binary: BinaryOperationsViewModel = viewModel()
@@ -84,7 +87,7 @@ fun HomeschoolTeacherApp() {
     val sightWords: SightWordsViewModel = viewModel()
     val rhymingWords: RhymingWordsViewModel = viewModel()
     val selector: LessonSelector = viewModel(
-        factory = LessonSelectorFactory(game, chess, math, binary, multiplication, multiplicationOperands, letterSounds, phonemes, reading, sightWords, rhymingWords),
+        factory = LessonSelectorFactory(game, tttPuzzle, chess, math, binary, multiplication, multiplicationOperands, letterSounds, phonemes, reading, sightWords, rhymingWords),
     )
 
     val mode by selector.mode.collectAsStateWithLifecycle()
@@ -181,6 +184,7 @@ fun HomeschoolTeacherApp() {
                 if (mode == SelectionMode.Progress) {
                     ProgressScreen(
                         game = game,
+                        tttPuzzle = tttPuzzle,
                         math = math,
                         binary = binary,
                         multiplication = multiplication,
@@ -202,6 +206,11 @@ fun HomeschoolTeacherApp() {
                         LessonId.TicTacToe1,
                         LessonId.TicTacToe2 -> GameScreen(
                             viewModel = game,
+                            onCompleted = selector::onLessonInstanceCompleted,
+                            modifier = Modifier.fillMaxWidth(),
+                        )
+                        LessonId.TicTacToeWinBlock -> TttPuzzleScreen(
+                            viewModel = tttPuzzle,
                             onCompleted = selector::onLessonInstanceCompleted,
                             modifier = Modifier.fillMaxWidth(),
                         )

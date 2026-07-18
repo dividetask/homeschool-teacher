@@ -87,8 +87,8 @@ fun MultiplicationOperandsScreen(
         // taps. On a wrong/revealed outcome the true operands are shown.
         val reveal = state.feedback == OperandsFeedback.Wrong ||
             state.feedback == OperandsFeedback.Revealed
-        val left = if (reveal) problem.op1.toString() else state.firstPick?.toString() ?: "▢"
-        val right = if (reveal) problem.op2.toString() else state.secondPick?.toString() ?: "▢"
+        val left = if (reveal) problem.op1.toString() else state.firstPick?.toString() ?: "_"
+        val right = if (reveal) problem.op2.toString() else state.secondPick?.toString() ?: "_"
         Text(
             text = "$left × $right",
             fontSize = 36.sp,
@@ -113,7 +113,6 @@ fun MultiplicationOperandsScreen(
         )
 
         NumberPad(
-            selected = listOfNotNull(state.firstPick, state.secondPick),
             feedback = state.feedback,
             onPick = viewModel::onPick,
             inputEnabled = inputReady,
@@ -152,24 +151,19 @@ private fun ScoreItem(label: String, value: Int, color: Color) {
 
 @Composable
 private fun NumberPad(
-    selected: List<Int>,
     feedback: OperandsFeedback,
     onPick: (Int) -> Unit,
     inputEnabled: Boolean,
 ) {
+    // Buttons keep the same colour throughout — the chosen numbers show in
+    // the equation blanks above, so highlighting the pressed button just
+    // added confusion.
+    val container = MaterialTheme.colorScheme.primary
     Row(
         horizontalArrangement = Arrangement.spacedBy(8.dp),
         modifier = Modifier.widthIn(max = 360.dp).fillMaxWidth(),
     ) {
         (1..4).forEach { n ->
-            // Dim a number that already fills the first slot so the child can
-            // see their pending pick; full coloring resets each problem.
-            val pending = feedback == OperandsFeedback.None && selected.contains(n)
-            val container = if (pending) {
-                MaterialTheme.colorScheme.tertiary
-            } else {
-                MaterialTheme.colorScheme.primary
-            }
             Button(
                 onClick = { onPick(n) },
                 enabled = inputEnabled && feedback == OperandsFeedback.None,
