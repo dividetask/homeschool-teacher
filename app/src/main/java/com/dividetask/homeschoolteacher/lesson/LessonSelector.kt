@@ -59,9 +59,9 @@ class LessonSelector(
      */
     private val orderedLessons: List<LessonId> = listOf(
         LessonId.TicTacToe0,
+        LessonId.TicTacToeWinBlock,
         LessonId.TicTacToe1,
         LessonId.TicTacToe2,
-        LessonId.TicTacToeWinBlock,
         LessonId.Chess0,
         LessonId.Chess1,
         LessonId.Chess2,

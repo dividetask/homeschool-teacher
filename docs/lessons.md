@@ -447,9 +447,9 @@ over the next one.
 | Game UID | Lesson                              | Category | Unlock                            |
 | -------- | ----------------------------------- | -------- | --------------------------------- |
 | 0        | Tic Tac Toe — Level 0               | Game     | —                                 |
-| 0        | Tic Tac Toe — Level 1               | Game     | Tic Tac Toe 0                     |
+| 0        | Tic Tac Toe — Win or Block          | Game     | Tic Tac Toe 0                     |
+| 0        | Tic Tac Toe — Level 1               | Game     | Tic Tac Toe — Win or Block        |
 | 0        | Tic Tac Toe — Level 2               | Game     | Tic Tac Toe 1                     |
-| 0        | Tic Tac Toe — Win or Block          | Game     | Tic Tac Toe 2                     |
 | 1        | Chess — Level 0                     | Game     | Tic Tac Toe 0                     |
 | 1        | Chess — Level 1                     | Game     | Chess 0                           |
 | 1        | Chess — Level 2                     | Game     | Chess 1                           |
@@ -503,7 +503,7 @@ over the next one.
 - **Difficulty:** 1
 - **Category:** Game
 - **Runs per round:** 1
-- **Unlock conditions:** Tic Tac Toe — Level 0 passed.
+- **Unlock conditions:** Tic Tac Toe — Win or Block passed.
 - **Screen:** Tic Tac Toe Board Screen
 - **CPU rule:** take a winning move if one exists; else uniformly random
   legal move.
@@ -529,7 +529,7 @@ over the next one.
 - **Subject:** Tic Tac Toe
 - **Category:** Game
 - **Runs per round:** 1
-- **Unlock conditions:** Tic Tac Toe — Level 2 passed.
+- **Unlock conditions:** Tic Tac Toe — Level 0 passed.
 - **Screen:** Tic Tac Toe Puzzle Screen — a single pre-set board; no CPU
   turn, no "New Game" button.
 - **Setup:** the board is generated so it is the learner's move (they are
