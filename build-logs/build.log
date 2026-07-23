@@ -1,4 +1,3 @@
-Starting a Gradle Daemon (subsequent builds will be faster)
 
 The Kotlin Gradle plugin was loaded multiple times in different subprojects, which is not supported and may break the build. 
 This might happen in subprojects that apply the Kotlin plugins with the Gradle 'plugins { ... }' DSL if they specify explicit versions, even if the versions are equal.
@@ -11,6 +10,11 @@ The Kotlin plugin was loaded in the following projects: ':app', ':shared'
 > Task :app:preDebugBuild UP-TO-DATE
 > Task :app:mergeDebugNativeDebugMetadata NO-SOURCE
 > Task :app:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :shared:compileKotlin UP-TO-DATE
+> Task :shared:compileJava NO-SOURCE
+> Task :shared:processResources NO-SOURCE
+> Task :shared:classes UP-TO-DATE
+> Task :shared:jar UP-TO-DATE
 > Task :app:checkDebugAarMetadata UP-TO-DATE
 > Task :app:generateDebugResValues UP-TO-DATE
 > Task :app:mapDebugSourceSetPaths UP-TO-DATE
@@ -23,7 +27,6 @@ The Kotlin plugin was loaded in the following projects: ':app', ':shared'
 > Task :app:processDebugMainManifest UP-TO-DATE
 > Task :app:processDebugManifest UP-TO-DATE
 > Task :app:processDebugManifestForPackage UP-TO-DATE
-> Task :shared:processResources NO-SOURCE
 > Task :app:processDebugResources UP-TO-DATE
 > Task :app:javaPreCompileDebug UP-TO-DATE
 > Task :app:mergeDebugShaders UP-TO-DATE
@@ -34,31 +37,23 @@ The Kotlin plugin was loaded in the following projects: ':app', ':shared'
 > Task :app:desugarDebugFileDependencies UP-TO-DATE
 > Task :app:checkDebugDuplicateClasses UP-TO-DATE
 > Task :app:mergeExtDexDebug UP-TO-DATE
+> Task :app:mergeLibDexDebug UP-TO-DATE
 > Task :app:mergeDebugJniLibFolders UP-TO-DATE
+> Task :app:mergeDebugNativeLibs UP-TO-DATE
+> Task :app:stripDebugDebugSymbols UP-TO-DATE
 > Task :app:validateSigningDebug UP-TO-DATE
 > Task :app:writeDebugAppMetadata UP-TO-DATE
 > Task :app:writeDebugSigningConfigVersions UP-TO-DATE
-> Task :shared:compileKotlin
-> Task :shared:compileJava NO-SOURCE
-> Task :shared:classes UP-TO-DATE
-> Task :shared:jar
-> Task :app:mergeDebugNativeLibs UP-TO-DATE
-> Task :app:stripDebugDebugSymbols UP-TO-DATE
-> Task :app:mergeLibDexDebug
-
 > Task :app:compileDebugKotlin
-w: file:///home/brett/Projects/homeschool-teacher/app/src/main/java/com/dividetask/homeschoolteacher/chess/ChessScreen.kt:248:46 Condition is always 'true'.
-
 > Task :app:compileDebugJavaWithJavac NO-SOURCE
 > Task :app:dexBuilderDebug
 > Task :app:mergeDebugGlobalSynthetics UP-TO-DATE
 > Task :app:processDebugJavaRes UP-TO-DATE
+> Task :app:mergeDebugJavaResource UP-TO-DATE
 > Task :app:mergeProjectDexDebug
-> Task :app:mergeDebugJavaResource
 > Task :app:packageDebug
 > Task :app:createDebugApkListingFileRedirect UP-TO-DATE
 > Task :app:assembleDebug
-w: Detected multiple Kotlin daemon sessions at 
 
-BUILD SUCCESSFUL in 15s
-37 actionable tasks: 8 executed, 29 up-to-date
+BUILD SUCCESSFUL in 2s
+37 actionable tasks: 4 executed, 33 up-to-date
