@@ -286,12 +286,15 @@ Each operand is zero-padded to `bits` digits. The operator is spelled
 out as the word `AND`, `OR`, or `XOR`. The answer slots fill
 left-to-right as the learner taps digits; while empty they render as `_`.
 
-A **cheat sheet** sits at the top of the screen showing the single-bit
-truth table for **the current operator only** — the four `a OP b = r`
-rows for `a, b ∈ {0, 1}`. When the problem's operator is AND it shows the
-AND rows; OR shows the OR rows; XOR shows the XOR rows. For Level 0 these
-four rows are every possible question; for Level 1 they are the per-column
-rule to apply to each of the three bits.
+A **Cheat sheet** button reveals a full-screen overlay of the single-bit
+truth table for **the current operator only** — the four `a OP b`
+combinations for `a, b ∈ {0, 1}`, each drawn in the **same stacked layout
+and size as the problem itself** (operands stacked, `₂` subscripts, rule
+line, result). AND shows the AND table; OR the OR table; XOR the XOR
+table. For Level 0 these four are every possible question; for Level 1
+they are the per-column rule for each of the three bits. Pressing the
+button again hides it; otherwise it auto-hides after 8 seconds (or on a
+tap). It resets to hidden on each new problem.
 
 **Answer surface:** Binary Keypad with `bits` slots.
 

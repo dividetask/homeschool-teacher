@@ -1,6 +1,7 @@
 package com.dividetask.homeschoolteacher.binary
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -71,51 +72,84 @@ fun BinaryOperationsScreen(
         }
     }
 
-    Column(
-        modifier = modifier
-            .fillMaxSize()
-            .padding(16.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(16.dp, Alignment.CenterVertically),
-    ) {
-        Row(horizontalArrangement = Arrangement.spacedBy(24.dp)) {
-            ScoreItem("Correct", state.correctCount, Color(0xFF22C55E))
-            ScoreItem("Wrong", state.wrongCount, Color(0xFFEF4444))
+    // The cheat sheet is hidden behind a button. Showing it starts an
+    // 8-second auto-hide; pressing the button again hides it early. Resets
+    // to hidden on each new problem.
+    var showCheat by remember(state.problem) { mutableStateOf(false) }
+    LaunchedEffect(showCheat) {
+        if (showCheat) {
+            delay(8000)
+            showCheat = false
+        }
+    }
+
+    Box(modifier = modifier.fillMaxSize()) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(16.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(16.dp, Alignment.CenterVertically),
+        ) {
+            Row(horizontalArrangement = Arrangement.spacedBy(24.dp)) {
+                ScoreItem("Correct", state.correctCount, Color(0xFF22C55E))
+                ScoreItem("Wrong", state.wrongCount, Color(0xFFEF4444))
+            }
+
+            Button(
+                onClick = { showCheat = !showCheat },
+                shape = RoundedCornerShape(14.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.secondary,
+                    contentColor = Color.White,
+                ),
+            ) {
+                Text(
+                    text = if (showCheat) "Hide cheat sheet" else "Cheat sheet",
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Bold,
+                )
+            }
+
+            BinaryEquation(
+                problem = problem,
+                input = state.answerInput,
+                feedback = state.feedback,
+            )
+
+            Text(
+                text = when (state.feedback) {
+                    BinaryFeedback.Correct -> "Correct!"
+                    BinaryFeedback.Wrong -> "Not quite — the answer was ${problem.answerBinary}₂"
+                    BinaryFeedback.Revealed -> "The answer was ${problem.answerBinary}₂"
+                    BinaryFeedback.None -> "${problem.operator.verbalName} — pick each binary digit"
+                },
+                fontSize = 16.sp,
+                color = when (state.feedback) {
+                    BinaryFeedback.Correct -> Color(0xFF22C55E)
+                    BinaryFeedback.Wrong -> Color(0xFFEF4444)
+                    BinaryFeedback.Revealed -> Color(0xFFFACC15)
+                    BinaryFeedback.None -> MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f)
+                },
+            )
+
+            BinaryKeypad(
+                inputEnabled = inputReady && state.feedback == BinaryFeedback.None,
+                canBack = state.answerInput.isNotEmpty(),
+                onDigit = viewModel::onDigit,
+                onBack = viewModel::onBack,
+            )
+
+            TextButton(onClick = viewModel::giveUp) {
+                Text("Give up", fontSize = 14.sp)
+            }
         }
 
-        CheatSheet(operator = problem.operator)
-
-        BinaryEquation(
-            problem = problem,
-            input = state.answerInput,
-            feedback = state.feedback,
-        )
-
-        Text(
-            text = when (state.feedback) {
-                BinaryFeedback.Correct -> "Correct!"
-                BinaryFeedback.Wrong -> "Not quite — the answer was ${problem.answerBinary}₂"
-                BinaryFeedback.Revealed -> "The answer was ${problem.answerBinary}₂"
-                BinaryFeedback.None -> "${problem.operator.verbalName} — pick each binary digit"
-            },
-            fontSize = 16.sp,
-            color = when (state.feedback) {
-                BinaryFeedback.Correct -> Color(0xFF22C55E)
-                BinaryFeedback.Wrong -> Color(0xFFEF4444)
-                BinaryFeedback.Revealed -> Color(0xFFFACC15)
-                BinaryFeedback.None -> MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f)
-            },
-        )
-
-        BinaryKeypad(
-            inputEnabled = inputReady && state.feedback == BinaryFeedback.None,
-            canBack = state.answerInput.isNotEmpty(),
-            onDigit = viewModel::onDigit,
-            onBack = viewModel::onBack,
-        )
-
-        TextButton(onClick = viewModel::giveUp) {
-            Text("Give up", fontSize = 14.sp)
+        if (showCheat) {
+            CheatSheetOverlay(
+                operator = problem.operator,
+                onDismiss = { showCheat = false },
+            )
         }
     }
 }
@@ -138,45 +172,55 @@ private fun ScoreItem(label: String, value: Int, color: Color) {
 }
 
 /**
- * Cheat sheet for the current operator only: the single-bit truth table
- * (0/1 × 0/1). For Level 0 (1-bit) this is literally every possible
- * question; for Level 1 (3-bit) it's the rule applied to each column.
+ * Full-screen cheat-sheet overlay for the current operator only: the
+ * single-bit truth table (0/1 × 0/1), each entry drawn in the same stacked
+ * layout and size as the problem itself. For Level 0 (1-bit) these are
+ * literally every possible question; for Level 1 (3-bit) they are the rule
+ * applied to each column. Tap anywhere to close.
  */
 @Composable
-private fun CheatSheet(operator: BinaryOperator) {
-    val combos = listOf(0 to 0, 0 to 1, 1 to 0, 1 to 1)
-    Column(
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(8.dp),
+private fun CheatSheetOverlay(operator: BinaryOperator, onDismiss: () -> Unit) {
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.background.copy(alpha = 0.97f))
+            .clickable(onClick = onDismiss),
+        contentAlignment = Alignment.Center,
     ) {
-        Text(
-            text = "${operator.verbalName} cheat sheet",
-            fontSize = 18.sp,
-            fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f),
-        )
-        combos.chunked(2).forEach { rowPairs ->
-            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                rowPairs.forEach { (a, b) ->
-                    Box(
-                        modifier = Modifier
-                            .background(
-                                MaterialTheme.colorScheme.surfaceVariant,
-                                shape = RoundedCornerShape(10.dp),
-                            )
-                            .padding(horizontal = 16.dp, vertical = 8.dp),
-                    ) {
-                        Text(
-                            text = "$a ${operator.verbalName} $b = ${operator.apply(a, b)}",
-                            fontFamily = FontFamily.Monospace,
-                            fontSize = 24.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                    }
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(20.dp),
+        ) {
+            Text(
+                text = "${operator.verbalName} cheat sheet — tap to close",
+                fontSize = 18.sp,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f),
+            )
+            listOf(listOf(0 to 0, 0 to 1), listOf(1 to 0, 1 to 1)).forEach { rowPairs ->
+                Row(horizontalArrangement = Arrangement.spacedBy(32.dp)) {
+                    rowPairs.forEach { (a, b) -> CheatSheetEntry(a, b, operator) }
                 }
             }
         }
+    }
+}
+
+/** One truth-table entry, stacked and sized exactly like the problem. */
+@Composable
+private fun CheatSheetEntry(op1: Int, op2: Int, operator: BinaryOperator) {
+    val onBg = MaterialTheme.colorScheme.onBackground
+    Column(horizontalAlignment = Alignment.End) {
+        BinaryLine(leading = "  ", digits = op1.toString(), color = onBg, subscript = true)
+        BinaryLine(leading = "${operator.verbalName} ", digits = op2.toString(), color = onBg, subscript = true)
+        Text(
+            text = "─".repeat(3),
+            fontFamily = FontFamily.Monospace,
+            fontSize = 40.sp,
+            fontWeight = FontWeight.Bold,
+            color = onBg,
+        )
+        BinaryLine(leading = "  ", digits = operator.apply(op1, op2).toString(), color = onBg, subscript = true)
     }
 }
 
