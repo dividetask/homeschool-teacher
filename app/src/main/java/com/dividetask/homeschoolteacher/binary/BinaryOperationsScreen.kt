@@ -1,6 +1,7 @@
 package com.dividetask.homeschoolteacher.binary
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -189,7 +190,7 @@ private fun CheatSheetOverlay(operator: BinaryOperator, onDismiss: () -> Unit) {
     ) {
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(20.dp),
+            verticalArrangement = Arrangement.spacedBy(28.dp),
         ) {
             Text(
                 text = "${operator.verbalName} cheat sheet — tap to close",
@@ -198,7 +199,7 @@ private fun CheatSheetOverlay(operator: BinaryOperator, onDismiss: () -> Unit) {
                 color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f),
             )
             listOf(listOf(0 to 0, 0 to 1), listOf(1 to 0, 1 to 1)).forEach { rowPairs ->
-                Row(horizontalArrangement = Arrangement.spacedBy(32.dp)) {
+                Row(horizontalArrangement = Arrangement.spacedBy(28.dp)) {
                     rowPairs.forEach { (a, b) -> CheatSheetEntry(a, b, operator) }
                 }
             }
@@ -206,21 +207,35 @@ private fun CheatSheetOverlay(operator: BinaryOperator, onDismiss: () -> Unit) {
     }
 }
 
-/** One truth-table entry, stacked and sized exactly like the problem. */
+/** One truth-table entry, boxed and stacked/sized exactly like the problem. */
 @Composable
 private fun CheatSheetEntry(op1: Int, op2: Int, operator: BinaryOperator) {
     val onBg = MaterialTheme.colorScheme.onBackground
-    Column(horizontalAlignment = Alignment.End) {
-        BinaryLine(leading = "  ", digits = op1.toString(), color = onBg, subscript = true)
-        BinaryLine(leading = "${operator.verbalName} ", digits = op2.toString(), color = onBg, subscript = true)
-        Text(
-            text = "─".repeat(3),
-            fontFamily = FontFamily.Monospace,
-            fontSize = 40.sp,
-            fontWeight = FontWeight.Bold,
-            color = onBg,
-        )
-        BinaryLine(leading = "  ", digits = operator.apply(op1, op2).toString(), color = onBg, subscript = true)
+    Box(
+        modifier = Modifier
+            .background(
+                MaterialTheme.colorScheme.surfaceVariant,
+                shape = RoundedCornerShape(12.dp),
+            )
+            .border(
+                width = 2.dp,
+                color = MaterialTheme.colorScheme.primary,
+                shape = RoundedCornerShape(12.dp),
+            )
+            .padding(horizontal = 20.dp, vertical = 14.dp),
+    ) {
+        Column(horizontalAlignment = Alignment.End) {
+            BinaryLine(leading = "  ", digits = op1.toString(), color = onBg, subscript = true)
+            BinaryLine(leading = "${operator.verbalName} ", digits = op2.toString(), color = onBg, subscript = true)
+            Text(
+                text = "─".repeat(3),
+                fontFamily = FontFamily.Monospace,
+                fontSize = 40.sp,
+                fontWeight = FontWeight.Bold,
+                color = onBg,
+            )
+            BinaryLine(leading = "  ", digits = operator.apply(op1, op2).toString(), color = onBg, subscript = true)
+        }
     }
 }
 

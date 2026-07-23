@@ -61,14 +61,24 @@ fun GameScreen(
             fontSize = 18.sp,
             color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.8f),
         )
-        Board(
-            state = state,
-            onCellTap = viewModel::onCellTapped,
-            modifier = Modifier
-                .fillMaxWidth()
-                .widthIn(max = 360.dp)
-                .aspectRatio(1f),
-        )
+        Row(
+            modifier = Modifier.fillMaxWidth().widthIn(max = 440.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            // Indicate which mark the learner is playing this game.
+            Text(
+                text = state.playerMark.name,
+                fontSize = 64.sp,
+                fontWeight = FontWeight.Bold,
+                color = markColor(state.playerMark),
+            )
+            Board(
+                state = state,
+                onCellTap = viewModel::onCellTapped,
+                modifier = Modifier.weight(1f).aspectRatio(1f),
+            )
+        }
         Button(
             onClick = { viewModel.newGame() },
             shape = RoundedCornerShape(50),
@@ -150,7 +160,21 @@ private fun Board(
                 }
             }
         }
+        // Draw a large line through the winning three cells on any win.
+        if (state.winningLine.isNotEmpty()) {
+            WinningLineOverlay(
+                line = state.winningLine,
+                color = markColor(state.winner),
+                modifier = Modifier.fillMaxSize(),
+            )
+        }
     }
+}
+
+private fun markColor(mark: Mark?): Color = when (mark) {
+    Mark.X -> Color(0xFF60A5FA)
+    Mark.O -> Color(0xFFF472B6)
+    null -> Color(0xFFFACC15)
 }
 
 @Composable

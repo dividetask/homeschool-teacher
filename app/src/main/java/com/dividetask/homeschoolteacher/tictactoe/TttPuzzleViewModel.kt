@@ -18,6 +18,8 @@ data class TttPuzzleState(
     val critical: Int,
     /** true = the learner has a winning move; false = they must block. */
     val isWin: Boolean,
+    /** The threatening three-in-a-row line (contains [critical]). */
+    val line: List<Int>,
     val feedback: TttPuzzleFeedback = TttPuzzleFeedback.None,
     val tapped: Int? = null,
     val streak: Int = 0,
@@ -98,6 +100,7 @@ class TttPuzzleViewModel : ViewModel() {
                 board = p.board,
                 critical = p.critical,
                 isWin = p.isWin,
+                line = p.line,
                 streak = streak,
                 correctCount = it.correctCount,
                 wrongCount = it.wrongCount,
@@ -107,10 +110,21 @@ class TttPuzzleViewModel : ViewModel() {
 
     private fun freshState(): TttPuzzleState {
         val p = buildPuzzle(Random)
-        return TttPuzzleState(board = p.board, critical = p.critical, isWin = p.isWin, streak = streak)
+        return TttPuzzleState(
+            board = p.board,
+            critical = p.critical,
+            isWin = p.isWin,
+            line = p.line,
+            streak = streak,
+        )
     }
 
-    private data class Puzzle(val board: List<Mark?>, val critical: Int, val isWin: Boolean)
+    private data class Puzzle(
+        val board: List<Mark?>,
+        val critical: Int,
+        val isWin: Boolean,
+        val line: List<Int>,
+    )
 
     /**
      * Build a valid win-or-block position: the threatening side has exactly
@@ -134,14 +148,14 @@ class TttPuzzleViewModel : ViewModel() {
             if (alreadyWon(list)) return@repeat
             if (winningMoves(list, threat) != listOf(critical)) return@repeat
             if (winningMoves(list, other).isNotEmpty()) return@repeat
-            return Puzzle(list, critical, isWin)
+            return Puzzle(list, critical, isWin, line)
         }
         // Deterministic fallback (should never be reached): O threatens the
         // top row (0,1,_); X must block at 2. X's pieces (3,7) form no threat.
         val fb = arrayOfNulls<Mark>(9)
         fb[0] = Mark.O; fb[1] = Mark.O
         fb[3] = Mark.X; fb[7] = Mark.X
-        return Puzzle(fb.toList(), critical = 2, isWin = false)
+        return Puzzle(fb.toList(), critical = 2, isWin = false, line = listOf(0, 1, 2))
     }
 
     private fun winningMoves(board: List<Mark?>, mark: Mark): List<Int> {

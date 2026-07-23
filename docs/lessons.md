@@ -207,15 +207,26 @@ number line is a counting aid, not the answer input).
 (Level 1 multiplication), as specified per lesson.
 
 ### Tic Tac Toe Board Screen
-Standard 3×3 board. The learner taps an empty cell to place their mark;
-the CPU then plays. Game ends on a win, draw, or loss. The CPU rule
-varies by lesson.
+Standard 3×3 board with a **large X or O to its left** showing which mark
+the learner is playing this game. The learner taps an empty cell to place
+their mark; the CPU then plays. Game ends on a win, draw, or loss. On any
+win a **large line is drawn through the three winning cells**.
 
 ### Tic Tac Toe Puzzle Screen
-Standard 3×3 board, but pre-filled with a single-move puzzle position and
-no CPU turn. The learner taps one empty cell; that resolves the puzzle
-(correct = the win or block, anything else = a loss), the correct/ wrong
-cells are outlined, and the next puzzle is dealt. Used by "Win or Block".
+Standard 3×3 board (large player X to its left), pre-filled with a
+single-move puzzle position and no CPU turn and no instruction text. The
+learner taps one empty cell:
+
+- **Correct win** — they complete three-in-a-row; the winning line is
+  drawn.
+- **Correct block** — they take the opponent's threatened cell; nobody
+  wins.
+- **Missed win** — the correct cell blinks a red X, then the winning line
+  they missed is drawn.
+- **Missed block** — the opponent moves into the threatened cell to punish
+  the mistake, then the winning line is drawn.
+
+Then the next puzzle is dealt. Used by "Win or Block".
 
 ### Chess Board Screen
 8×8 board with one player piece, a number of capturable pawns, a
@@ -541,8 +552,9 @@ over the next one.
   other side has no winning move. There is exactly one correct cell (the
   win or the block).
 - **Rules:** tapping the correct cell is a **Correct**; **any other tap is
-  a loss** (Wrong). After answering, the correct cell is outlined (green if
-  taken, yellow if missed) and a wrong tap is outlined red, then the next
+  a loss** (Wrong). The consequence is then shown (see Tic Tac Toe Puzzle
+  Screen: a missed win blinks the correct move red then draws the line; a
+  missed block lets the opponent complete their win) before the next
   puzzle appears.
 - **Variables:** `win_streak[0][WinOrBlock]`
 - **Pass criteria:** `win_streak >= 8` (eight correct in a row).

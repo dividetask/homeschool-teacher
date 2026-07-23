@@ -1,7 +1,12 @@
 package com.dividetask.homeschoolteacher.tictactoe
 
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -18,15 +23,25 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.coroutines.delay
+
+private val X_COLOR = Color(0xFF60A5FA)
+private val O_COLOR = Color(0xFFF472B6)
+private val MISS_COLOR = Color(0xFFEF4444)
 
 @Composable
 fun TttPuzzleScreen(
@@ -36,15 +51,50 @@ fun TttPuzzleScreen(
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
 
-    LaunchedEffect(state.feedback, state.board) {
-        val hold = when (state.feedback) {
-            TttPuzzleFeedback.None -> return@LaunchedEffect
-            TttPuzzleFeedback.Correct -> 1200L
-            TttPuzzleFeedback.Wrong -> 2200L
+    // Reveal state, reset for each new answer.
+    var oppRevealed by remember(state.tapped, state.feedback) { mutableStateOf(false) }
+    var lineShown by remember(state.tapped, state.feedback) { mutableStateOf(false) }
+
+    LaunchedEffect(state.tapped, state.feedback) {
+        when {
+            state.feedback == TttPuzzleFeedback.None -> return@LaunchedEffect
+            // Correct + winning move: the learner completes three in a row.
+            state.feedback == TttPuzzleFeedback.Correct && state.isWin -> {
+                delay(400); lineShown = true; delay(1600); onCompleted()
+            }
+            // Correct block: no one wins.
+            state.feedback == TttPuzzleFeedback.Correct -> {
+                delay(1100); onCompleted()
+            }
+            // Missed winning move: blink the correct move, then show the line.
+            state.isWin -> {
+                delay(1500); lineShown = true; delay(1100); onCompleted()
+            }
+            // Missed block: the opponent moves to punish, then the line shows.
+            else -> {
+                delay(700); oppRevealed = true; delay(400); lineShown = true
+                delay(1400); onCompleted()
+            }
         }
-        delay(hold)
-        onCompleted()
     }
+
+    // Blink animation for the missed winning move.
+    val blink = rememberInfiniteTransition(label = "blink")
+    val blinkAlpha by blink.animateFloat(
+        initialValue = 1f,
+        targetValue = 0.15f,
+        animationSpec = infiniteRepeatable(tween(400), RepeatMode.Reverse),
+        label = "blinkAlpha",
+    )
+    val showMissMark = state.feedback == TttPuzzleFeedback.Wrong && state.isWin
+
+    // The displayed board: add the opponent's punishing move once revealed.
+    val displayBoard = if (oppRevealed) {
+        state.board.toMutableList().also { it[state.critical] = Mark.O }
+    } else {
+        state.board
+    }
+    val lineColor = if (state.isWin) X_COLOR else O_COLOR
 
     Column(
         modifier = modifier
@@ -59,38 +109,35 @@ fun TttPuzzleScreen(
             ScoreItem("Wrong", state.wrongCount, Color(0xFFEF4444))
         }
 
-        Text(
-            text = "You are X. Win if you can — otherwise block O!",
-            fontSize = 16.sp,
-            color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.8f),
-        )
-
-        Board(
-            state = state,
-            onCellTap = viewModel::onCellTap,
-            modifier = Modifier
-                .fillMaxWidth()
-                .widthIn(max = 360.dp)
-                .aspectRatio(1f),
-        )
-
-        Text(
-            text = when (state.feedback) {
-                TttPuzzleFeedback.Correct -> if (state.isWin) "You win! 🎉" else "Blocked! 🛡️"
-                TttPuzzleFeedback.Wrong ->
-                    if (state.isWin) "That loses — the winning move is outlined"
-                    else "That loses — the block is outlined"
-                TttPuzzleFeedback.None -> " "
-            },
-            fontSize = 16.sp,
-            fontWeight = FontWeight.Bold,
-            color = when (state.feedback) {
-                TttPuzzleFeedback.Correct -> Color(0xFF22C55E)
-                TttPuzzleFeedback.Wrong -> Color(0xFFEF4444)
-                TttPuzzleFeedback.None -> Color.Transparent
-            },
-        )
+        Row(
+            modifier = Modifier.fillMaxWidth().widthIn(max = 440.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            // Player indicator: the learner is always X in the puzzle.
+            PlayerMark(Mark.X)
+            Board(
+                board = displayBoard,
+                enabled = state.feedback == TttPuzzleFeedback.None,
+                missCell = if (showMissMark) state.critical else null,
+                missAlpha = blinkAlpha,
+                winningLine = if (lineShown) state.line else emptyList(),
+                lineColor = lineColor,
+                onCellTap = viewModel::onCellTap,
+                modifier = Modifier.weight(1f).aspectRatio(1f),
+            )
+        }
     }
+}
+
+@Composable
+private fun PlayerMark(mark: Mark) {
+    Text(
+        text = mark.name,
+        fontSize = 64.sp,
+        fontWeight = FontWeight.Bold,
+        color = if (mark == Mark.X) X_COLOR else O_COLOR,
+    )
 }
 
 @Composable
@@ -112,11 +159,15 @@ private fun ScoreItem(label: String, value: Int, color: Color) {
 
 @Composable
 private fun Board(
-    state: TttPuzzleState,
+    board: List<Mark?>,
+    enabled: Boolean,
+    missCell: Int?,
+    missAlpha: Float,
+    winningLine: List<Int>,
+    lineColor: Color,
     onCellTap: (Int) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val answered = state.feedback != TttPuzzleFeedback.None
     Box(
         modifier = modifier
             .clip(RoundedCornerShape(16.dp))
@@ -134,20 +185,10 @@ private fun Board(
                 ) {
                     for (col in 0 until 3) {
                         val i = row * 3 + col
-                        // After answering, outline the critical cell (green if
-                        // they took it, yellow if they missed it) and flag a
-                        // wrong tap in red.
-                        val outline = when {
-                            !answered -> null
-                            i == state.critical && state.feedback == TttPuzzleFeedback.Correct -> Color(0xFF22C55E)
-                            i == state.critical -> Color(0xFFFACC15)
-                            i == state.tapped -> Color(0xFFEF4444)
-                            else -> null
-                        }
                         Cell(
-                            mark = state.board[i],
-                            outline = outline,
-                            enabled = !answered && state.board[i] == null,
+                            mark = board[i],
+                            missMark = if (i == missCell) missAlpha else null,
+                            enabled = enabled && board[i] == null,
                             onTap = { onCellTap(i) },
                             modifier = Modifier.weight(1f).fillMaxSize(),
                         )
@@ -155,39 +196,66 @@ private fun Board(
                 }
             }
         }
+        if (winningLine.size >= 2) {
+            WinningLineOverlay(
+                line = winningLine,
+                color = lineColor,
+                modifier = Modifier.fillMaxSize(),
+            )
+        }
     }
 }
 
 @Composable
 private fun Cell(
     mark: Mark?,
-    outline: Color?,
+    /** When non-null, draw a blinking red "missed move" X at [missMark] alpha. */
+    missMark: Float?,
     enabled: Boolean,
     onTap: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val markColor = when (mark) {
-        Mark.X -> Color(0xFF60A5FA)
-        Mark.O -> Color(0xFFF472B6)
+        Mark.X -> X_COLOR
+        Mark.O -> O_COLOR
         null -> Color.Transparent
     }
-    var box = modifier
-        .clip(RoundedCornerShape(12.dp))
-        .background(Color(0xFF374151))
-    if (outline != null) {
-        box = box.border(3.dp, outline, RoundedCornerShape(12.dp))
-    }
     Box(
-        modifier = box.clickable(enabled = enabled, onClick = onTap),
+        modifier = modifier
+            .clip(RoundedCornerShape(12.dp))
+            .background(Color(0xFF374151))
+            .clickable(enabled = enabled, onClick = onTap),
         contentAlignment = Alignment.Center,
     ) {
         if (mark != null) {
+            Text(text = mark.name, fontSize = 56.sp, fontWeight = FontWeight.Bold, color = markColor)
+        } else if (missMark != null) {
             Text(
-                text = mark.name,
+                text = "X",
                 fontSize = 56.sp,
                 fontWeight = FontWeight.Bold,
-                color = markColor,
+                color = MISS_COLOR,
+                modifier = Modifier.alpha(missMark),
             )
         }
+    }
+}
+
+/** Draws a thick line through the winning cells' centres. */
+@Composable
+internal fun WinningLineOverlay(line: List<Int>, color: Color, modifier: Modifier = Modifier) {
+    Canvas(modifier = modifier) {
+        fun center(idx: Int): Offset {
+            val r = idx / 3
+            val c = idx % 3
+            return Offset(size.width * (c + 0.5f) / 3f, size.height * (r + 0.5f) / 3f)
+        }
+        drawLine(
+            color = color,
+            start = center(line.first()),
+            end = center(line.last()),
+            strokeWidth = 18f,
+            cap = StrokeCap.Round,
+        )
     }
 }
