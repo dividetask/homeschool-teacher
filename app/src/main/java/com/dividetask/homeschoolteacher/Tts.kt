@@ -10,6 +10,10 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
 /**
@@ -49,6 +53,14 @@ object Tts {
     // utterance finished (or errored).
     private val pendingUtterances = ConcurrentHashMap<String, CompletableDeferred<Unit>>()
 
+    // For speakSequence(): utteranceId -> the word, so onStart can publish
+    // which word is currently being spoken (for UI highlighting).
+    private val utteranceWords = ConcurrentHashMap<String, String>()
+
+    private val _speakingWord = MutableStateFlow<String?>(null)
+    /** The word currently being spoken by [speakSequence], or null. */
+    val speakingWord: StateFlow<String?> = _speakingWord.asStateFlow()
+
     fun init(context: Context) {
         if (engine != null) return
         val app = context.applicationContext
@@ -57,18 +69,25 @@ object Tts {
                 val e = engine ?: return@TextToSpeech
                 e.language = Locale.US
                 e.setOnUtteranceProgressListener(object : UtteranceProgressListener() {
-                    override fun onStart(utteranceId: String) = Unit
+                    override fun onStart(utteranceId: String) {
+                        // Publish the word being spoken (null for the plain
+                        // speak()/speakAll() utterances that don't highlight).
+                        _speakingWord.value = utteranceWords[utteranceId]
+                    }
 
                     override fun onDone(utteranceId: String) {
+                        utteranceWords.remove(utteranceId)
                         pendingUtterances.remove(utteranceId)?.complete(Unit)
                     }
 
                     @Deprecated("Deprecated in Java")
                     override fun onError(utteranceId: String) {
+                        utteranceWords.remove(utteranceId)
                         pendingUtterances.remove(utteranceId)?.complete(Unit)
                     }
 
                     override fun onError(utteranceId: String, errorCode: Int) {
+                        utteranceWords.remove(utteranceId)
                         pendingUtterances.remove(utteranceId)?.complete(Unit)
                     }
                 })
@@ -94,6 +113,50 @@ object Tts {
         engine?.stop()
         pendingUtterances.values.forEach { it.complete(Unit) }
         pendingUtterances.clear()
+        utteranceWords.clear()
+        _speakingWord.value = null
+    }
+
+    /**
+     * Speak each word once at normal speed, in order, publishing the word
+     * currently being spoken via [speakingWord] so the UI can highlight it.
+     * Used by the Rhyming Words lessons.
+     */
+    fun speakSequence(words: List<String>) {
+        if (words.isEmpty()) return
+        if (!ready) {
+            pending = words.first()
+            return
+        }
+        currentSequence?.cancel()
+        _speakingWord.value = null
+        currentSequence = scope.launch {
+            val e = engine ?: return@launch
+            e.stop()
+            pendingUtterances.values.forEach { it.complete(Unit) }
+            pendingUtterances.clear()
+            utteranceWords.clear()
+            delay(POST_STOP_SETTLE_MS)
+            e.setSpeechRate(1.0f)
+
+            words.forEachIndexed { i, word ->
+                val id = "homeschool-tts-hl-${System.nanoTime()}-$i"
+                val completion = CompletableDeferred<Unit>()
+                pendingUtterances[id] = completion
+                utteranceWords[id] = word
+                val mode = if (i == 0) TextToSpeech.QUEUE_FLUSH else TextToSpeech.QUEUE_ADD
+                val result = e.speak(word, mode, null, id)
+                if (result != TextToSpeech.SUCCESS) {
+                    pendingUtterances.remove(id)
+                    utteranceWords.remove(id)
+                    return@forEachIndexed
+                }
+                completion.await()
+                _speakingWord.value = null
+                if (i < words.size - 1) delay(400L)
+            }
+            _speakingWord.value = null
+        }
     }
 
     fun speak(text: String) {

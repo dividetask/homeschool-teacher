@@ -24,10 +24,13 @@ data class PhonemesState(
     val wrongCount: Int = 0,
 )
 
+/** A run of this many correct in a row passes the lesson outright. */
+private const val RUN_TARGET = 8
+
 class PhonemesViewModel : ViewModel() {
 
     private val streakMap: MutableMap<String, Int> = Phonemes.all
-        .associateWith { Storage.loadPhonemeWordStreak(it) }
+        .associateWith { Storage.loadWinStreak("Phonemes0.$it") }
         .toMutableMap()
 
     private val _streaks = MutableStateFlow(streakMap.toMap())
@@ -35,6 +38,9 @@ class PhonemesViewModel : ViewModel() {
 
     private val _passed = MutableStateFlow(Storage.loadLessonPassed(LessonId.Phonemes0))
     val passed: StateFlow<Boolean> = _passed.asStateFlow()
+
+    // Consecutive-correct run; reaching RUN_TARGET passes the lesson.
+    private var runStreak: Int = Storage.loadWinStreak("run.Phonemes0")
 
     private val _state: MutableStateFlow<PhonemesState>
     val state: StateFlow<PhonemesState>
@@ -59,7 +65,7 @@ class PhonemesViewModel : ViewModel() {
     fun setPassed(value: Boolean) {
         _passed.value = value
         Storage.saveLessonPassed(LessonId.Phonemes0, value)
-        Storage.saveLessonManualOverride(LessonId.Phonemes0, true)
+        Storage.saveLessonManualOverride(LessonId.Phonemes0, value)
     }
 
     fun onAnswer(letter: Char) {
@@ -71,9 +77,11 @@ class PhonemesViewModel : ViewModel() {
         problem.words.forEach { word ->
             val newValue = if (correct) (streakMap[word] ?: 0) + 1 else 0
             streakMap[word] = newValue
-            Storage.savePhonemeWordStreak(word, newValue)
+            Storage.saveWinStreak("Phonemes0.$word", newValue)
         }
         _streaks.value = streakMap.toMap()
+        runStreak = if (correct) runStreak + 1 else 0
+        Storage.saveWinStreak("run.Phonemes0", runStreak)
         evaluatePassedFlag()
         _state.update {
             it.copy(
@@ -93,9 +101,11 @@ class PhonemesViewModel : ViewModel() {
         // Same "reset all three" penalty as a wrong answer.
         current.problem.words.forEach { word ->
             streakMap[word] = 0
-            Storage.savePhonemeWordStreak(word, 0)
+            Storage.saveWinStreak("Phonemes0.$word", 0)
         }
         _streaks.value = streakMap.toMap()
+        runStreak = 0
+        Storage.saveWinStreak("run.Phonemes0", 0)
         _state.update {
             it.copy(
                 feedback = PhonemesFeedback.Revealed,
@@ -121,7 +131,7 @@ class PhonemesViewModel : ViewModel() {
         val pool = Phonemes.all
         if (pool.isEmpty()) return
         val mastered = pool.all { (streakMap[it] ?: 0) >= 2 }
-        if (mastered && !_passed.value) {
+        if ((mastered || runStreak >= RUN_TARGET) && !_passed.value) {
             _passed.value = true
             Storage.saveLessonPassed(LessonId.Phonemes0, true)
         }

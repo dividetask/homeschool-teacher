@@ -36,6 +36,8 @@ homeschoolteacher/
 ├── Storage.kt               Thin wrapper over SharedPreferences. All
 │                            persistence flows through here.
 ├── Tts.kt                   Text-to-speech singleton (Android TTS).
+├── ClipPlayer.kt            Bundled-audio-clip player (MediaPlayer),
+│                            used by Letter Sounds to play word clips.
 ├── lesson/
 │   └── LessonSelector.kt    The orchestrator. Knows which lesson is
 │                            active, decides what's next. (The lesson
@@ -43,9 +45,10 @@ homeschoolteacher/
 ├── ui/
 │   ├── HomeschoolTeacherApp.kt   Top-level composable. Drawer, top
 │   │                             bar, dispatch to the right screen.
-│   ├── ProficiencyBar.kt    The "Games X  Math X  Reading X" header.
-│   ├── ProgressScreen.kt    Debug/inspection screen + manual
-│   │                        lock/unlock switches.
+│   ├── ProficiencyBar.kt    Passed-count-per-category header. No longer
+│   │                        rendered (kept for reference).
+│   ├── ProgressScreen.kt    Debug/inspection screen + per-lesson
+│   │                        "Unlocked" and "Passed" switches.
 │   └── theme/Theme.kt       Material3 color scheme.
 ├── tictactoe/               Lessons: TicTacToe0, TicTacToe1
 │   ├── GameViewModel.kt     Runs whichever TTT lesson is active.
@@ -62,11 +65,14 @@ homeschoolteacher/
 ├── binary/                  Lessons: BinaryOps0, BinaryOps1
 │   ├── BinaryOperationsViewModel.kt
 │   └── BinaryOperationsScreen.kt
-├── multiplication/          Lesson: CountingMultiplication0
-│   ├── CountingMultiplicationViewModel.kt
-│   └── CountingMultiplicationScreen.kt
-└── reading/                 Lessons: Phonemes0, Reading0,
-    ├── Phonemes.kt          SightWords0/1, RhymingWords0
+├── multiplication/          Lessons: CountingMultiplication0/1
+│   ├── CountingMultiplicationViewModel.kt / CountingMultiplicationScreen.kt
+│   └── MultiplicationOperandsViewModel.kt / MultiplicationOperandsScreen.kt
+│                            (Level 1: pick the two operands)
+└── reading/                 Lessons: LetterSounds0, Phonemes0,
+    ├── LetterSounds.kt      Reading0, SightWords0/1, RhymingWords0
+    ├── LetterSoundsViewModel.kt / LetterSoundsScreen.kt
+    ├── Phonemes.kt
     ├── PhonemesViewModel.kt / PhonemesScreen.kt
     ├── ReadingViewModel.kt / ReadingScreen.kt
     ├── SightWords.kt / SightWordsViewModel.kt / SightWordsScreen.kt
@@ -95,7 +101,7 @@ enum class LessonId {
     CountingSubtraction0, HorizontalSubtraction0,
     VerticalSubtraction0, NumberLineSubtraction0,
     CountingMultiplication0,
-    Phonemes0, Reading0, SightWords0, SightWords1, RhymingWords0,
+    LetterSounds0, Phonemes0, Reading0, SightWords0, SightWords1, RhymingWords0,
 }
 
 data class LessonDefinition(
@@ -186,6 +192,8 @@ math.startLesson(id)           // MathPictures, Math0, HorizontalAddition0,
                                // VerticalSubtraction0, NumberLineSubtraction0
 binary.startLesson(id)         // BinaryOps0 / BinaryOps1
 multiplication.startLesson()   // CountingMultiplication0
+multiplicationOperands.startLesson() // CountingMultiplication1
+letterSounds.startLesson()     // LetterSounds0
 phonemes.startLesson()         // Phonemes0
 reading.startLesson()          // Reading0
 sightWords.startLesson(id)     // SightWords0 / SightWords1
@@ -239,48 +247,73 @@ All persisted state lives in one `SharedPreferences` file named
 `homeschool_teacher`. Keys are namespaced:
 
 - `lesson.<LessonId>.passed`         — sticky boolean per lesson.
-- `lesson.<LessonId>.manualOverride` — legacy. Set in older builds when
-                                        the Progress switch was flipped;
-                                        no longer written but still
-                                        loaded if present.
-- `lesson.<LessonId>.manualUnlock`   — Progress-screen Switch flips
-                                        this. When true, the lesson is
-                                        listed as unlocked regardless of
-                                        whether its parents are passed.
+- `lesson.<LessonId>.manualOverride` — set to match the Progress
+                                        "Passed" switch. When true, the
+                                        VM's auto-evaluation will not
+                                        change the passed flag (the value
+                                        is pinned by hand). Flipping
+                                        "Passed" off clears it so the
+                                        lesson can be earned normally
+                                        again.
+- `lesson.<LessonId>.manualUnlock`   — Progress-screen "Unlocked" Switch
+                                        flips this. When true, the lesson
+                                        is listed as unlocked regardless
+                                        of whether its parents are passed.
                                         Does not mark the lesson as
                                         passed.
-- `ttt.streak.<LessonId>`            — non-loss streak per TTT lesson.
+- `win_streak.<key>`                 — THE single streak store. Every
+                                        consecutive-correct / non-loss
+                                        streak lives here under one
+                                        namespace; `<key>` is the
+                                        `LessonId` (games & math), or
+                                        `<LessonId>.<letter|word|...>` for
+                                        the per-item reading lessons
+                                        (`SightWords.<word>.<pos>` is shared
+                                        by both Sight Words levels;
+                                        `LetterSounds0.run` is the across-
+                                        letters run). Every lesson also
+                                        keeps a `run.<LessonId>`
+                                        consecutive-correct run here — the
+                                        universal fast-path streak (see
+                                        "Universal win-streak pass" below).
+                                        Set/save through
+                                        `Storage.loadWinStreak/saveWinStreak`.
 - `ttt.{player|cpu|draw}Score`       — aggregate scoreboard.
-- `math.streak.<x>.<y>`              — 16×16 cell grid shared by every
-                                        addition variant (Counting,
-                                        Vertical, Horizontal, Number
-                                        Line) at both difficulty levels.
-- `math.lessonstreak.<LessonId>`     — per-lesson consecutive-correct
-                                        streak. Cells alone aren't
-                                        enough to pass a math lesson:
-                                        each variant must independently
-                                        hit 8 in a row in its own screen.
+- `math.streak.<x>.<y>`              — 16×16 addition cell *grid* (a
+                                        coverage map, NOT a win streak),
+                                        shared by every addition variant
+                                        (Counting, Vertical, Horizontal,
+                                        Number Line) at both difficulties.
 - `math.{correct|wrong}`             — lifetime counters.
-- `subtraction.streak.<x>.<y>`       — 16×16 cell grid shared by every
-                                        subtraction variant (cells track
-                                        op1 − op2 correctness).
-- `binary.streak.<lvl>.<op>.<a>.<b>` — binary AND/OR/XOR streak cells.
+- `subtraction.streak.<x>.<y>`       — 16×16 subtraction cell grid (shared
+                                        by every subtraction variant).
+- `binary.streak.<lvl>.<op>.<a>.<b>` — binary AND/OR/XOR coverage grid.
 - `binary.{correct|wrong}`           — lifetime counters.
-- `multiplication.streak.<a>.<b>`    — counting-multiplication grid.
+- `multiplication.streak.<a>.<b>`    — counting-multiplication (product)
+                                        coverage grid (Level 0).
 - `multiplication.{correct|wrong}`   — lifetime counters.
-- `phonemes.streak.<word>`           — per-word phoneme streak.
+- `multoperands.streak.<a>.<b>`      — Level 1 "identify the operands"
+                                        coverage grid (op1, op2 ∈ 1..4).
+- `multoperands.{correct|wrong}`     — lifetime counters.
+- `multgrid.streak.<a>.<b>`          — product-coverage grid for the
+                                        Horizontal / Vertical / Number Line
+                                        multiplication screens (shared by
+                                        all three; lives in MathViewModel).
+- `lettersounds.{correct|wrong}`     — lifetime counters.
 - `phonemes.{correct|wrong}`         — lifetime counters.
-- `reading.streak.<letter>`          — per-animal streak.
 - `reading.{correct|wrong}`          — lifetime counters.
-- `sightwords.streak.<word>.<pos>`   — per-(word, position) streak.
 - `sightwords.{correct|wrong}`       — lifetime counters.
-- `rhymingwords.streak.<word>`       — per-word streak.
 - `rhymingwords.{correct|wrong}`     — lifetime counters.
-- `chess.streak.<LessonId>`          — per-lesson correct-move streak
-                                        (Chess0..Chess3).
 - `chess.{correct|wrong}`            — lifetime counters (shared across
                                         all chess levels).
-- `migration.v2` / `migration.v3`    — one-shot migration sentinels.
+- `migration.v2` … `migration.v5`    — one-shot migration sentinels. `v4`
+                                        auto-passes Letter Sounds 0 for
+                                        users who already reached Phonemes;
+                                        `v5` folds every old per-feature
+                                        streak key (`ttt.streak.*`,
+                                        `chess.streak.*`,
+                                        `math.lessonstreak.*`, the reading
+                                        streaks, …) into `win_streak.*`.
 
 When a runner mutates state, it writes to storage inline (no debouncing
 or batching — SharedPreferences `apply()` is cheap). When a runner is
@@ -291,6 +324,29 @@ process resumes exactly where the previous one left off.
 upgrade: it derives `lesson.*.passed` flags from any older `ttt.level`
 and the math streak grid, and routes the legacy `ttt.nonLossStreak`
 into the right per-lesson slot.
+
+## Universal win-streak pass
+
+Every lesson passes when **either** its original mastery condition is
+met **or** a run of `RUN_TARGET = 8` correct-in-a-row is reached — the
+fast path for a learner who already knows the material and shouldn't
+have to grind every cell/word/letter. The mechanism Tic Tac Toe always
+used (a non-loss streak) is now shared by all categories:
+
+- Each runner VM keeps a `runStreak` (single-lesson VMs) or a
+  `runStreaks: Map<LessonId, Int>` (multi-lesson VMs), loaded from and
+  saved to `win_streak.run.<LessonId>`.
+- It increments on a correct answer and resets to 0 on a wrong answer
+  or "Give up", right before `evaluatePassedFlag(s)`.
+- `evaluatePassedFlag(s)` ORs `runStreak >= RUN_TARGET` into the
+  existing pass check. Math keeps its own `LESSON_STREAK_TARGET = 4`
+  gate as the "other condition"; Letter Sounds, which previously
+  required run **AND** every-letter mastery, now passes on **either**.
+- Games (TTT, Chess) already passed at streak ≥ 8, so they were left
+  unchanged.
+
+A learner can also be passed by hand from the Progress screen (see the
+"Passed" switch below), which pins the flag via `manualOverride`.
 
 ## Config (`AppConfig.kt` + `config.yaml`)
 
@@ -324,8 +380,6 @@ accepted for backwards compatibility.
   list is taller than most screens.
 - A `TopAppBar` whose title is the current lesson's `title` (or
   "Progress" when in Progress mode).
-- The `ProficiencyBar` row, which shows the count of passed lessons in
-  each category.
 - The active screen dispatched off `currentLesson` — one `when`
   branch per runner (TTT, Chess, Math, Binary, Multiplication,
   Phonemes, Animals, Sight Words, Rhyming Words).
@@ -343,6 +397,14 @@ the vertical stack. All answers are single-tap on a numeric grid
 sized to the lesson's max possible sum. The Binary screen uses a
 0/1/Back keypad that auto-submits when all bits are entered.
 
+`ProgressScreen` renders one `LessonSection` per lesson, each with two
+switches on the right (`LabeledSwitch`): **Unlocked** (drives
+`setManualUnlock`; disabled for entry-level lessons that are always
+available) and **Passed** (drives `setPassed`, always enabled). Marking
+Passed pins the flag by hand; clearing it lets the lesson be earned
+normally again. Both toggles round-trip through `LessonSelector`, which
+fans out to the owning runner VM.
+
 ## How to add a new lesson
 
 1. Add a new entry to `LessonId` and to the list in `Lessons`. Set
@@ -351,6 +413,9 @@ sized to the lesson's max possible sum. The Binary screen uses a
    - **Existing runner**: add a branch in `startLesson(id)` and in any
      behavior that varies (problem range, AI level, UI mode). Track
      a new `streak` and `passed` flow per lesson where appropriate.
+     Add a `run.<LessonId>` win-streak so the universal 8-in-a-row
+     fast path passes the lesson (increment on correct, reset on wrong
+     / give-up, OR it into `evaluatePassedFlag`).
    - **New category / new runner**: create a new feature package with
      `XViewModel`, `XScreen`, and any pure-logic file. Add storage
      keys to `Storage.kt`. Add a `when` branch in

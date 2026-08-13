@@ -8,12 +8,16 @@ import com.dividetask.homeschoolteacher.Storage
 import com.dividetask.homeschoolteacher.binary.BinaryOperationsViewModel
 import com.dividetask.homeschoolteacher.chess.ChessViewModel
 import com.dividetask.homeschoolteacher.multiplication.CountingMultiplicationViewModel
+import com.dividetask.homeschoolteacher.multiplication.MultiplicationOperandsViewModel
 import com.dividetask.homeschoolteacher.math.MathViewModel
+import com.dividetask.homeschoolteacher.reading.LetterSoundsViewModel
 import com.dividetask.homeschoolteacher.reading.PhonemesViewModel
+import com.dividetask.homeschoolteacher.reading.PositionWordsViewModel
 import com.dividetask.homeschoolteacher.reading.ReadingViewModel
 import com.dividetask.homeschoolteacher.reading.RhymingWordsViewModel
 import com.dividetask.homeschoolteacher.reading.SightWordsViewModel
 import com.dividetask.homeschoolteacher.tictactoe.GameViewModel
+import com.dividetask.homeschoolteacher.tictactoe.TttPuzzleViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -30,14 +34,18 @@ enum class SelectionMode {
 
 class LessonSelector(
     private val ttt: GameViewModel,
+    private val tttPuzzle: TttPuzzleViewModel,
     private val chess: ChessViewModel,
     private val math: MathViewModel,
     private val binary: BinaryOperationsViewModel,
     private val multiplication: CountingMultiplicationViewModel,
+    private val multiplicationOperands: MultiplicationOperandsViewModel,
+    private val letterSounds: LetterSoundsViewModel,
     private val phonemes: PhonemesViewModel,
     private val reading: ReadingViewModel,
     private val sightWords: SightWordsViewModel,
     private val rhymingWords: RhymingWordsViewModel,
+    private val positionWords: PositionWordsViewModel,
 ) : ViewModel() {
 
     private val _mode = MutableStateFlow(SelectionMode.Random)
@@ -53,6 +61,7 @@ class LessonSelector(
      */
     private val orderedLessons: List<LessonId> = listOf(
         LessonId.TicTacToe0,
+        LessonId.TicTacToeWinBlock,
         LessonId.TicTacToe1,
         LessonId.TicTacToe2,
         LessonId.Chess0,
@@ -74,27 +83,48 @@ class LessonSelector(
         LessonId.VerticalSubtraction0,
         LessonId.NumberLineSubtraction0,
         LessonId.CountingMultiplication0,
+        LessonId.CountingMultiplication1,
+        LessonId.HorizontalMultiplication0,
+        LessonId.VerticalMultiplication0,
+        LessonId.NumberLineMultiplication0,
+        LessonId.HorizontalMultiplication1,
+        LessonId.VerticalMultiplication1,
+        LessonId.NumberLineMultiplication1,
+        LessonId.LetterSounds0,
         LessonId.Phonemes0,
         LessonId.Reading0,
         LessonId.SightWords0,
         LessonId.SightWords1,
         LessonId.RhymingWords0,
+        LessonId.RhymingWords1,
+        LessonId.PositionWords0,
+        LessonId.PositionWords1,
+        LessonId.PositionWords2,
     )
 
     private fun passedFlowFor(id: LessonId): StateFlow<Boolean> = when (id) {
         LessonId.TicTacToe0, LessonId.TicTacToe1, LessonId.TicTacToe2 -> ttt.passed(id)
+        LessonId.TicTacToeWinBlock -> tttPuzzle.passed
         LessonId.Chess0, LessonId.Chess1, LessonId.Chess2, LessonId.Chess3 -> chess.passed(id)
         LessonId.MathPictures, LessonId.Math0, LessonId.HorizontalAddition0,
         LessonId.NumberLineAddition0, LessonId.CountingAddition1, LessonId.Math1,
         LessonId.HorizontalAddition1, LessonId.MathNumberLine,
         LessonId.CountingSubtraction0, LessonId.HorizontalSubtraction0,
-        LessonId.VerticalSubtraction0, LessonId.NumberLineSubtraction0 -> math.passed(id)
+        LessonId.VerticalSubtraction0, LessonId.NumberLineSubtraction0,
+        LessonId.HorizontalMultiplication0, LessonId.VerticalMultiplication0,
+        LessonId.NumberLineMultiplication0,
+        LessonId.HorizontalMultiplication1, LessonId.VerticalMultiplication1,
+        LessonId.NumberLineMultiplication1 -> math.passed(id)
         LessonId.BinaryOps0, LessonId.BinaryOps1 -> binary.passed(id)
         LessonId.CountingMultiplication0 -> multiplication.passed
+        LessonId.CountingMultiplication1 -> multiplicationOperands.passed
+        LessonId.LetterSounds0 -> letterSounds.passed
         LessonId.Phonemes0 -> phonemes.passed
         LessonId.Reading0 -> reading.passed
         LessonId.SightWords0, LessonId.SightWords1 -> sightWords.passed(id)
-        LessonId.RhymingWords0 -> rhymingWords.passed
+        LessonId.RhymingWords0, LessonId.RhymingWords1 -> rhymingWords.passed(id)
+        LessonId.PositionWords0, LessonId.PositionWords1,
+        LessonId.PositionWords2 -> positionWords.passed(id)
     }
 
     val passedMap: StateFlow<Map<LessonId, Boolean>> = combine(
@@ -186,6 +216,7 @@ class LessonSelector(
             LessonId.TicTacToe0,
             LessonId.TicTacToe1,
             LessonId.TicTacToe2 -> ttt.startLesson(id)
+            LessonId.TicTacToeWinBlock -> tttPuzzle.startLesson()
             LessonId.Chess0,
             LessonId.Chess1,
             LessonId.Chess2,
@@ -201,13 +232,23 @@ class LessonSelector(
             LessonId.CountingSubtraction0,
             LessonId.HorizontalSubtraction0,
             LessonId.VerticalSubtraction0,
-            LessonId.NumberLineSubtraction0 -> math.startLesson(id)
+            LessonId.NumberLineSubtraction0,
+            LessonId.HorizontalMultiplication0,
+            LessonId.VerticalMultiplication0,
+            LessonId.NumberLineMultiplication0,
+            LessonId.HorizontalMultiplication1,
+            LessonId.VerticalMultiplication1,
+            LessonId.NumberLineMultiplication1 -> math.startLesson(id)
             LessonId.BinaryOps0, LessonId.BinaryOps1 -> binary.startLesson(id)
             LessonId.CountingMultiplication0 -> multiplication.startLesson()
+            LessonId.CountingMultiplication1 -> multiplicationOperands.startLesson()
+            LessonId.LetterSounds0 -> letterSounds.startLesson()
             LessonId.Phonemes0 -> phonemes.startLesson()
             LessonId.Reading0 -> reading.startLesson()
             LessonId.SightWords0, LessonId.SightWords1 -> sightWords.startLesson(id)
-            LessonId.RhymingWords0 -> rhymingWords.startLesson()
+            LessonId.RhymingWords0, LessonId.RhymingWords1 -> rhymingWords.startLesson(id)
+            LessonId.PositionWords0, LessonId.PositionWords1,
+            LessonId.PositionWords2 -> positionWords.startLesson(id)
         }
     }
 
@@ -216,6 +257,7 @@ class LessonSelector(
             LessonId.TicTacToe0,
             LessonId.TicTacToe1,
             LessonId.TicTacToe2 -> ttt.setPassed(id, value)
+            LessonId.TicTacToeWinBlock -> tttPuzzle.setPassed(value)
             LessonId.Chess0,
             LessonId.Chess1,
             LessonId.Chess2,
@@ -231,30 +273,44 @@ class LessonSelector(
             LessonId.CountingSubtraction0,
             LessonId.HorizontalSubtraction0,
             LessonId.VerticalSubtraction0,
-            LessonId.NumberLineSubtraction0 -> math.setPassed(id, value)
+            LessonId.NumberLineSubtraction0,
+            LessonId.HorizontalMultiplication0,
+            LessonId.VerticalMultiplication0,
+            LessonId.NumberLineMultiplication0,
+            LessonId.HorizontalMultiplication1,
+            LessonId.VerticalMultiplication1,
+            LessonId.NumberLineMultiplication1 -> math.setPassed(id, value)
             LessonId.BinaryOps0, LessonId.BinaryOps1 -> binary.setPassed(id, value)
             LessonId.CountingMultiplication0 -> multiplication.setPassed(value)
+            LessonId.CountingMultiplication1 -> multiplicationOperands.setPassed(value)
+            LessonId.LetterSounds0 -> letterSounds.setPassed(value)
             LessonId.Phonemes0 -> phonemes.setPassed(value)
             LessonId.Reading0 -> reading.setPassed(value)
             LessonId.SightWords0, LessonId.SightWords1 -> sightWords.setPassed(id, value)
-            LessonId.RhymingWords0 -> rhymingWords.setPassed(value)
+            LessonId.RhymingWords0, LessonId.RhymingWords1 -> rhymingWords.setPassed(id, value)
+            LessonId.PositionWords0, LessonId.PositionWords1,
+            LessonId.PositionWords2 -> positionWords.setPassed(id, value)
         }
     }
 }
 
 class LessonSelectorFactory(
     private val ttt: GameViewModel,
+    private val tttPuzzle: TttPuzzleViewModel,
     private val chess: ChessViewModel,
     private val math: MathViewModel,
     private val binary: BinaryOperationsViewModel,
     private val multiplication: CountingMultiplicationViewModel,
+    private val multiplicationOperands: MultiplicationOperandsViewModel,
+    private val letterSounds: LetterSoundsViewModel,
     private val phonemes: PhonemesViewModel,
     private val reading: ReadingViewModel,
     private val sightWords: SightWordsViewModel,
     private val rhymingWords: RhymingWordsViewModel,
+    private val positionWords: PositionWordsViewModel,
 ) : ViewModelProvider.Factory {
     @Suppress("UNCHECKED_CAST")
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
-        return LessonSelector(ttt, chess, math, binary, multiplication, phonemes, reading, sightWords, rhymingWords) as T
+        return LessonSelector(ttt, tttPuzzle, chess, math, binary, multiplication, multiplicationOperands, letterSounds, phonemes, reading, sightWords, rhymingWords, positionWords) as T
     }
 }

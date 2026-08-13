@@ -44,8 +44,9 @@ import com.dividetask.homeschoolteacher.binary.BinaryOperationsViewModel
 import com.dividetask.homeschoolteacher.chess.ChessScreen
 import com.dividetask.homeschoolteacher.multiplication.CountingMultiplicationScreen
 import com.dividetask.homeschoolteacher.multiplication.CountingMultiplicationViewModel
+import com.dividetask.homeschoolteacher.multiplication.MultiplicationOperandsScreen
+import com.dividetask.homeschoolteacher.multiplication.MultiplicationOperandsViewModel
 import com.dividetask.homeschoolteacher.chess.ChessViewModel
-import com.dividetask.homeschoolteacher.lesson.Category
 import com.dividetask.homeschoolteacher.lesson.LessonId
 import com.dividetask.homeschoolteacher.lesson.LessonSelector
 import com.dividetask.homeschoolteacher.lesson.LessonSelectorFactory
@@ -53,8 +54,12 @@ import com.dividetask.homeschoolteacher.lesson.Lessons
 import com.dividetask.homeschoolteacher.lesson.SelectionMode
 import com.dividetask.homeschoolteacher.math.MathScreen
 import com.dividetask.homeschoolteacher.math.MathViewModel
+import com.dividetask.homeschoolteacher.reading.LetterSoundsScreen
+import com.dividetask.homeschoolteacher.reading.LetterSoundsViewModel
 import com.dividetask.homeschoolteacher.reading.PhonemesScreen
 import com.dividetask.homeschoolteacher.reading.PhonemesViewModel
+import com.dividetask.homeschoolteacher.reading.PositionWordsScreen
+import com.dividetask.homeschoolteacher.reading.PositionWordsViewModel
 import com.dividetask.homeschoolteacher.reading.ReadingScreen
 import com.dividetask.homeschoolteacher.reading.ReadingViewModel
 import com.dividetask.homeschoolteacher.reading.RhymingWordsScreen
@@ -63,6 +68,8 @@ import com.dividetask.homeschoolteacher.reading.SightWordsScreen
 import com.dividetask.homeschoolteacher.reading.SightWordsViewModel
 import com.dividetask.homeschoolteacher.tictactoe.GameScreen
 import com.dividetask.homeschoolteacher.tictactoe.GameViewModel
+import com.dividetask.homeschoolteacher.tictactoe.TttPuzzleScreen
+import com.dividetask.homeschoolteacher.tictactoe.TttPuzzleViewModel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
@@ -70,28 +77,26 @@ import kotlinx.coroutines.launch
 @Composable
 fun HomeschoolTeacherApp() {
     val game: GameViewModel = viewModel()
+    val tttPuzzle: TttPuzzleViewModel = viewModel()
     val chess: ChessViewModel = viewModel()
     val math: MathViewModel = viewModel()
     val binary: BinaryOperationsViewModel = viewModel()
     val multiplication: CountingMultiplicationViewModel = viewModel()
+    val multiplicationOperands: MultiplicationOperandsViewModel = viewModel()
+    val letterSounds: LetterSoundsViewModel = viewModel()
     val phonemes: PhonemesViewModel = viewModel()
     val reading: ReadingViewModel = viewModel()
     val sightWords: SightWordsViewModel = viewModel()
     val rhymingWords: RhymingWordsViewModel = viewModel()
+    val positionWords: PositionWordsViewModel = viewModel()
     val selector: LessonSelector = viewModel(
-        factory = LessonSelectorFactory(game, chess, math, binary, multiplication, phonemes, reading, sightWords, rhymingWords),
+        factory = LessonSelectorFactory(game, tttPuzzle, chess, math, binary, multiplication, multiplicationOperands, letterSounds, phonemes, reading, sightWords, rhymingWords, positionWords),
     )
 
     val mode by selector.mode.collectAsStateWithLifecycle()
     val current by selector.currentLesson.collectAsStateWithLifecycle()
     val passed by selector.passedMap.collectAsStateWithLifecycle()
     val manualUnlock by selector.manualUnlockMap.collectAsStateWithLifecycle()
-
-    val proficiency = Proficiency(
-        games = countPassed(passed, Category.Game),
-        math = countPassed(passed, Category.Math),
-        reading = countPassed(passed, Category.Reading),
-    )
 
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     val scope = rememberCoroutineScope()
@@ -179,21 +184,25 @@ fun HomeschoolTeacherApp() {
             modifier = Modifier.fillMaxSize(),
         ) { padding ->
             Column(modifier = Modifier.padding(padding).fillMaxSize()) {
-                ProficiencyBar(proficiency)
                 if (mode == SelectionMode.Progress) {
                     ProgressScreen(
                         game = game,
+                        tttPuzzle = tttPuzzle,
                         math = math,
                         binary = binary,
                         multiplication = multiplication,
+                        multiplicationOperands = multiplicationOperands,
+                        letterSounds = letterSounds,
                         phonemes = phonemes,
                         reading = reading,
                         sightWords = sightWords,
                         rhymingWords = rhymingWords,
+                        positionWords = positionWords,
                         chess = chess,
                         passedMap = passed,
                         manualUnlockMap = manualUnlock,
                         onToggleManualUnlock = { id, value -> selector.setManualUnlock(id, value) },
+                        onSetPassed = { id, value -> selector.setPassed(id, value) },
                         modifier = Modifier.fillMaxWidth(),
                     )
                 } else {
@@ -202,6 +211,11 @@ fun HomeschoolTeacherApp() {
                         LessonId.TicTacToe1,
                         LessonId.TicTacToe2 -> GameScreen(
                             viewModel = game,
+                            onCompleted = selector::onLessonInstanceCompleted,
+                            modifier = Modifier.fillMaxWidth(),
+                        )
+                        LessonId.TicTacToeWinBlock -> TttPuzzleScreen(
+                            viewModel = tttPuzzle,
                             onCompleted = selector::onLessonInstanceCompleted,
                             modifier = Modifier.fillMaxWidth(),
                         )
@@ -224,7 +238,13 @@ fun HomeschoolTeacherApp() {
                         LessonId.CountingSubtraction0,
                         LessonId.HorizontalSubtraction0,
                         LessonId.VerticalSubtraction0,
-                        LessonId.NumberLineSubtraction0 -> MathScreen(
+                        LessonId.NumberLineSubtraction0,
+                        LessonId.HorizontalMultiplication0,
+                        LessonId.VerticalMultiplication0,
+                        LessonId.NumberLineMultiplication0,
+                        LessonId.HorizontalMultiplication1,
+                        LessonId.VerticalMultiplication1,
+                        LessonId.NumberLineMultiplication1 -> MathScreen(
                             viewModel = math,
                             onCompleted = selector::onLessonInstanceCompleted,
                             modifier = Modifier.fillMaxWidth(),
@@ -237,6 +257,16 @@ fun HomeschoolTeacherApp() {
                         )
                         LessonId.CountingMultiplication0 -> CountingMultiplicationScreen(
                             viewModel = multiplication,
+                            onCompleted = selector::onLessonInstanceCompleted,
+                            modifier = Modifier.fillMaxWidth(),
+                        )
+                        LessonId.CountingMultiplication1 -> MultiplicationOperandsScreen(
+                            viewModel = multiplicationOperands,
+                            onCompleted = selector::onLessonInstanceCompleted,
+                            modifier = Modifier.fillMaxWidth(),
+                        )
+                        LessonId.LetterSounds0 -> LetterSoundsScreen(
+                            viewModel = letterSounds,
                             onCompleted = selector::onLessonInstanceCompleted,
                             modifier = Modifier.fillMaxWidth(),
                         )
@@ -256,8 +286,16 @@ fun HomeschoolTeacherApp() {
                             onCompleted = selector::onLessonInstanceCompleted,
                             modifier = Modifier.fillMaxWidth(),
                         )
-                        LessonId.RhymingWords0 -> RhymingWordsScreen(
+                        LessonId.RhymingWords0,
+                        LessonId.RhymingWords1 -> RhymingWordsScreen(
                             viewModel = rhymingWords,
+                            onCompleted = selector::onLessonInstanceCompleted,
+                            modifier = Modifier.fillMaxWidth(),
+                        )
+                        LessonId.PositionWords0,
+                        LessonId.PositionWords1,
+                        LessonId.PositionWords2 -> PositionWordsScreen(
+                            viewModel = positionWords,
                             onCompleted = selector::onLessonInstanceCompleted,
                             modifier = Modifier.fillMaxWidth(),
                         )
@@ -267,9 +305,6 @@ fun HomeschoolTeacherApp() {
         }
     }
 }
-
-private fun countPassed(passed: Map<LessonId, Boolean>, category: Category): Int =
-    Lessons.all.count { it.category == category && passed[it.id] == true }
 
 /**
  * Hamburger icon that opens the menu only after being held for `holdMillis`.

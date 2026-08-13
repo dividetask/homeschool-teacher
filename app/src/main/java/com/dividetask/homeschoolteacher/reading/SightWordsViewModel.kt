@@ -28,6 +28,9 @@ data class SightWordsState(
 
 private val SUPPORTED_LESSONS = setOf(LessonId.SightWords0, LessonId.SightWords1)
 
+/** A run of this many correct in a row passes the lesson outright. */
+private const val RUN_TARGET = 8
+
 class SightWordsViewModel : ViewModel() {
 
     // Per-word, per-letter streak. The IntArray length equals the word's
@@ -36,7 +39,7 @@ class SightWordsViewModel : ViewModel() {
     // mastering the first letter of "cat" counts toward Level 1 as well.
     private val streakMap: MutableMap<String, IntArray> = SightWords.all
         .associateWith { word ->
-            IntArray(word.length) { pos -> Storage.loadSightWordStreak(word, pos) }
+            IntArray(word.length) { pos -> Storage.loadWinStreak("SightWords.$word.$pos") }
         }.toMutableMap()
 
     private val _streaks = MutableStateFlow(streakSnapshot())
@@ -46,6 +49,11 @@ class SightWordsViewModel : ViewModel() {
         SUPPORTED_LESSONS.associateWith {
             MutableStateFlow(Storage.loadLessonPassed(it))
         }.toMutableMap()
+
+    // Consecutive-correct run per lesson; reaching RUN_TARGET passes it.
+    private val runStreaks: MutableMap<LessonId, Int> =
+        SUPPORTED_LESSONS.associateWith { Storage.loadWinStreak("run.${it.name}") }
+            .toMutableMap()
 
     private val _activeLesson = MutableStateFlow(LessonId.SightWords0)
     val activeLesson: StateFlow<LessonId> = _activeLesson.asStateFlow()
@@ -72,7 +80,7 @@ class SightWordsViewModel : ViewModel() {
         if (id !in SUPPORTED_LESSONS) return
         passedFlow.getValue(id).value = value
         Storage.saveLessonPassed(id, value)
-        Storage.saveLessonManualOverride(id, true)
+        Storage.saveLessonManualOverride(id, value)
     }
 
     fun startLesson(id: LessonId) {
@@ -93,8 +101,11 @@ class SightWordsViewModel : ViewModel() {
         } else {
             arr[position] = 0
         }
-        Storage.saveSightWordStreak(word, position, arr[position])
+        Storage.saveWinStreak("SightWords.$word.$position", arr[position])
         _streaks.value = streakSnapshot()
+        val lesson = _activeLesson.value
+        runStreaks[lesson] = if (correct) (runStreaks[lesson] ?: 0) + 1 else 0
+        Storage.saveWinStreak("run.${lesson.name}", runStreaks.getValue(lesson))
         evaluatePassedFlags()
         _state.update {
             it.copy(
@@ -115,8 +126,11 @@ class SightWordsViewModel : ViewModel() {
         val position = current.problem.missingIndex
         val arr = streakMap.getValue(word)
         arr[position] = 0
-        Storage.saveSightWordStreak(word, position, 0)
+        Storage.saveWinStreak("SightWords.$word.$position", 0)
         _streaks.value = streakSnapshot()
+        val lesson = _activeLesson.value
+        runStreaks[lesson] = 0
+        Storage.saveWinStreak("run.${lesson.name}", 0)
         _state.update {
             it.copy(
                 feedback = SightWordsFeedback.Revealed,
@@ -142,7 +156,8 @@ class SightWordsViewModel : ViewModel() {
         if (pool.isEmpty()) return
         // Level 0 = every word's position-0 streak >= 2.
         if (!Storage.loadLessonManualOverride(LessonId.SightWords0)) {
-            val passed0 = pool.all { (streakMap[it]?.getOrNull(0) ?: 0) >= 2 }
+            val passed0 = pool.all { (streakMap[it]?.getOrNull(0) ?: 0) >= 2 } ||
+                (runStreaks[LessonId.SightWords0] ?: 0) >= RUN_TARGET
             val flag0 = passedFlow.getValue(LessonId.SightWords0)
             if (passed0 && !flag0.value) {
                 flag0.value = true
@@ -154,7 +169,7 @@ class SightWordsViewModel : ViewModel() {
             val passed1 = pool.all { word ->
                 val arr = streakMap[word] ?: return@all false
                 arr.all { it >= 2 }
-            }
+            } || (runStreaks[LessonId.SightWords1] ?: 0) >= RUN_TARGET
             val flag1 = passedFlow.getValue(LessonId.SightWords1)
             if (passed1 && !flag1.value) {
                 flag1.value = true

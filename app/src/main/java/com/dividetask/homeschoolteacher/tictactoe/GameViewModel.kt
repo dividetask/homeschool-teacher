@@ -22,7 +22,7 @@ class GameViewModel : ViewModel() {
 
     private val streaks: MutableMap<LessonId, MutableStateFlow<Int>> =
         SUPPORTED_LESSONS.associateWith {
-            MutableStateFlow(Storage.loadTttStreak(it))
+            MutableStateFlow(Storage.loadWinStreak(it.name))
         }.toMutableMap()
 
     private val passedFlow: MutableMap<LessonId, MutableStateFlow<Boolean>> =
@@ -59,7 +59,7 @@ class GameViewModel : ViewModel() {
         if (id !in SUPPORTED_LESSONS) return
         passedFlow.getValue(id).value = value
         Storage.saveLessonPassed(id, value)
-        Storage.saveLessonManualOverride(id, true)
+        Storage.saveLessonManualOverride(id, value)
     }
 
     fun startLesson(id: LessonId) {
@@ -167,7 +167,7 @@ class GameViewModel : ViewModel() {
                     Storage.saveLessonPassed(lesson, true)
                 }
             }
-            Storage.saveTttStreak(lesson, streakFlow.value)
+            Storage.saveWinStreak(lesson.name, streakFlow.value)
             Storage.saveTttScores(after.playerScore, after.cpuScore, after.drawScore)
         }
     }

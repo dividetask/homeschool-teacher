@@ -53,6 +53,24 @@ object Storage {
         prefs().edit().putBoolean("lesson.${id.name}.manualUnlock", value).apply()
     }
 
+    // --- Win streak (the single, unified streak variable) ---
+    // Every consecutive-correct / non-loss streak in the app lives here,
+    // under one `win_streak.<key>` namespace. The key identifies the
+    // lesson and, for lessons that track several parallel streaks, the
+    // item within it:
+    //   - Games & math:        win_streak.<LessonId>            (e.g. "Chess1")
+    //   - Animals/Letter Sounds: win_streak.<LessonId>.<LETTER>
+    //   - Phonemes/Rhyming:    win_streak.<LessonId>.<word>
+    //   - Sight Words:         win_streak.SightWords.<word>.<pos> (shared L0/L1)
+    //   - Letter Sounds run:   win_streak.LetterSounds0.run
+    // The old per-feature streak keys are folded into this namespace by
+    // the v5 migration below.
+    fun loadWinStreak(key: String): Int = prefs().getInt("win_streak.$key", 0)
+
+    fun saveWinStreak(key: String, value: Int) {
+        prefs().edit().putInt("win_streak.$key", value).apply()
+    }
+
     // --- Math (Addition) ---
     fun loadMathStreaks(): Array<IntArray> {
         val p = prefs()
@@ -79,19 +97,6 @@ object Storage {
             .apply()
     }
 
-    /**
-     * Per-lesson consecutive-correct streak for math lessons. Each
-     * addition / subtraction variant tracks its own — passing requires
-     * 8 consecutive correct answers *in that variant* on top of the
-     * shared cell coverage.
-     */
-    fun loadMathLessonStreak(id: LessonId): Int =
-        prefs().getInt("math.lessonstreak.${id.name}", 0)
-
-    fun saveMathLessonStreak(id: LessonId, value: Int) {
-        prefs().edit().putInt("math.lessonstreak.${id.name}", value).apply()
-    }
-
     // --- Math (Subtraction) ---
     fun loadSubtractionStreaks(): Array<IntArray> {
         val p = prefs()
@@ -106,14 +111,24 @@ object Storage {
         prefs().edit().putInt("subtraction.streak.$a.$b", value).apply()
     }
 
-    // --- Tic Tac Toe (per-lesson) ---
-    fun loadTttStreak(id: LessonId): Int =
-        prefs().getInt("ttt.streak.${id.name}", 0)
-
-    fun saveTttStreak(id: LessonId, value: Int) {
-        prefs().edit().putInt("ttt.streak.${id.name}", value).apply()
+    // --- Math (Multiplication equations) ---
+    // Product-coverage grid shared by the Horizontal / Vertical / Number
+    // Line multiplication presentations (tap-the-product lessons). Separate
+    // from the counting-multiplication grid (`multiplication.streak`).
+    fun loadMultiplicationGridStreaks(): Array<IntArray> {
+        val p = prefs()
+        val out = Array(16) { IntArray(16) }
+        for (a in 0..15) for (b in 0..15) {
+            out[a][b] = p.getInt("multgrid.streak.$a.$b", 0)
+        }
+        return out
     }
 
+    fun saveMultiplicationGridStreak(a: Int, b: Int, value: Int) {
+        prefs().edit().putInt("multgrid.streak.$a.$b", value).apply()
+    }
+
+    // --- Tic Tac Toe ---
     fun loadTttScores(): Triple<Int, Int, Int> {
         val p = prefs()
         return Triple(
@@ -132,11 +147,6 @@ object Storage {
     }
 
     // --- Reading ---
-    fun loadReadingStreak(letter: Char): Int = prefs().getInt("reading.streak.$letter", 0)
-    fun saveReadingStreak(letter: Char, value: Int) {
-        prefs().edit().putInt("reading.streak.$letter", value).apply()
-    }
-
     fun loadReadingCounts(): Pair<Int, Int> {
         val p = prefs()
         return p.getInt("reading.correct", 0) to p.getInt("reading.wrong", 0)
@@ -149,12 +159,7 @@ object Storage {
             .apply()
     }
 
-    // --- Chess (per-lesson) ---
-    fun loadChessStreak(id: LessonId): Int = prefs().getInt("chess.streak.${id.name}", 0)
-    fun saveChessStreak(id: LessonId, value: Int) {
-        prefs().edit().putInt("chess.streak.${id.name}", value).apply()
-    }
-
+    // --- Chess ---
     fun loadChessCounts(): Pair<Int, Int> {
         val p = prefs()
         return p.getInt("chess.correct", 0) to p.getInt("chess.wrong", 0)
@@ -168,15 +173,6 @@ object Storage {
     }
 
     // --- Sight Words ---
-    // Per-letter streak: one slot per (word, position). Level 0 only writes
-    // position 0; Level 1 writes any position. Shared between the lessons.
-    fun loadSightWordStreak(word: String, position: Int): Int =
-        prefs().getInt("sightwords.streak.$word.$position", 0)
-
-    fun saveSightWordStreak(word: String, position: Int, value: Int) {
-        prefs().edit().putInt("sightwords.streak.$word.$position", value).apply()
-    }
-
     fun loadSightWordsCounts(): Pair<Int, Int> {
         val p = prefs()
         return p.getInt("sightwords.correct", 0) to p.getInt("sightwords.wrong", 0)
@@ -190,14 +186,6 @@ object Storage {
     }
 
     // --- Rhyming Words ---
-    // Per-word streak (only the first letter is ever blanked).
-    fun loadRhymingWordStreak(word: String): Int =
-        prefs().getInt("rhymingwords.streak.$word", 0)
-
-    fun saveRhymingWordStreak(word: String, value: Int) {
-        prefs().edit().putInt("rhymingwords.streak.$word", value).apply()
-    }
-
     fun loadRhymingWordsCounts(): Pair<Int, Int> {
         val p = prefs()
         return p.getInt("rhymingwords.correct", 0) to p.getInt("rhymingwords.wrong", 0)
@@ -210,14 +198,33 @@ object Storage {
             .apply()
     }
 
-    // --- Phonemes ---
-    fun loadPhonemeWordStreak(word: String): Int =
-        prefs().getInt("phonemes.streak.$word", 0)
-
-    fun savePhonemeWordStreak(word: String, value: Int) {
-        prefs().edit().putInt("phonemes.streak.$word", value).apply()
+    // --- Letter Sounds ---
+    fun loadLetterSoundsCounts(): Pair<Int, Int> {
+        val p = prefs()
+        return p.getInt("lettersounds.correct", 0) to p.getInt("lettersounds.wrong", 0)
     }
 
+    fun saveLetterSoundsCounts(correct: Int, wrong: Int) {
+        prefs().edit()
+            .putInt("lettersounds.correct", correct)
+            .putInt("lettersounds.wrong", wrong)
+            .apply()
+    }
+
+    // --- Position Words ---
+    fun loadPositionWordsCounts(): Pair<Int, Int> {
+        val p = prefs()
+        return p.getInt("positionwords.correct", 0) to p.getInt("positionwords.wrong", 0)
+    }
+
+    fun savePositionWordsCounts(correct: Int, wrong: Int) {
+        prefs().edit()
+            .putInt("positionwords.correct", correct)
+            .putInt("positionwords.wrong", wrong)
+            .apply()
+    }
+
+    // --- Phonemes ---
     fun loadPhonemesCounts(): Pair<Int, Int> {
         val p = prefs()
         return p.getInt("phonemes.correct", 0) to p.getInt("phonemes.wrong", 0)
@@ -247,6 +254,29 @@ object Storage {
         prefs().edit()
             .putInt("multiplication.correct", correct)
             .putInt("multiplication.wrong", wrong)
+            .apply()
+    }
+
+    // --- Counting Multiplication — operands (Level 1) ---
+    // Coverage grid for "which two numbers are being multiplied"; cells
+    // track correct identifications of (op1, op2). Separate from the
+    // Level 0 product grid above.
+    fun loadMultiplicationOperandsStreak(op1: Int, op2: Int): Int =
+        prefs().getInt("multoperands.streak.$op1.$op2", 0)
+
+    fun saveMultiplicationOperandsStreak(op1: Int, op2: Int, value: Int) {
+        prefs().edit().putInt("multoperands.streak.$op1.$op2", value).apply()
+    }
+
+    fun loadMultiplicationOperandsCounts(): Pair<Int, Int> {
+        val p = prefs()
+        return p.getInt("multoperands.correct", 0) to p.getInt("multoperands.wrong", 0)
+    }
+
+    fun saveMultiplicationOperandsCounts(correct: Int, wrong: Int) {
+        prefs().edit()
+            .putInt("multoperands.correct", correct)
+            .putInt("multoperands.wrong", wrong)
             .apply()
     }
 
@@ -316,6 +346,62 @@ object Storage {
                 editor.putBoolean("lesson.Phonemes0.passed", true)
             }
             editor.putBoolean("migration.v3", true)
+            editor.apply()
+        }
+
+        if (!p.contains("migration.v4")) {
+            // Letter Sounds — Level 0 was inserted ahead of Phonemes as the
+            // new head of the Reading chain. Existing users who already
+            // reached Phonemes (or beyond) would otherwise have the whole
+            // chain re-locked behind a brand-new lesson. Auto-pass Letter
+            // Sounds for them so their progress stays unlocked.
+            val editor = p.edit()
+            val phonemesPassed = p.getBoolean("lesson.Phonemes0.passed", false)
+            val phonemesCorrect = p.getInt("phonemes.correct", 0)
+            if (phonemesPassed || phonemesCorrect > 0) {
+                editor.putBoolean("lesson.LetterSounds0.passed", true)
+            }
+            editor.putBoolean("migration.v4", true)
+            editor.apply()
+        }
+
+        if (!p.contains("migration.v5")) {
+            // Streak consolidation: every per-feature streak key is folded
+            // into the single `win_streak.*` namespace. We scan the existing
+            // integer entries by prefix and rewrite them, then drop the old
+            // keys. The coverage grids (`math.streak.*`, `subtraction.*`,
+            // `binary.streak.*`, `multiplication.streak.*`) are NOT streaks
+            // and are deliberately left untouched.
+            val editor = p.edit()
+            for ((key, value) in p.all) {
+                if (value !is Int) continue
+                val newKey: String? = when {
+                    key.startsWith("ttt.streak.") ->
+                        "win_streak." + key.removePrefix("ttt.streak.")
+                    key.startsWith("chess.streak.") ->
+                        "win_streak." + key.removePrefix("chess.streak.")
+                    key.startsWith("math.lessonstreak.") ->
+                        "win_streak." + key.removePrefix("math.lessonstreak.")
+                    key.startsWith("reading.streak.") ->
+                        "win_streak.Reading0." + key.removePrefix("reading.streak.")
+                    key.startsWith("phonemes.streak.") ->
+                        "win_streak.Phonemes0." + key.removePrefix("phonemes.streak.")
+                    key.startsWith("sightwords.streak.") ->
+                        "win_streak.SightWords." + key.removePrefix("sightwords.streak.")
+                    key.startsWith("rhymingwords.streak.") ->
+                        "win_streak.RhymingWords0." + key.removePrefix("rhymingwords.streak.")
+                    key.startsWith("lettersounds.streak.") ->
+                        "win_streak.LetterSounds0." + key.removePrefix("lettersounds.streak.")
+                    key == "lettersounds.runstreak" ->
+                        "win_streak.LetterSounds0.run"
+                    else -> null
+                }
+                if (newKey != null) {
+                    editor.putInt(newKey, value)
+                    editor.remove(key)
+                }
+            }
+            editor.putBoolean("migration.v5", true)
             editor.apply()
         }
     }

@@ -13,9 +13,10 @@ present problems, reads and writes one or more defined **variables**,
 and is considered done when its **pass criteria** are met. Lessons may
 be locked until one or more parent lessons are passed.
 
-The proficiency header at the top of every screen shows one number per
-category — `Games X    Math X    Reading X` — equal to the count of
-passed lessons within that category.
+Every lesson also has a universal fast path: a run of eight correct
+answers in a row passes it outright, regardless of its listed pass
+criteria (see Rules → *Universal win-streak pass*). A lesson can be
+marked passed (or un-passed) by hand from the Progress screen too.
 
 All stored variables persist across app restarts.
 
@@ -61,27 +62,44 @@ multiple levels of the same game family (e.g. `win_streak[game][level]`).
 | 0   | Tic Tac Toe    |
 | 1   | Chess          |
 | 2   | Addition       |
-| 3   | Phonemes       |
+| 3   | Letter Sounds / Phonemes |
 | 4   | Animals        |
 | 5   | Sight Words    |
 | 6   | Rhyming Words  |
 | 7   | Subtraction    |
 | 8   | Binary         |
 | 9   | Multiplication |
+| 10  | Position Words |
 
 ## Variables
 
 Single canonical description of every stored variable. Lesson
 definitions reference these by name. All defaults are zero unless noted.
 
-### `win_streak[game][level]`
-Integer 2D array. Records win streak (or consecutive correct answers,
-for games where every problem has a single answer) for each
-(Game UID, level) pair. Resets to zero on any loss or mistake.
+### `win_streak[game][slot]`
+The single variable that tracks **every** consecutive-correct / non-loss
+streak in the app. Indexed by Game UID and a per-streak slot. A correct
+answer / non-loss increments the slot; any wrong answer, loss, or
+**Give up** resets it to zero. The slot's meaning depends on the game:
 
-### `chess_correct_streak[level]`
-Integer array indexed by chess level. Tracks consecutive correct chess
-captures. Resets to zero on any incorrect move.
+- **Games & math** — slot = difficulty level. The four math screens that
+  share a Subject + Difficulty each keep their **own** slot, so they are
+  passed independently; read e.g. `win_streak[2][1]` as "that screen's
+  Level 1 slot", not one shared counter.
+- **Animals & Letter Sounds** — slot = letter (`A → 0 … Z → 25`).
+- **Phonemes & Rhyming Words** — slot = word.
+- **Sight Words** — slot = `(word, position)`, shared between Levels 0
+  and 1.
+- **Letter Sounds** additionally keeps `win_streak[3][run]`, the
+  across-all-letters run.
+- **Every lesson** additionally keeps a `run[lesson]` slot — a plain
+  consecutive-correct run across the whole lesson (increment on correct,
+  reset to zero on any wrong answer or **Give up**). It drives the
+  universal pass rule (see Rules → *Universal win-streak pass*). Games,
+  which are scored per game rather than per answer, use their existing
+  non-loss slot as this run.
+
+All slots default to zero and persist across restarts.
 
 ### `binary_grid[level][operator][op1][op2]`
 Integer 4D array. `level ∈ 0..1`; `operator ∈ {AND, OR, XOR}` (stored
@@ -93,10 +111,17 @@ Integer 2D array, `op1` and `op2` indexed `0..9`. Default zero. Cell
 tracks correct answers for the matching multiplication problem when
 shown via the Counting Multiplication Screen.
 
-### `counting_addition_grid[op1][op2]`
-Integer 2D array, `op1` and `op2` indexed `0..9` (length 10 each). Cell
-tracks correct answers for the matching addition problem when shown via
-the Counting Equation Screen.
+### `multiplication_equation_grid[op1][op2]`
+Integer 2D array, `op1` and `op2` indexed `0..4`. Product-coverage grid
+shared by the Horizontal / Vertical / Number Line multiplication screens
+(tap-the-product lessons). Separate from `multiplication_grid` (the
+counting/product lesson) and `multiplication_operands_grid`. Default zero.
+
+### `multiplication_operands_grid[op1][op2]`
+Integer 2D array, `op1` and `op2` indexed `1..4`. Cell tracks correct
+identifications of the two operands in Counting Multiplication Level 1
+(separate from `multiplication_grid`, which tracks products in Level 0).
+Default zero.
 
 ### `addition_grid[op1][op2]`
 Integer 2D array, `op1` and `op2` indexed `0..19` (length 20 each). Cell
@@ -104,32 +129,11 @@ tracks correct answers for the matching addition problem when shown via
 the Vertical, Horizontal, or Number Line equation screens. Shared
 across those three screens.
 
-### `counting_subtraction_grid[op1][op2]`
-Integer 2D array, `op1` and `op2` indexed `0..9`. Cell tracks correct
-answers for the matching subtraction problem (`op1 − op2`) when shown
-via the Counting Equation Screen.
-
 ### `subtraction_grid[op1][op2]`
 Integer 2D array, `op1` and `op2` indexed `0..19`. Cell tracks correct
 answers for the matching subtraction problem when shown via the
 Vertical, Horizontal, or Number Line equation screens. Shared across
 those three screens.
-
-### `animal_streak[letter]`
-Integer array indexed by letter `A..Z`. Tracks consecutive correct
-answers for the Animals lesson.
-
-### `phoneme_word_streak[word]`
-Integer array indexed by word from the phoneme word bank. A correct
-trio answer increments all three words in the trio; a wrong answer (or
-**Give up**) resets all three to zero.
-
-### `sight_word_streak[word][position]`
-Integer 2D array. First index is the word; second index is the letter
-position within the word.
-
-### `rhyming_word_streak[word]`
-Integer array indexed by word from the rhyming-word pool.
 
 ### `lesson_passed[lesson]`
 Boolean, one per lesson. Sticky: once a lesson's pass criteria are met
@@ -137,11 +141,18 @@ the flag is set to `true` and stays `true` even if streaks subsequently
 drop.
 
 ### `lesson_manual_unlock[lesson]`
-Boolean, one per lesson. Flipping the Progress screen's Switch sets
-this. When `true`, the lesson is considered unlocked regardless of
-whether its parents are passed (see Manual unlock). Independent of
-`lesson_passed[lesson]` — manually unlocking a lesson does not mark
-it as completed.
+Boolean, one per lesson. Flipping the Progress screen's **Unlocked**
+switch sets this. When `true`, the lesson is considered unlocked
+regardless of whether its parents are passed (see Manual unlock).
+Independent of `lesson_passed[lesson]` — manually unlocking a lesson
+does not mark it as completed.
+
+### `lesson_manual_override[lesson]`
+Boolean, one per lesson. Tracks the Progress screen's **Passed** switch.
+When `true`, the lesson's automatic pass evaluation is suppressed — the
+`lesson_passed` value is pinned by hand. Turning **Passed** on sets both
+`lesson_passed` and this flag to `true`; turning it off sets both back to
+`false`, so the lesson can be earned normally again.
 
 ## Screens
 
@@ -196,23 +207,47 @@ The two operands stacked, with the operator on the second line:
 **Answer surface:** single-tap grid covering every possible answer.
 
 ### Number Line Equation Screen
-A horizontal number line drawn above the equation. The line shows
-integer tick marks from `min(X, sum) − 1..3` to `max(X, sum) + 1..3`
-(clamped to the valid sum range; the padding is randomized per problem
-so the answer can't be inferred from the right-most labelled tick). No
-markers on the line itself — the learner has to count ticks. Equation
-below:
+A horizontal number line drawn above the equation, with the equation
+below (`X op Y = ?`). The number line:
 
-```
-X + Y = ?
-```
+- **always starts at 0** and runs to `next_multiple_of_ten(answer + 10)`
+  — so the answer sits comfortably inside the range, never at the edge;
+- **labels every integer** with a tick;
+- **scrolls horizontally** — the learner drags it left/right with a
+  finger (it is wider than the screen);
+- **is markable** — tapping a number toggles a mark (a filled dot) on it,
+  as a skip-counting aid. Marks are visual only (they don't affect
+  correctness) and clear when the next problem appears.
 
-**Answer surface:** single-tap grid covering every possible answer.
+The answer itself is still entered on the equation's answer surface (the
+number line is a counting aid, not the answer input).
+
+**Answer surface:** the single-tap grid (Level 0) or the Number Pad
+(Level 1 multiplication), as specified per lesson.
 
 ### Tic Tac Toe Board Screen
-Standard 3×3 board. The learner taps an empty cell to place their mark;
-the CPU then plays. Game ends on a win, draw, or loss. The CPU rule
-varies by lesson.
+Standard 3×3 board. A **large X or O sits above the board, at the left of
+the score row**, showing which mark the learner is playing this game. The
+learner taps an empty cell to place their mark; the CPU then plays. Game
+ends on a win, draw, or loss. On any win a **large line is drawn through
+the three winning cells**.
+
+### Tic Tac Toe Puzzle Screen
+Standard 3×3 board (large player X above the board, left of the scores),
+pre-filled with a
+single-move puzzle position and no CPU turn and no instruction text. The
+learner taps one empty cell:
+
+- **Correct win** — they complete three-in-a-row; the winning line is
+  drawn.
+- **Correct block** — they take the opponent's threatened cell; nobody
+  wins.
+- **Missed win** — the correct cell blinks a red X, then the winning line
+  they missed is drawn.
+- **Missed block** — the opponent moves into the threatened cell to punish
+  the mistake, then the winning line is drawn.
+
+Then the next puzzle is dealt. Used by "Win or Block".
 
 ### Chess Board Screen
 8×8 board with one player piece, a number of capturable pawns, a
@@ -239,6 +274,28 @@ is spoken aloud via TTS. Tapping the word replays the audio.
 
 **Answer surface:** full A–Z keypad.
 
+### Rhyme Choice Screen
+Used by the Rhyming Words lessons. A prompt plus a vertical list of rows,
+each a word **answer button** with a separate **🔊 play button to its
+left** (tapping the answer button answers; the 🔊 replays just that
+word). On each new problem all the words are read aloud in sequence, and
+the word currently being spoken is highlighted (yellow outline). Level 0
+shows the spoken **target word** at the top ("which rhymes with X?");
+Level 1 shows no target ("which does NOT rhyme?"). The correct button
+turns green and a wrong pick turns red. A 🔊 Repeat button replays the
+whole read-out.
+
+**Answer surface:** the word answer buttons (one per choice).
+
+### Position Scene Screen
+Used by the Position Words lessons. A depicted scene (an animal emoji
+placed on / in / over / under an object emoji) above the sentence
+`The __ is __ the __.` with one blank, and a wrapping row of word-choice
+buttons. Tapping a word answers; the blank fills in (green if correct,
+yellow on reveal) and the correct button turns green / a wrong pick red.
+
+**Answer surface:** the word-choice buttons.
+
 ### Phoneme Trio Screen
 Three words played in sequence via TTS at the three rates. The words
 are masked on screen as `🔊 1`, `🔊 2`, `🔊 3` until the learner
@@ -249,19 +306,21 @@ answers, then they are revealed alongside the green/red feedback. A
 
 ### Counting Multiplication Screen
 The equation displayed on its own line followed by `op2` groups, each
-containing `op1` copies of a randomly-picked animal emoji. Groups
-flow left-to-right and wrap to additional lines as needed; a single
-group is never split across a line. Example for `op1 = 2`, `op2 = 4`:
+containing `op1` copies of a randomly-picked animal emoji. **Each group
+is drawn inside its own rounded box, with a wide gap between boxes**, so
+the "this many groups of this many" structure is clear. Groups flow
+left-to-right and wrap to additional lines as needed; a single group is
+never split across a line. Example for `op1 = 2`, `op2 = 4`:
 
 ```
 2 × 4 = ?
-🐱🐱   🐱🐱   🐱🐱   🐱🐱
+[🐱🐱]  [🐱🐱]  [🐱🐱]  [🐱🐱]
 ```
 
 For products that don't fit on one line (e.g. `4 × 4 = 16`), the
-groups wrap onto two or three lines while staying visually grouped.
-When either operand is 0 the area shows "(no 🐱)" instead of empty
-space.
+boxed groups wrap onto two or three lines while staying visually
+grouped. When either operand is 0 the area shows "(no 🐱)" instead of
+empty space.
 
 **Answer surface:** Numeric Grid (0..max).
 
@@ -271,15 +330,25 @@ and a subscript `₂` after each operand and the answer line to indicate
 base 2:
 
 ```
-  0₂              110₂
-& 1₂      or    & 011₂
-──              ─────
-  ?₂              ???₂
+    0₂                110₂
+AND 1₂      or    AND 011₂
+  ──                ─────
+    ?₂                ???₂
 ```
 
-Each operand is zero-padded to `bits` digits. The operator symbol is
-`&` (AND), `|` (OR), or `^` (XOR). The answer slots fill left-to-right
-as the learner taps digits; while empty they render as `_`.
+Each operand is zero-padded to `bits` digits. The operator is spelled
+out as the word `AND`, `OR`, or `XOR`. The answer slots fill
+left-to-right as the learner taps digits; while empty they render as `_`.
+
+A **Cheat sheet** button reveals a full-screen overlay of the single-bit
+truth table for **the current operator only** — the four `a OP b`
+combinations for `a, b ∈ {0, 1}`, each drawn in the **same stacked layout
+and size as the problem itself** (operands stacked, `₂` subscripts, rule
+line, result). AND shows the AND table; OR the OR table; XOR the XOR
+table. For Level 0 these four are every possible question; for Level 1
+they are the per-column rule for each of the three bits. Pressing the
+button again hides it; otherwise it auto-hides after 8 seconds (or on a
+tap). It resets to hidden on each new problem.
 
 **Answer surface:** Binary Keypad with `bits` slots.
 
@@ -300,6 +369,20 @@ that value as the answer.
 Full alphabet keypad of 26 single-tap buttons arranged in rows of 7
 (letters A–Z, last row padded with spacers). Used by every reading
 screen. Tapping a letter submits it as the answer.
+
+### Number Pad
+Calculator-style pad — digits `1..9`, then a **⌫ (Back) / 0 / Enter**
+row — with a readout above showing the digits entered so far. The learner
+types the answer and presses **Enter** to submit; **⌫** deletes the last
+digit. Used where the answer range is too large for a comfortable tap grid
+(multiplication products up to 81, so answers are at most two digits).
+
+### Operand Picker
+Row of single-tap buttons `1..4` used by Counting Multiplication Level 1.
+The displayed equation has two blanks (`▢ × ▢`); the first tap fills the
+left blank, the second fills the right blank and submits. The answer is
+order-independent. A **Clear** button resets the picks before the second
+tap.
 
 ### Binary Keypad (N slots)
 Two answer buttons (`0` and `1`) plus a `Back` button. The current
@@ -421,9 +504,10 @@ over the next one.
 | Game UID | Lesson                              | Category | Unlock                            |
 | -------- | ----------------------------------- | -------- | --------------------------------- |
 | 0        | Tic Tac Toe — Level 0               | Game     | —                                 |
-| 0        | Tic Tac Toe — Level 1               | Game     | Tic Tac Toe 0                     |
+| 0        | Tic Tac Toe — Win or Block          | Game     | Tic Tac Toe 0                     |
+| 0        | Tic Tac Toe — Level 1               | Game     | Tic Tac Toe — Win or Block        |
 | 0        | Tic Tac Toe — Level 2               | Game     | Tic Tac Toe 1                     |
-| 1        | Chess — Level 0                     | Game     | Tic Tac Toe 1                     |
+| 1        | Chess — Level 0                     | Game     | Tic Tac Toe 0                     |
 | 1        | Chess — Level 1                     | Game     | Chess 0                           |
 | 1        | Chess — Level 2                     | Game     | Chess 1                           |
 | 1        | Chess — Level 3                     | Game     | Chess 2                           |
@@ -431,22 +515,34 @@ over the next one.
 | 2        | Horizontal Addition — Level 0       | Math     | —                                 |
 | 2        | Vertical Addition — Level 0         | Math     | —                                 |
 | 2        | Number Line Addition — Level 0      | Math     | —                                 |
-| 2        | Counting Addition — Level 1          | Math     | All Addition Difficulty 0 passed  |
-| 2        | Horizontal Addition — Level 1       | Math     | All Addition Difficulty 0 passed  |
-| 2        | Vertical Addition — Level 1         | Math     | All Addition Difficulty 0 passed  |
-| 2        | Number Line Addition — Level 1      | Math     | All Addition Difficulty 0 passed  |
+| 2        | Number Line Addition — Level 1      | Math     | Number Line Addition 0 passed     |
+| 2        | Counting Addition — Level 1          | Math     | All Addition Diff 0 + Number Line Addition 1 |
+| 2        | Horizontal Addition — Level 1       | Math     | All Addition Diff 0 + Number Line Addition 1 |
+| 2        | Vertical Addition — Level 1         | Math     | All Addition Diff 0 + Number Line Addition 1 |
 | 8        | Binary — Level 0                    | Math     | All Addition Difficulty 0 passed  |
-| 8        | Binary — Level 1                    | Math     | All Binary Difficulty 0 passed    |
+| 8        | Binary — Level 1                    | Math     | All Addition Diff 0 + Binary 0    |
 | 7        | Counting Subtraction — Level 0      | Math     | All Addition Difficulty 1 passed  |
 | 7        | Horizontal Subtraction — Level 0    | Math     | All Addition Difficulty 1 passed  |
 | 7        | Vertical Subtraction — Level 0      | Math     | All Addition Difficulty 1 passed  |
 | 7        | Number Line Subtraction — Level 0   | Math     | All Addition Difficulty 1 passed  |
 | 9        | Counting Multiplication — Level 0   | Math     | All Subtraction Difficulty 0 passed |
-| 3        | Phonemes — Level 0                  | Reading  | —                                 |
+| 9        | Counting Multiplication — Level 1   | Math     | Counting Multiplication 0 passed  |
+| 9        | Number Line Multiplication — Level 0| Math     | Counting Multiplication 0 passed  |
+| 9        | Horizontal Multiplication — Level 0 | Math     | Number Line Multiplication 0 passed |
+| 9        | Vertical Multiplication — Level 0   | Math     | Number Line Multiplication 0 passed |
+| 9        | Horizontal Multiplication — Level 1 | Math     | All symbolic Multiplication Diff 0 passed |
+| 9        | Vertical Multiplication — Level 1   | Math     | All symbolic Multiplication Diff 0 passed |
+| 9        | Number Line Multiplication — Level 1| Math     | All symbolic Multiplication Diff 0 passed |
+| 3        | Letter Sounds — Level 0             | Reading  | —                                 |
+| 3        | Phonemes — Level 0                  | Reading  | Letter Sounds 0                   |
 | 4        | Animals — Level 0                   | Reading  | Phonemes 0                        |
 | 5        | Sight Words — Level 0               | Reading  | Animals 0                         |
 | 5        | Sight Words — Level 1               | Reading  | Sight Words 0                     |
 | 6        | Rhyming Words — Level 0             | Reading  | Sight Words 1                     |
+| 6        | Rhyming Words — Level 1             | Reading  | Rhyming Words 0                   |
+| 10       | Position Words — Level 0            | Reading  | Rhyming Words 1                   |
+| 10       | Position Words — Level 1            | Reading  | Position Words 0                  |
+| 10       | Position Words — Level 2            | Reading  | Position Words 1                  |
 
 ## Lesson definitions
 
@@ -468,7 +564,7 @@ over the next one.
 - **Difficulty:** 1
 - **Category:** Game
 - **Runs per round:** 1
-- **Unlock conditions:** Tic Tac Toe — Level 0 passed.
+- **Unlock conditions:** Tic Tac Toe — Win or Block passed.
 - **Screen:** Tic Tac Toe Board Screen
 - **CPU rule:** take a winning move if one exists; else uniformly random
   legal move.
@@ -489,19 +585,40 @@ over the next one.
 - **Variables:** `win_streak[0][2]`
 - **Pass criteria:** `win_streak[0][2] >= 8`
 
+### Tic Tac Toe — Win or Block
+- **Game UID:** 0
+- **Subject:** Tic Tac Toe
+- **Category:** Game
+- **Runs per round:** 1
+- **Unlock conditions:** Tic Tac Toe — Level 0 passed.
+- **Screen:** Tic Tac Toe Puzzle Screen — a single pre-set board; no CPU
+  turn, no "New Game" button.
+- **Setup:** the board is generated so it is the learner's move (they are
+  X, X/O counts equal) and **exactly one side has a winning move**: either
+  X can complete three-in-a-row, or O threatens to and X must block. The
+  other side has no winning move. There is exactly one correct cell (the
+  win or the block).
+- **Rules:** tapping the correct cell is a **Correct**; **any other tap is
+  a loss** (Wrong). The consequence is then shown (see Tic Tac Toe Puzzle
+  Screen: a missed win blinks the correct move red then draws the line; a
+  missed block lets the opponent complete their win) before the next
+  puzzle appears.
+- **Variables:** `win_streak[0][WinOrBlock]`
+- **Pass criteria:** `win_streak >= 8` (eight correct in a row).
+
 ### Chess — Level 0
 - **Game UID:** 1
 - **Subject:** Chess
 - **Difficulty:** 0
 - **Category:** Game
 - **Runs per round:** 1
-- **Unlock conditions:** Tic Tac Toe — Level 1 passed.
+- **Unlock conditions:** Tic Tac Toe — Level 0 passed.
 - **Screen:** Chess Board Screen
 - **Pieces:** queen (random colour); capturable pawn ≥ 1;
   non-capturable pawn ≥ 1
 - **Movement:** queen (see Rules § Chess piece movement)
-- **Variables:** `chess_correct_streak[0]`
-- **Pass criteria:** `chess_correct_streak[0] >= 8`
+- **Variables:** `win_streak[1][0]`
+- **Pass criteria:** `win_streak[1][0] >= 8`
 
 ### Chess — Level 1
 - **Game UID:** 1
@@ -514,8 +631,8 @@ over the next one.
 - **Pieces:** queen (random colour); capturable opposite-colour pawn
   ≥ 1; non-capturable opposite-colour pawn ≥ 1; friendly pawn ≥ 1
 - **Movement:** queen
-- **Variables:** `chess_correct_streak[1]`
-- **Pass criteria:** `chess_correct_streak[1] >= 8`
+- **Variables:** `win_streak[1][1]`
+- **Pass criteria:** `win_streak[1][1] >= 8`
 
 ### Chess — Level 2
 - **Game UID:** 1
@@ -528,8 +645,8 @@ over the next one.
 - **Pieces:** rook (random colour); capturable opposite-colour pawn
   ≥ 1; non-capturable opposite-colour pawn ≥ 1; friendly pawn ≥ 1
 - **Movement:** rook
-- **Variables:** `chess_correct_streak[2]`
-- **Pass criteria:** `chess_correct_streak[2] >= 8`
+- **Variables:** `win_streak[1][2]`
+- **Pass criteria:** `win_streak[1][2] >= 8`
 
 ### Chess — Level 3
 - **Game UID:** 1
@@ -542,8 +659,8 @@ over the next one.
 - **Pieces:** bishop (random colour); capturable opposite-colour pawn
   ≥ 1; non-capturable opposite-colour pawn ≥ 1; friendly pawn ≥ 1
 - **Movement:** bishop
-- **Variables:** `chess_correct_streak[3]`
-- **Pass criteria:** `chess_correct_streak[3] >= 8`
+- **Variables:** `win_streak[1][3]`
+- **Pass criteria:** `win_streak[1][3] >= 8`
 
 ### Counting Addition — Level 0
 - **Game UID:** 2
@@ -553,12 +670,12 @@ over the next one.
 - **Runs per round:** 4
 - **Unlock conditions:** always.
 - **Screen:** Counting Equation Screen (addition operator)
-- **Variables:** `counting_addition_grid`, `win_streak[2][0]`
+- **Variables:** `addition_grid`, `win_streak[2][0]`
 - **Random variables:**
   - `op1, op2 ∈ 0..4`
 - **Problem selection:** standard math-grid selection
   (see Rules § Random problem selection (math grid))
-- **Pass criteria:** `counting_addition_grid[op1][op2] >= 2` for
+- **Pass criteria:** `addition_grid[op1][op2] >= 2` for
   every `op1, op2 ∈ 0..4` **AND** `win_streak[2][0] >= 4`
 
 ### Horizontal Addition — Level 0
@@ -612,15 +729,14 @@ over the next one.
 - **Difficulty:** 1
 - **Category:** Math
 - **Runs per round:** 4
-- **Unlock conditions:** All Addition Difficulty 0 passed
-  (i.e. Counting Addition 0, Horizontal Addition 0, Vertical
-  Addition 0, and Number Line Addition 0).
+- **Unlock conditions:** All Addition Difficulty 0 passed and Number
+  Line Addition 1 passed.
 - **Screen:** Counting Equation Screen (addition operator)
-- **Variables:** `counting_addition_grid`, `win_streak[2][1]`
+- **Variables:** `addition_grid`, `win_streak[Counting Addition 1]`
 - **Random variables:**
   - `op1, op2 ∈ 0..8`
 - **Problem selection:** standard math-grid selection
-- **Pass criteria:** `counting_addition_grid[op1][op2] >= 2` for every
+- **Pass criteria:** `addition_grid[op1][op2] >= 2` for every
   `op1, op2 ∈ 0..8` **AND** `win_streak[2][1] >= 4`
 
 ### Horizontal Addition — Level 1
@@ -629,7 +745,7 @@ over the next one.
 - **Difficulty:** 1
 - **Category:** Math
 - **Runs per round:** 4
-- **Unlock conditions:** All Addition Difficulty 0 passed.
+- **Unlock conditions:** All Addition Difficulty 0 passed and Number Line Addition 1 passed.
 - **Screen:** Horizontal Equation Screen (addition operator)
 - **Variables:** `addition_grid`, `win_streak[2][1]`
 - **Random variables:**
@@ -644,7 +760,7 @@ over the next one.
 - **Difficulty:** 1
 - **Category:** Math
 - **Runs per round:** 4
-- **Unlock conditions:** All Addition Difficulty 0 passed.
+- **Unlock conditions:** All Addition Difficulty 0 passed and Number Line Addition 1 passed.
 - **Screen:** Vertical Equation Screen (addition operator)
 - **Variables:** `addition_grid`, `win_streak[2][1]`
 - **Random variables:**
@@ -659,7 +775,7 @@ over the next one.
 - **Difficulty:** 1
 - **Category:** Math
 - **Runs per round:** 4
-- **Unlock conditions:** All Addition Difficulty 0 passed.
+- **Unlock conditions:** Number Line Addition 0 passed.
 - **Screen:** Number Line Equation Screen (addition operator)
 - **Variables:** `addition_grid`, `win_streak[2][1]`
 - **Random variables:**
@@ -676,7 +792,7 @@ over the next one.
 - **Runs per round:** 4
 - **Unlock conditions:** All Addition Difficulty 0 passed.
 - **Screen:** Binary Vertical Equation Screen (`bits = 1`)
-- **Variables:** `binary_grid`, `win_streak[8][0]`
+- **Variables:** `binary_grid`
 - **Random variables:**
   - `operator ∈ {AND, OR, XOR}` chosen uniformly at random
   - `op1, op2 ∈ 0..1`
@@ -692,9 +808,9 @@ over the next one.
 - **Difficulty:** 1
 - **Category:** Math
 - **Runs per round:** 4
-- **Unlock conditions:** All Binary Difficulty 0 passed.
+- **Unlock conditions:** All Addition Difficulty 0 passed and Binary 0 passed.
 - **Screen:** Binary Vertical Equation Screen (`bits = 3`)
-- **Variables:** `binary_grid`, `win_streak[8][1]`
+- **Variables:** `binary_grid`
 - **Random variables:**
   - `operator ∈ {AND, OR, XOR}` chosen uniformly at random
   - `op1, op2 ∈ 0..7` (rendered as zero-padded 3-bit binary)
@@ -712,7 +828,7 @@ over the next one.
 - **Runs per round:** 4
 - **Unlock conditions:** All Subtraction Difficulty 0 passed.
 - **Screen:** Counting Multiplication Screen
-- **Variables:** `multiplication_grid`, `win_streak[9][0]`
+- **Variables:** `multiplication_grid`
 - **Random variables:**
   - `op1, op2 ∈ 0..4` (max product 16)
   - A random animal emoji per problem (independent of streak)
@@ -722,6 +838,107 @@ over the next one.
 - **Pass criteria:** `multiplication_grid[op1][op2] >= 2` for every
   `op1, op2 ∈ 0..4`.
 
+### Counting Multiplication — Level 1
+- **Game UID:** 9
+- **Subject:** Multiplication
+- **Difficulty:** 1
+- **Category:** Math
+- **Runs per round:** 4
+- **Unlock conditions:** Counting Multiplication — Level 0 passed.
+- **Screen:** Counting Multiplication Screen (same boxed animal groups),
+  but the operands are hidden and the answer surface is the Operand
+  Picker (below) instead of the numeric grid. The product is never shown.
+- **Variables:** `multiplication_operands_grid` — a separate coverage
+  grid from Level 0, cells indexed `(op1, op2) ∈ 1..4`.
+- **Random variables:**
+  - `op1, op2 ∈ 1..4` (**never 0**)
+  - A random animal emoji per problem
+- **Answer surface:** Operand Picker — buttons `1..4`; the first tap fills
+  the first operand blank, the second tap fills the second and submits.
+  The answer is **order-independent** (a × b ≡ b × a). A **Clear** button
+  undoes the first pick before submitting.
+- **Problem selection:** standard math-grid selection over the
+  `(op1, op2) ∈ 1..4` cell space.
+- **Pass criteria:** `multiplication_operands_grid[op1][op2] >= 2` for
+  every `op1, op2 ∈ 1..4`.
+
+### Horizontal Multiplication — Level 0
+- **Game UID:** 9
+- **Subject:** Multiplication
+- **Difficulty:** 0
+- **Category:** Math
+- **Runs per round:** 4
+- **Unlock conditions:** Number Line Multiplication — Level 0 passed.
+- **Screen:** Horizontal Equation Screen (`×` operator)
+- **Variables:** `multiplication_equation_grid`, `win_streak[9][Horizontal]`
+- **Random variables:**
+  - `op1, op2 ∈ 0..4` (max product 16)
+- **Answer surface:** Numeric Grid (0..16)
+- **Problem selection:** standard math-grid selection
+- **Pass criteria:** `multiplication_equation_grid[op1][op2] >= 2` for
+  every `op1, op2 ∈ 0..4` **AND** `win_streak >= 4`
+
+### Vertical Multiplication — Level 0
+- **Game UID:** 9
+- **Subject:** Multiplication
+- **Difficulty:** 0
+- **Category:** Math
+- **Runs per round:** 4
+- **Unlock conditions:** Number Line Multiplication — Level 0 passed.
+- **Screen:** Vertical Equation Screen (`×` operator)
+- **Variables:** `multiplication_equation_grid`, `win_streak[9][Vertical]`
+- **Random variables:**
+  - `op1, op2 ∈ 0..4`
+- **Answer surface:** Numeric Grid (0..16)
+- **Problem selection:** standard math-grid selection
+- **Pass criteria:** `multiplication_equation_grid[op1][op2] >= 2` for
+  every `op1, op2 ∈ 0..4` **AND** `win_streak >= 4`
+
+### Number Line Multiplication — Level 0
+- **Game UID:** 9
+- **Subject:** Multiplication
+- **Difficulty:** 0
+- **Category:** Math
+- **Runs per round:** 4
+- **Unlock conditions:** Counting Multiplication — Level 0 passed.
+- **Screen:** Number Line Equation Screen (`×` operator) — the scrollable,
+  markable line from 0; the learner still taps the product.
+- **Variables:** `multiplication_equation_grid`, `win_streak[9][NumberLine]`
+- **Random variables:**
+  - `op1, op2 ∈ 0..4`
+- **Answer surface:** Numeric Grid (0..16)
+- **Problem selection:** standard math-grid selection
+- **Pass criteria:** `multiplication_equation_grid[op1][op2] >= 2` for
+  every `op1, op2 ∈ 0..4` **AND** `win_streak >= 4`
+
+The three share one `multiplication_equation_grid` (product coverage) but
+each keeps its own streak, so they pass independently — mirroring the
+Addition / Subtraction Level 0 groups. This grid is separate from the
+counting-multiplication grids.
+
+### Horizontal / Vertical / Number Line Multiplication — Level 1
+- **Game UID:** 9
+- **Subject:** Multiplication
+- **Difficulty:** 1
+- **Category:** Math
+- **Runs per round:** 4
+- **Unlock conditions:** all three symbolic Multiplication Level 0 lessons
+  passed (Horizontal, Vertical, and Number Line Multiplication 0).
+- **Screen:** the matching Horizontal / Vertical / Number Line Equation
+  Screen (`×`). The Number Line screen scrolls (it runs 0 to the answer +
+  10, rounded to the next ten — up to 90 for the largest products).
+- **Variables:** `multiplication_equation_grid` (the same grid as Level 0,
+  now covering the `0..9` slice), plus each lesson's own `win_streak`.
+- **Random variables:** `op1, op2 ∈ 0..9` (max product 81).
+- **Answer surface:** **Number Pad** — the learner types the product and
+  presses **Enter** (products up to 81 are too many for a tap grid).
+- **Problem selection:** standard math-grid selection over `0..9`.
+- **Pass criteria:** `multiplication_equation_grid[op1][op2] >= 2` for
+  every `op1, op2 ∈ 0..9` **AND** `win_streak >= 4` (per lesson).
+
+Like Level 0, the three presentations share the grid and pass
+independently.
+
 ### Counting Subtraction — Level 0
 - **Game UID:** 7
 - **Subject:** Subtraction
@@ -730,11 +947,11 @@ over the next one.
 - **Runs per round:** 4
 - **Unlock conditions:** All Addition Difficulty 1 passed.
 - **Screen:** Counting Equation Screen (subtraction operator)
-- **Variables:** `counting_subtraction_grid`, `win_streak[7][0]`
+- **Variables:** `subtraction_grid`, `win_streak[7][0]`
 - **Random variables:**
   - `op1 ∈ 4..9`, `op2 ∈ 0..4`
 - **Problem selection:** standard math-grid selection
-- **Pass criteria:** `counting_subtraction_grid[op1][op2] >= 2` for
+- **Pass criteria:** `subtraction_grid[op1][op2] >= 2` for
   every `op1 ∈ 4..9`, `op2 ∈ 0..4` **AND** `win_streak[7][0] >= 4`
 
 ### Horizontal Subtraction — Level 0
@@ -782,6 +999,39 @@ over the next one.
 - **Pass criteria:** `subtraction_grid[op1][op2] >= 2` for every
   `op1 ∈ 4..9`, `op2 ∈ 0..4` **AND** `win_streak[7][0] >= 4`
 
+### Letter Sounds — Level 0
+- **Game UID:** 3
+- **Subject:** Letter Sounds
+- **Difficulty:** 0
+- **Category:** Reading
+- **Runs per round:** 2 (Reading default)
+- **Unlock conditions:** always (entry-level Reading lesson, and the head
+  of the whole Reading chain).
+- **Screen:** Letter Sound Clip Screen — a large tappable speaker plays a
+  pre-recorded word clip; tapping it replays the clip.
+- **Variables:** `win_streak[3]` — a per-letter slot plus the `run` slot
+  (`win_streak[3][run]`).
+- **Audio:** two pre-cut clips per letter, bundled under
+  `app/src/main/res/raw`: `<x>3.mp3` (the word, played as the question)
+  and `<x>1.mp3` (the letter, played back after the learner answers).
+  E.g. `a3.mp3` / `a1.mp3`. The whole alphabet A–Z is present; the letter
+  set is the list in `reading/LetterSounds.kt`.
+- **Problem selection:** pick a letter that still has
+  `win_streak[3][letter] < 2` where possible; avoid immediately
+  repeating the previous letter when more than one is available. Play
+  that letter's word clip and ask which letter it starts with (A–Z
+  keypad).
+- **Show answer:** after any answer (correct, wrong, or Give up) the
+  letter clip (`<x>1.mp3`) plays as reinforcement. The lesson waits for
+  the clip to finish in full (plus a short buffer, and never less than the
+  usual feedback hold) before advancing, so it is never cut off.
+- **Pass criteria (both required):**
+  - `win_streak[3][run] >= 8` (eight correct answers in a row), AND
+  - `win_streak[3][letter] >= 2` for every letter that has a clip.
+
+  Any wrong answer (or Give up) resets both the run streak and the
+  current letter's streak to 0.
+
 ### Phonemes — Level 0
 - **Game UID:** 3
 - **Subject:** Phonemes
@@ -790,19 +1040,20 @@ over the next one.
 - **Runs per round:** 3
 - **Show answer time:** 4 seconds (the answer reveals all three words,
   which take longer to read than a single answer).
-- **Unlock conditions:** always (entry-level Reading lesson).
+- **Unlock conditions:** Letter Sounds — Level 0 passed.
 - **Screen:** Phoneme Trio Screen
-- **Variables:** `phoneme_word_streak`
+- **Variables:** `win_streak[3]` (one slot per word; the Game UID 3 slot
+  space is shared with Letter Sounds, keyed separately per lesson)
 - **Word bank:** `app/src/main/assets/config.yaml` under `phonemes` —
   19 letter groups: b, c, d, f, g, h, j, k, l, m, n, p, r, s, t, v, w,
   y, z. (`/k/` is split into c-words and k-words because the answer is
   a letter, not a phoneme. `/ng/` and `/zh/` are excluded because they
   don't appear word-initially in English.)
 - **Problem selection:** group words by first letter; prefer a letter
-  whose words still have at least one `phoneme_word_streak[word] < 2`
+  whose words still have at least one `win_streak[3][word] < 2`
   (10% wildcard for uniformly random letter); draw 3 random words from
   that letter's list.
-- **Pass criteria:** `phoneme_word_streak[word] >= 2` for every word
+- **Pass criteria:** `win_streak[3][word] >= 2` for every word
   in the bank.
 
 ### Animals — Level 0
@@ -813,12 +1064,12 @@ over the next one.
 - **Runs per round:** 2
 - **Unlock conditions:** Phonemes — Level 0 passed.
 - **Screen:** Animal Picture Screen
-- **Variables:** `animal_streak`
+- **Variables:** `win_streak[4]`
 - **Problem selection:** per-word list selection
   (see Rules § Random problem selection (per-word list)) over the set
   of letters with a mapped animal emoji.
-- **Pass criteria:** `animal_streak[letter] >= 2` for every mapped
-  letter.
+- **Pass criteria:** `win_streak[4][letter] >= 2` for every mapped
+  letter. letters are mapped with A -> 0, B -> 1, etc
 
 ### Sight Words — Level 0
 - **Game UID:** 5
@@ -828,13 +1079,15 @@ over the next one.
 - **Runs per round:** 2
 - **Unlock conditions:** Animals — Level 0 passed.
 - **Screen:** Word Display Screen
-- **Variables:** `sight_word_streak`
+- **Variables:** `win_streak[5]`
 - **Word bank:** `app/src/main/assets/config.yaml` under
   `sight_words.words`
 - **Random variables:**
   - `position = 0` (only the first letter is ever blanked)
 - **Problem selection:** per-word list selection over the word bank.
-- **Pass criteria:** `sight_word_streak[word][0] >= 2` for every word.
+- **Pass criteria:** `win_streak[5][word][0] >= 2` for every word
+  (the first-letter slot of each word).
+
 
 ### Sight Words — Level 1
 - **Game UID:** 5
@@ -844,30 +1097,82 @@ over the next one.
 - **Runs per round:** 2
 - **Unlock conditions:** Sight Words — Level 0 passed.
 - **Screen:** Word Display Screen
-- **Variables:** `sight_word_streak`
+- **Variables:** `win_streak[5]` (per `(word, position)`; shared with
+  Level 0)
 - **Word bank:** same as Level 0
 - **Random variables:**
   - `position` chosen uniformly at random within the word
 - **Problem selection:** per-word list selection over the set of
   `(word, position)` pairs.
-- **Pass criteria:** `sight_word_streak[word][p] >= 2` for every word
+- **Pass criteria:** `win_streak[5][word][p] >= 2` for every word
   and every letter position `p` of every word.
 
-### Rhyming Words — Level 0
+### Rhyming Words — Level 0 (Pick the rhyme)
 - **Game UID:** 6
 - **Subject:** Rhyming Words
 - **Difficulty:** 0
 - **Category:** Reading
 - **Runs per round:** 2
 - **Unlock conditions:** Sight Words — Level 1 passed.
-- **Screen:** Word Display Screen
-- **Variables:** `rhyming_word_streak`
+- **Screen:** Rhyme Choice Screen.
 - **Word bank:** `app/src/main/assets/config.yaml` under
-  `rhyming_words.groups`
-- **Random variables:**
-  - `position = 0`
-- **Problem selection:** per-word list selection.
-- **Pass criteria:** `rhyming_word_streak[word] >= 2` for every word.
+  `rhyming_words.groups` (each list is a rhyme family).
+- **Task:** a **target word** is spoken and shown; the learner taps the one
+  of three word choices that **rhymes** with it (the other two are
+  distractors drawn from other families).
+- **Variables:** `win_streak[6]` — one slot per **target word**.
+- **Problem selection:** prefer target words still below streak 2 (10%
+  fully random); avoid repeating the previous target.
+- **Pass criteria:** `win_streak[6][word] >= 2` for every word (i.e. every
+  word has been correctly rhymed twice as the target).
+
+### Rhyming Words — Level 1 (Odd one out)
+- **Game UID:** 6
+- **Subject:** Rhyming Words
+- **Difficulty:** 1
+- **Category:** Reading
+- **Runs per round:** 2
+- **Unlock conditions:** Rhyming Words — Level 0 passed.
+- **Screen:** Rhyme Choice Screen (all four words spoken in sequence).
+- **Task:** four words are shown — **three from one rhyme family plus one
+  from another**; the learner taps the word that does **not** rhyme.
+- **Variables:** `win_streak[6]` — one slot per **rhyme family**
+  (`fam<index>`).
+- **Problem selection:** prefer families still below streak 2; avoid
+  repeating the previous family.
+- **Pass criteria:** `win_streak` for every family `>= 2`.
+
+### Position Words — Levels 0 / 1 / 2
+- **Game UID:** 10
+- **Subject:** Position Words
+- **Category:** Reading
+- **Runs per round:** 2
+- **Unlock conditions:** Level 0 after Rhyming Words 1; Level 1 after
+  Position Words 0; Level 2 after Position Words 1.
+- **Screen:** Position Scene Screen.
+- **Concept:** spatial prepositions — **on / in / over / under / by**. A
+  scene shows a three-letter **animal** placed relative to a three-letter
+  **object** (emoji), with the sentence
+  `The <animal> is <prep> the <object>.` and exactly one slot blank. The
+  learner taps the missing word from a few choices.
+  - **Level 0** blanks the **animal** (choices = animals).
+  - **Level 1** blanks the **preposition** (choices = on / in / over /
+    under / by).
+  - **Level 2** blanks the **object** (choices = objects).
+- **Depiction:** `on` = animal resting directly on the object (touching);
+  `under` = object above the animal; `over` = animal floating higher above
+  the object (no arrow); `in` = for deep containers the object is drawn in
+  front of the animal so it peeks out the top, for a flat pan the animal
+  sits inside it; `by` = animal beside the object. Each object declares
+  which prepositions read sensibly with it — `in` is limited to containers
+  (box, bus, cup, jar, pot, net, tub, pan, bin); `by` works with anything.
+  Objects: box, bus, hat, log, bed, cup, jar, pot, bag, net, tub, pan,
+  can, bin.
+- **Variables:** `win_streak[10]` — one slot per blanked item
+  (`PositionWords0.<animal>`, `PositionWords1.<prep>`,
+  `PositionWords2.<object>`).
+- **Pass criteria:** every item of that level answered correctly at least
+  twice (`>= 2`).
 
 ## Unlocking
 
@@ -888,23 +1193,44 @@ passed, the lesson stays passed even if the learner subsequently fails
 problems within it. A passed lesson can still be opened and practiced
 from the menu.
 
+### Universal win-streak pass
+
+Every lesson passes when **either** its own listed pass criteria are
+met **or** its `run[lesson]` slot reaches **8** (eight correct answers
+in a row). The run resets to zero on any wrong answer or **Give up**,
+so the fast path requires a clean streak. This lets a learner who
+already knows the material clear a lesson quickly instead of grinding
+every cell, word, or letter to its per-item target.
+
+The run is the same mechanism Tic Tac Toe always used; it is now shared
+by every category. Where a lesson's own criteria previously combined a
+run with per-item mastery using **AND** (Letter Sounds), the two are
+now combined with **OR** — either alone passes the lesson. Games, which
+already passed at a non-loss streak of 8, are unchanged.
+
 ### Manual unlock
 
-The Progress screen exposes a Switch beside every lesson. Flipping it
-on **manually unlocks** the lesson — it appears in the menu and the
-Random / Mixed rotation right away, even if its prerequisites haven't
-been passed yet. Flipping it off relocks the lesson (it remains
-available if its parents have been passed naturally). The switch sets
-`lesson_manual_unlock[lesson]`; it does **not** mark the lesson as
-passed. The learner still has to play and pass the lesson the normal
-way for it to count as done — and so for downstream lessons whose
-gate references it to unlock.
+The Progress screen exposes two switches beside every lesson:
+**Unlocked** and **Passed**.
 
-Useful for letting a learner jump ahead to try a more advanced lesson
-before mastering everything below it, or for skipping past a lesson
-the parent doesn't want them to drill right now. Switches on
-entry-level lessons (no prerequisites) are disabled — those lessons
-are always available regardless.
+**Unlocked** flips `lesson_manual_unlock[lesson]`. On, it **manually
+unlocks** the lesson — it appears in the menu and the Random / Mixed
+rotation right away, even if its prerequisites haven't been passed yet.
+Off relocks it (it remains available if its parents have been passed
+naturally). This does **not** mark the lesson passed — the learner
+still has to play and pass it the normal way for downstream gates to
+open. Switches on entry-level lessons (no prerequisites) are disabled —
+those lessons are always available regardless.
+
+**Passed** flips `lesson_manual_override[lesson]` and sets
+`lesson_passed[lesson]` to match. On, it marks the lesson complete by
+hand — use it to skip a lesson the learner already knows — which
+unlocks whatever it gates, exactly as a normally-earned pass would.
+Off clears both flags so the lesson can be earned normally again. It is
+enabled for every lesson.
+
+Together these let a parent jump a learner ahead to try a more advanced
+lesson before mastering everything below it, or skip a lesson outright.
 
 ## Random / Mixed mode
 
@@ -938,9 +1264,10 @@ session:
 
 ## Persistence
 
-All variables described in the Variables section — `win_streak`,
-`chess_correct_streak`, the two addition grids, the two subtraction
-grids, the animal / phoneme / sight-word / rhyming-word streaks, plus
-`lesson_passed` and `lesson_manual_unlock` — are written to the
-device's app-local storage and reloaded on launch. They survive
-closing the app, killing it from recents, and rebooting the device.
+All variables described in the Variables section — the single
+`win_streak` (every consecutive-correct / non-loss streak in the app),
+`addition_grid`, `subtraction_grid`, `multiplication_grid`,
+`binary_grid`, plus `lesson_passed` and `lesson_manual_unlock` — are
+written to the device's app-local storage and reloaded on launch. They
+survive closing the app, killing it from recents, and rebooting the
+device.

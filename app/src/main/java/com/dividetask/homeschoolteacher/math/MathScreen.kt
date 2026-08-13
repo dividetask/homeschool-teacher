@@ -1,7 +1,8 @@
 package com.dividetask.homeschoolteacher.math
 
-import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -13,7 +14,11 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -23,12 +28,12 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
@@ -39,6 +44,15 @@ import com.dividetask.homeschoolteacher.Tts
 import com.dividetask.homeschoolteacher.lesson.LessonId
 import kotlin.random.Random
 import kotlinx.coroutines.delay
+
+// Lessons whose answer is typed on a number pad (Enter to submit) instead
+// of tapped from a grid — used where the answer range is too large for a
+// comfortable button grid (multiplication products up to 81).
+private val TYPED_ANSWER_LESSONS = setOf(
+    LessonId.HorizontalMultiplication1,
+    LessonId.VerticalMultiplication1,
+    LessonId.NumberLineMultiplication1,
+)
 
 @Composable
 fun MathScreen(
@@ -62,7 +76,24 @@ fun MathScreen(
         LessonId.HorizontalSubtraction0,
         LessonId.VerticalSubtraction0,
         LessonId.NumberLineSubtraction0 -> 9 // subtraction op1 4..9, op2 0..4, max diff 9
+        LessonId.HorizontalMultiplication0,
+        LessonId.VerticalMultiplication0,
+        LessonId.NumberLineMultiplication0 -> 16 // multiplication operands 0..4, max product 16
+        LessonId.HorizontalMultiplication1,
+        LessonId.VerticalMultiplication1,
+        LessonId.NumberLineMultiplication1 -> 81 // multiplication operands 0..9, max product 81
         else -> 9
+    }
+
+    val isTyped = active in TYPED_ANSWER_LESSONS
+    // In-progress typed answer for the number-pad lessons; resets each problem.
+    var typed by remember(state.problem) { mutableStateOf("") }
+    // What the equation's answer box shows: the typed digits while entering,
+    // otherwise the submitted choice (once feedback is showing).
+    val answerText = if (isTyped && state.feedback == MathFeedback.None) {
+        typed
+    } else {
+        state.selected?.toString() ?: ""
     }
 
     var inputReady by remember { mutableStateOf(false) }
@@ -108,16 +139,20 @@ fun MathScreen(
             LessonId.CountingSubtraction0 -> PictureProblem(problem)
             LessonId.MathNumberLine,
             LessonId.NumberLineAddition0,
-            LessonId.NumberLineSubtraction0 -> NumberLineProblem(
+            LessonId.NumberLineSubtraction0,
+            LessonId.NumberLineMultiplication0,
+            LessonId.NumberLineMultiplication1 -> NumberLineProblem(
                 problem = problem,
-                selected = state.selected,
+                answerText = answerText,
                 feedback = state.feedback,
             )
             LessonId.HorizontalAddition0,
             LessonId.HorizontalAddition1,
-            LessonId.HorizontalSubtraction0 -> HorizontalProblem(
+            LessonId.HorizontalSubtraction0,
+            LessonId.HorizontalMultiplication0,
+            LessonId.HorizontalMultiplication1 -> HorizontalProblem(
                 problem = problem,
-                selected = state.selected,
+                answerText = answerText,
                 feedback = state.feedback,
             )
             else -> StackedProblem(
@@ -142,14 +177,25 @@ fun MathScreen(
             },
         )
 
-        ChoiceGrid(
-            selected = state.selected,
-            feedback = state.feedback,
-            correct = problem.answer,
-            onChoose = viewModel::onAnswer,
-            inputEnabled = inputReady,
-            maxAnswer = maxAnswer,
-        )
+        if (isTyped) {
+            DecimalKeypad(
+                typed = typed,
+                feedback = state.feedback,
+                inputEnabled = inputReady && state.feedback == MathFeedback.None,
+                onDigit = { d -> if (typed.length < 2) typed += d.toString() },
+                onBack = { if (typed.isNotEmpty()) typed = typed.dropLast(1) },
+                onEnter = { if (typed.isNotEmpty()) viewModel.onAnswer(typed.toInt()) },
+            )
+        } else {
+            ChoiceGrid(
+                selected = state.selected,
+                feedback = state.feedback,
+                correct = problem.answer,
+                onChoose = viewModel::onAnswer,
+                inputEnabled = inputReady,
+                maxAnswer = maxAnswer,
+            )
+        }
 
         TextButton(onClick = viewModel::giveUp) {
             Text("Give up", fontSize = 14.sp)
@@ -282,7 +328,7 @@ private fun AnimalGroup(animal: String, count: Int, twoLines: Boolean) {
 @Composable
 private fun HorizontalProblem(
     problem: MathProblem,
-    selected: Int?,
+    answerText: String,
     feedback: MathFeedback,
 ) {
     Row(
@@ -296,53 +342,48 @@ private fun HorizontalProblem(
         Text("${problem.right}", fontSize = 40.sp, fontWeight = FontWeight.Bold,
             fontFamily = FontFamily.Monospace)
         Text("=", fontSize = 40.sp, fontWeight = FontWeight.Bold)
-        AnswerBox(selected?.toString() ?: "", feedback)
+        AnswerBox(answerText, feedback)
     }
 }
 
 @Composable
 private fun NumberLineProblem(
     problem: MathProblem,
-    selected: Int?,
+    answerText: String,
     feedback: MathFeedback,
 ) {
-    val a = problem.left
-    val c = problem.answer
-    // Pad each side with a randomized 1..3 extra ticks so the answer can't
-    // be read off as "the right-most labelled tick". Same random padding
-    // sticks for the lifetime of this problem.
-    val extras = remember(problem) {
-        Random.nextInt(1, 4) to Random.nextInt(1, 4)
-    }
-    val low = (minOf(a, c) - extras.first).coerceAtLeast(0)
-    val high = (maxOf(a, c) + extras.second).coerceAtMost(18)
+    // The line always starts at 0 and runs to the answer + 10, rounded up
+    // to the next multiple of ten — so the answer sits comfortably inside
+    // the range rather than at the far edge.
+    val highest = nextMultipleOfTen(problem.answer + 10)
 
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(8.dp),
         modifier = Modifier.fillMaxWidth(),
     ) {
-        NumberLine(
-            rangeStart = low,
-            rangeEnd = high,
-            modifier = Modifier
-                .fillMaxWidth()
-                .widthIn(max = 500.dp),
+        ScrollableNumberLine(
+            highest = highest,
+            resetKey = problem,
+            modifier = Modifier.fillMaxWidth(),
         )
         Row(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {
-            Text("$a", fontSize = 32.sp, fontWeight = FontWeight.Bold,
+            Text("${problem.left}", fontSize = 32.sp, fontWeight = FontWeight.Bold,
                 fontFamily = FontFamily.Monospace)
             Text(problem.operator.symbol, fontSize = 32.sp, fontWeight = FontWeight.Bold)
             Text("${problem.right}", fontSize = 32.sp, fontWeight = FontWeight.Bold,
                 fontFamily = FontFamily.Monospace)
             Text("=", fontSize = 32.sp, fontWeight = FontWeight.Bold)
-            AnswerBox(selected?.toString() ?: "", feedback)
+            AnswerBox(answerText, feedback)
         }
     }
 }
+
+/** Smallest multiple of ten that is >= [x]. */
+private fun nextMultipleOfTen(x: Int): Int = ((x + 9) / 10) * 10
 
 @Composable
 private fun AnswerBox(text: String, feedback: MathFeedback) {
@@ -373,57 +414,184 @@ private fun AnswerBox(text: String, feedback: MathFeedback) {
     }
 }
 
+/**
+ * Horizontally-scrollable number line from 0 to [highest], every integer
+ * labelled. The learner drags to scroll and taps a number to toggle a mark
+ * on it (a counting aid — marks are visual only and reset each problem).
+ * [resetKey] should change per problem so the marks and scroll position
+ * clear when a new problem appears.
+ */
 @Composable
-private fun NumberLine(
-    rangeStart: Int,
-    rangeEnd: Int,
+private fun ScrollableNumberLine(
+    highest: Int,
+    resetKey: Any,
     modifier: Modifier = Modifier,
 ) {
-    val count = rangeEnd - rangeStart + 1
-    if (count < 2) return
-    val tickColor = MaterialTheme.colorScheme.onBackground
-    Column(modifier = modifier.fillMaxWidth()) {
-        Canvas(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(40.dp),
-        ) {
-            val w = size.width
-            val h = size.height
-            val lineY = h * 0.6f
-            val step = w / (count - 1)
-            val tickHalf = 8.dp.toPx()
+    val marks = remember(resetKey) { mutableStateListOf<Int>() }
+    val scroll = rememberScrollState()
+    LaunchedEffect(resetKey) { scroll.scrollTo(0) }
 
-            drawLine(
-                color = tickColor,
-                start = Offset(0f, lineY),
-                end = Offset(w, lineY),
-                strokeWidth = 3f,
-            )
+    val lineColor = MaterialTheme.colorScheme.onBackground
+    val markColor = MaterialTheme.colorScheme.primary
+    val cellWidth = 34.dp
 
-            for (i in 0 until count) {
-                val x = i * step
-                drawLine(
-                    color = tickColor,
-                    start = Offset(x, lineY - tickHalf),
-                    end = Offset(x, lineY + tickHalf),
-                    strokeWidth = 2f,
+    Row(
+        modifier = modifier
+            .horizontalScroll(scroll)
+            .padding(vertical = 4.dp),
+    ) {
+        for (n in 0..highest) {
+            val marked = marks.contains(n)
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                modifier = Modifier
+                    .width(cellWidth)
+                    .clickable { if (marked) marks.remove(n) else marks.add(n) },
+            ) {
+                // Mark dot (space reserved so the row height stays steady).
+                Box(modifier = Modifier.size(12.dp), contentAlignment = Alignment.Center) {
+                    if (marked) {
+                        Box(
+                            modifier = Modifier
+                                .size(12.dp)
+                                .background(markColor, CircleShape),
+                        )
+                    }
+                }
+                // Axis: a full-width horizontal segment (segments of adjacent
+                // cells join into one line) crossed by a centred tick.
+                Box(
+                    modifier = Modifier.fillMaxWidth().height(16.dp),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Box(Modifier.fillMaxWidth().height(2.dp).background(lineColor))
+                    Box(Modifier.width(2.dp).height(12.dp).background(lineColor))
+                }
+                Text(
+                    text = n.toString(),
+                    fontSize = 12.sp,
+                    fontFamily = FontFamily.Monospace,
+                    fontWeight = if (marked) FontWeight.Bold else FontWeight.Normal,
+                    color = if (marked) markColor else lineColor.copy(alpha = 0.7f),
                 )
+            }
+        }
+    }
+}
+
+/**
+ * Calculator-style number pad for typed answers: digits 1–9, then a
+ * Back / 0 / Enter row. A readout above shows the digits entered so far
+ * (feedback-coloured once submitted). Answers are at most two digits
+ * (products reach 81), enforced by the caller.
+ */
+@Composable
+private fun DecimalKeypad(
+    typed: String,
+    feedback: MathFeedback,
+    inputEnabled: Boolean,
+    onDigit: (Int) -> Unit,
+    onBack: () -> Unit,
+    onEnter: () -> Unit,
+) {
+    val readoutColor = when (feedback) {
+        MathFeedback.Correct -> Color(0xFF22C55E)
+        MathFeedback.Wrong -> Color(0xFFEF4444)
+        MathFeedback.Revealed -> Color(0xFFFACC15)
+        MathFeedback.None -> MaterialTheme.colorScheme.primary
+    }
+    Column(
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        modifier = Modifier.widthIn(max = 300.dp).fillMaxWidth(),
+    ) {
+        Box(
+            modifier = Modifier
+                .widthIn(min = 96.dp)
+                .heightIn(min = 48.dp)
+                .background(
+                    MaterialTheme.colorScheme.surface,
+                    shape = RoundedCornerShape(8.dp),
+                )
+                .padding(horizontal = 16.dp, vertical = 4.dp),
+            contentAlignment = Alignment.Center,
+        ) {
+            Text(
+                text = typed.ifEmpty { "_" },
+                fontSize = 32.sp,
+                fontWeight = FontWeight.Bold,
+                fontFamily = FontFamily.Monospace,
+                color = readoutColor,
+            )
+        }
+        listOf(listOf(1, 2, 3), listOf(4, 5, 6), listOf(7, 8, 9)).forEach { row ->
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                row.forEach { d ->
+                    KeypadButton(
+                        label = d.toString(),
+                        onTap = { onDigit(d) },
+                        container = MaterialTheme.colorScheme.primary,
+                        enabled = inputEnabled,
+                        modifier = Modifier.weight(1f),
+                    )
+                }
             }
         }
         Row(
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
         ) {
-            for (i in rangeStart..rangeEnd) {
-                Text(
-                    text = i.toString(),
-                    fontSize = if (count > 10) 9.sp else 11.sp,
-                    fontFamily = FontFamily.Monospace,
-                    color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f),
-                )
-            }
+            KeypadButton(
+                label = "⌫",
+                onTap = onBack,
+                container = MaterialTheme.colorScheme.secondary,
+                enabled = inputEnabled && typed.isNotEmpty(),
+                modifier = Modifier.weight(1f),
+            )
+            KeypadButton(
+                label = "0",
+                onTap = { onDigit(0) },
+                container = MaterialTheme.colorScheme.primary,
+                enabled = inputEnabled,
+                modifier = Modifier.weight(1f),
+            )
+            KeypadButton(
+                label = "Enter",
+                onTap = onEnter,
+                container = Color(0xFF22C55E),
+                enabled = inputEnabled && typed.isNotEmpty(),
+                modifier = Modifier.weight(1f),
+            )
         }
+    }
+}
+
+@Composable
+private fun KeypadButton(
+    label: String,
+    onTap: () -> Unit,
+    container: Color,
+    enabled: Boolean,
+    modifier: Modifier = Modifier,
+) {
+    val effective = if (enabled) container else container.copy(alpha = 0.4f)
+    Button(
+        onClick = onTap,
+        enabled = enabled,
+        shape = RoundedCornerShape(14.dp),
+        contentPadding = PaddingValues(2.dp),
+        colors = ButtonDefaults.buttonColors(
+            containerColor = effective,
+            disabledContainerColor = effective,
+            contentColor = Color.White,
+            disabledContentColor = Color.White,
+        ),
+        modifier = modifier.heightIn(min = 56.dp),
+    ) {
+        Text(text = label, fontSize = 20.sp, fontWeight = FontWeight.Bold)
     }
 }
 

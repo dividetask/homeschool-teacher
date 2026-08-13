@@ -71,11 +71,12 @@ sight_words:
     - vet
 
 rhyming_words:
-  # Each list is a rhyme family. The lesson picks one word at random
-  # from the flattened pool of all words across all families, speaks
-  # it aloud, displays it with the first letter blanked, and asks the
-  # learner which letter is missing. Pass criteria: every word's
-  # first-letter streak is >= 2.
+  # Each list is a rhyme family. Level 0 ("pick the rhyme") speaks a
+  # target word and shows word choices — one from the target's family
+  # (rhymes) plus distractors from other families; tap the rhyme. Level 1
+  # ("odd one out") shows three words from one family plus one word from
+  # another; tap the one that does NOT rhyme. Every family must rhyme
+  # internally and not rhyme with the others for this to work.
   groups:
     - [cat, bat, hat, mat, rat, sat]
     - [dog, fog, log, jog, hog]

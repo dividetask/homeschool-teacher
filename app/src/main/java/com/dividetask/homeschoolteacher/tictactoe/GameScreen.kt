@@ -86,7 +86,16 @@ fun GameScreen(
 private fun ScoreRow(state: GameState) {
     Row(
         horizontalArrangement = Arrangement.spacedBy(24.dp),
+        verticalAlignment = Alignment.CenterVertically,
     ) {
+        // Player indicator: which mark the learner is this game, shown to
+        // the left of the scores.
+        Text(
+            text = state.playerMark.name,
+            fontSize = 48.sp,
+            fontWeight = FontWeight.Bold,
+            color = markColor(state.playerMark),
+        )
         ScoreItem("You (${state.playerMark})", state.playerScore)
         ScoreItem("CPU (${state.cpuMark})", state.cpuScore)
         ScoreItem("Draws", state.drawScore)
@@ -150,7 +159,21 @@ private fun Board(
                 }
             }
         }
+        // Draw a large line through the winning three cells on any win.
+        if (state.winningLine.isNotEmpty()) {
+            WinningLineOverlay(
+                line = state.winningLine,
+                color = markColor(state.winner),
+                modifier = Modifier.fillMaxSize(),
+            )
+        }
     }
+}
+
+private fun markColor(mark: Mark?): Color = when (mark) {
+    Mark.X -> Color(0xFF60A5FA)
+    Mark.O -> Color(0xFFF472B6)
+    null -> Color(0xFFFACC15)
 }
 
 @Composable

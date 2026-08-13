@@ -19,10 +19,12 @@ data class ReadingState(
     val wrongCount: Int = 0,
 )
 
+private const val RUN_TARGET = 8
+
 class ReadingViewModel : ViewModel() {
 
     private val letterStreaks: MutableMap<Char, Int> = Animals.all
-        .associate { it.letter to Storage.loadReadingStreak(it.letter) }
+        .associate { it.letter to Storage.loadWinStreak("Reading0.${it.letter}") }
         .toMutableMap()
 
     private val _streaks = MutableStateFlow(letterStreaks.toMap())
@@ -30,6 +32,9 @@ class ReadingViewModel : ViewModel() {
 
     private val _passed = MutableStateFlow(Storage.loadLessonPassed(LessonId.Reading0))
     val passed: StateFlow<Boolean> = _passed.asStateFlow()
+
+    // Consecutive-correct run; reaching RUN_TARGET passes the lesson.
+    private var runStreak: Int = Storage.loadWinStreak("run.Reading0")
 
     private val _state: MutableStateFlow<ReadingState>
     val state: StateFlow<ReadingState>
@@ -54,7 +59,7 @@ class ReadingViewModel : ViewModel() {
     fun setPassed(value: Boolean) {
         _passed.value = value
         Storage.saveLessonPassed(LessonId.Reading0, value)
-        Storage.saveLessonManualOverride(LessonId.Reading0, true)
+        Storage.saveLessonManualOverride(LessonId.Reading0, value)
     }
 
     fun onAnswer(letter: Char) {
@@ -68,8 +73,10 @@ class ReadingViewModel : ViewModel() {
         } else {
             letterStreaks[animalLetter] = 0
         }
-        Storage.saveReadingStreak(animalLetter, letterStreaks[animalLetter] ?: 0)
+        Storage.saveWinStreak("Reading0.$animalLetter", letterStreaks[animalLetter] ?: 0)
         _streaks.value = letterStreaks.toMap()
+        runStreak = if (correct) runStreak + 1 else 0
+        Storage.saveWinStreak("run.Reading0", runStreak)
         evaluatePassedFlag()
 
         _state.update {
@@ -89,8 +96,10 @@ class ReadingViewModel : ViewModel() {
             current.feedback == ReadingFeedback.Revealed) return
         val animalLetter = current.animal.letter
         letterStreaks[animalLetter] = 0
-        Storage.saveReadingStreak(animalLetter, 0)
+        Storage.saveWinStreak("Reading0.$animalLetter", 0)
         _streaks.value = letterStreaks.toMap()
+        runStreak = 0
+        Storage.saveWinStreak("run.Reading0", 0)
         _state.update {
             it.copy(
                 feedback = ReadingFeedback.Revealed,
@@ -114,7 +123,7 @@ class ReadingViewModel : ViewModel() {
     private fun evaluatePassedFlag() {
         if (Storage.loadLessonManualOverride(LessonId.Reading0)) return
         val mastered = Animals.all.all { (letterStreaks[it.letter] ?: 0) >= 2 }
-        if (mastered && !_passed.value) {
+        if ((mastered || runStreak >= RUN_TARGET) && !_passed.value) {
             _passed.value = true
             Storage.saveLessonPassed(LessonId.Reading0, true)
         }

@@ -48,6 +48,9 @@ data class BinaryState(
 
 private val SUPPORTED_LESSONS = setOf(LessonId.BinaryOps0, LessonId.BinaryOps1)
 
+/** A run of this many correct in a row passes the lesson outright. */
+private const val RUN_TARGET = 8
+
 class BinaryOperationsViewModel : ViewModel() {
 
     // streaks[level][operatorOrdinal][op1][op2]
@@ -67,6 +70,11 @@ class BinaryOperationsViewModel : ViewModel() {
         SUPPORTED_LESSONS.associateWith {
             MutableStateFlow(Storage.loadLessonPassed(it))
         }.toMutableMap()
+
+    // Consecutive-correct run per lesson; reaching RUN_TARGET passes it.
+    private val runStreaks: MutableMap<LessonId, Int> =
+        SUPPORTED_LESSONS.associateWith { Storage.loadWinStreak("run.${it.name}") }
+            .toMutableMap()
 
     private val _activeLesson = MutableStateFlow(LessonId.BinaryOps0)
     val activeLesson: StateFlow<LessonId> = _activeLesson.asStateFlow()
@@ -93,7 +101,7 @@ class BinaryOperationsViewModel : ViewModel() {
         if (id !in SUPPORTED_LESSONS) return
         passedFlow.getValue(id).value = value
         Storage.saveLessonPassed(id, value)
-        Storage.saveLessonManualOverride(id, true)
+        Storage.saveLessonManualOverride(id, value)
     }
 
     fun startLesson(id: LessonId) {
@@ -134,6 +142,9 @@ class BinaryOperationsViewModel : ViewModel() {
         streaks[level][problem.operator.ordinal][problem.op1][problem.op2] = 0
         Storage.saveBinaryStreak(level, problem.operator.ordinal, problem.op1, problem.op2, 0)
         _streaksSnapshot.value = snapshotStreaks()
+        val lesson = _activeLesson.value
+        runStreaks[lesson] = 0
+        Storage.saveWinStreak("run.${lesson.name}", 0)
         _state.update {
             it.copy(
                 feedback = BinaryFeedback.Revealed,
@@ -165,6 +176,9 @@ class BinaryOperationsViewModel : ViewModel() {
         streaks[level][opIdx][problem.op1][problem.op2] = newCell
         Storage.saveBinaryStreak(level, opIdx, problem.op1, problem.op2, newCell)
         _streaksSnapshot.value = snapshotStreaks()
+        val lesson = _activeLesson.value
+        runStreaks[lesson] = if (correct) (runStreaks[lesson] ?: 0) + 1 else 0
+        Storage.saveWinStreak("run.${lesson.name}", runStreaks.getValue(lesson))
         evaluatePassedFlags()
         _state.update {
             it.copy(
@@ -190,7 +204,7 @@ class BinaryOperationsViewModel : ViewModel() {
                 }
             }
             val flow = passedFlow.getValue(id)
-            if (mastered && !flow.value) {
+            if ((mastered || (runStreaks[id] ?: 0) >= RUN_TARGET) && !flow.value) {
                 flow.value = true
                 Storage.saveLessonPassed(id, true)
             }

@@ -11,7 +11,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlin.random.Random
 
-enum class MathOperator(val symbol: String) { Plus("+"), Minus("−") }
+enum class MathOperator(val symbol: String) { Plus("+"), Minus("−"), Times("×") }
 
 data class MathProblem(
     val left: Int,
@@ -25,6 +25,7 @@ data class MathProblem(
     val answer: Int get() = when (operator) {
         MathOperator.Plus -> left + right
         MathOperator.Minus -> left - right
+        MathOperator.Times -> left * right
     }
 }
 
@@ -39,7 +40,10 @@ data class MathState(
 )
 
 /** Threshold for the per-lesson consecutive-correct streak gate. */
-private const val LESSON_STREAK_TARGET = 8
+private const val LESSON_STREAK_TARGET = 4
+
+/** A run of this many correct in a row passes any lesson outright. */
+private const val RUN_TARGET = 8
 
 private val SUPPORTED_LESSONS = setOf(
     // Addition L0
@@ -57,6 +61,14 @@ private val SUPPORTED_LESSONS = setOf(
     LessonId.HorizontalSubtraction0,
     LessonId.VerticalSubtraction0,
     LessonId.NumberLineSubtraction0,
+    // Multiplication equations (tap the product), operands 0..4
+    LessonId.HorizontalMultiplication0,
+    LessonId.VerticalMultiplication0,
+    LessonId.NumberLineMultiplication0,
+    // Multiplication equations Level 1 (type the product), operands 0..9
+    LessonId.HorizontalMultiplication1,
+    LessonId.VerticalMultiplication1,
+    LessonId.NumberLineMultiplication1,
 )
 
 private fun lessonOperator(id: LessonId): MathOperator = when (id) {
@@ -64,6 +76,12 @@ private fun lessonOperator(id: LessonId): MathOperator = when (id) {
     LessonId.HorizontalSubtraction0,
     LessonId.VerticalSubtraction0,
     LessonId.NumberLineSubtraction0 -> MathOperator.Minus
+    LessonId.HorizontalMultiplication0,
+    LessonId.VerticalMultiplication0,
+    LessonId.NumberLineMultiplication0,
+    LessonId.HorizontalMultiplication1,
+    LessonId.VerticalMultiplication1,
+    LessonId.NumberLineMultiplication1 -> MathOperator.Times
     else -> MathOperator.Plus
 }
 
@@ -87,6 +105,12 @@ private fun lessonLeftRange(id: LessonId): IntRange = when (id) {
     LessonId.HorizontalSubtraction0,
     LessonId.VerticalSubtraction0,
     LessonId.NumberLineSubtraction0 -> 4..9
+    LessonId.HorizontalMultiplication0,
+    LessonId.VerticalMultiplication0,
+    LessonId.NumberLineMultiplication0 -> 0..4
+    LessonId.HorizontalMultiplication1,
+    LessonId.VerticalMultiplication1,
+    LessonId.NumberLineMultiplication1 -> 0..9
     else -> 0..4
 }
 
@@ -104,6 +128,12 @@ private fun lessonRightRange(id: LessonId): IntRange = when (id) {
     LessonId.HorizontalSubtraction0,
     LessonId.VerticalSubtraction0,
     LessonId.NumberLineSubtraction0 -> 0..4
+    LessonId.HorizontalMultiplication0,
+    LessonId.VerticalMultiplication0,
+    LessonId.NumberLineMultiplication0 -> 0..4
+    LessonId.HorizontalMultiplication1,
+    LessonId.VerticalMultiplication1,
+    LessonId.NumberLineMultiplication1 -> 0..9
     else -> 0..4
 }
 
@@ -125,11 +155,18 @@ class MathViewModel : ViewModel() {
     // op1 - op2 correctness.
     private val subtractionStreaks: Array<IntArray> = Storage.loadSubtractionStreaks()
 
+    // Multiplication (product) cell grid, shared by the Horizontal /
+    // Vertical / Number Line multiplication presentations.
+    private val multiplicationStreaks: Array<IntArray> = Storage.loadMultiplicationGridStreaks()
+
     private val _additionGridFlow = MutableStateFlow(snapshot(additionStreaks))
     val streaks: StateFlow<List<List<Int>>> = _additionGridFlow.asStateFlow()
 
     private val _subtractionGridFlow = MutableStateFlow(snapshot(subtractionStreaks))
     val subtractionGrid: StateFlow<List<List<Int>>> = _subtractionGridFlow.asStateFlow()
+
+    private val _multiplicationGridFlow = MutableStateFlow(snapshot(multiplicationStreaks))
+    val multiplicationGrid: StateFlow<List<List<Int>>> = _multiplicationGridFlow.asStateFlow()
 
     private val passedFlow: MutableMap<LessonId, MutableStateFlow<Boolean>> =
         SUPPORTED_LESSONS.associateWith {
@@ -145,7 +182,7 @@ class MathViewModel : ViewModel() {
     // Independent of the cell grids — passing requires both.
     private val lessonStreaks: MutableMap<LessonId, MutableStateFlow<Int>> =
         SUPPORTED_LESSONS.associateWith {
-            MutableStateFlow(Storage.loadMathLessonStreak(it))
+            MutableStateFlow(Storage.loadWinStreak(it.name))
         }.toMutableMap()
 
     private val _activeLesson = MutableStateFlow(LessonId.MathPictures)
@@ -174,9 +211,9 @@ class MathViewModel : ViewModel() {
     fun setPassed(id: LessonId, value: Boolean) {
         if (id !in SUPPORTED_LESSONS) return
         passedFlow.getValue(id).value = value
-        manualOverride[id] = true
+        manualOverride[id] = value
         Storage.saveLessonPassed(id, value)
-        Storage.saveLessonManualOverride(id, true)
+        Storage.saveLessonManualOverride(id, value)
     }
 
     fun startLesson(id: LessonId) {
@@ -204,7 +241,7 @@ class MathViewModel : ViewModel() {
         // Per-lesson consecutive-correct streak.
         val lessonStreakFlow = lessonStreaks.getValue(lesson)
         lessonStreakFlow.value = if (correct) lessonStreakFlow.value + 1 else 0
-        Storage.saveMathLessonStreak(lesson, lessonStreakFlow.value)
+        Storage.saveWinStreak(lesson.name, lessonStreakFlow.value)
 
         evaluatePassedFlags()
 
@@ -233,7 +270,7 @@ class MathViewModel : ViewModel() {
         // Giving up resets the lesson's consecutive-correct streak too.
         val lessonStreakFlow = lessonStreaks.getValue(lesson)
         lessonStreakFlow.value = 0
-        Storage.saveMathLessonStreak(lesson, 0)
+        Storage.saveWinStreak(lesson.name, 0)
 
         _state.update {
             it.copy(
@@ -256,11 +293,10 @@ class MathViewModel : ViewModel() {
     }
 
     /**
-     * Passing requires BOTH cell coverage in the lesson's range AND the
-     * per-lesson consecutive-correct streak reaching [LESSON_STREAK_TARGET].
-     * Cell coverage alone is not enough — each variant has its own
-     * streak that the learner has to build by answering in that
-     * variant's screen.
+     * A lesson passes when EITHER the consecutive-correct streak reaches
+     * [RUN_TARGET] (8 in a row — the fast path for a learner who already
+     * knows it), OR the full condition is met: cell coverage in the
+     * lesson's range AND the streak reaching [LESSON_STREAK_TARGET].
      */
     private fun evaluatePassedFlags() {
         SUPPORTED_LESSONS.forEach { id ->
@@ -271,9 +307,11 @@ class MathViewModel : ViewModel() {
             val cellsCovered = leftRange.all { a ->
                 rightRange.all { b -> grid[a][b] >= 2 }
             }
-            val streakHit = lessonStreaks.getValue(id).value >= LESSON_STREAK_TARGET
+            val streak = lessonStreaks.getValue(id).value
+            val shouldPass = streak >= RUN_TARGET ||
+                (cellsCovered && streak >= LESSON_STREAK_TARGET)
             val flow = passedFlow.getValue(id)
-            if (cellsCovered && streakHit && !flow.value) {
+            if (shouldPass && !flow.value) {
                 flow.value = true
                 Storage.saveLessonPassed(id, true)
             }
@@ -283,12 +321,14 @@ class MathViewModel : ViewModel() {
     private fun gridFor(op: MathOperator): Array<IntArray> = when (op) {
         MathOperator.Plus -> additionStreaks
         MathOperator.Minus -> subtractionStreaks
+        MathOperator.Times -> multiplicationStreaks
     }
 
     private fun saveCellStreak(op: MathOperator, a: Int, b: Int, value: Int) {
         when (op) {
             MathOperator.Plus -> Storage.saveMathStreak(a, b, value)
             MathOperator.Minus -> Storage.saveSubtractionStreak(a, b, value)
+            MathOperator.Times -> Storage.saveMultiplicationGridStreak(a, b, value)
         }
     }
 
@@ -296,6 +336,7 @@ class MathViewModel : ViewModel() {
         when (op) {
             MathOperator.Plus -> _additionGridFlow.value = snapshot(additionStreaks)
             MathOperator.Minus -> _subtractionGridFlow.value = snapshot(subtractionStreaks)
+            MathOperator.Times -> _multiplicationGridFlow.value = snapshot(multiplicationStreaks)
         }
     }
 

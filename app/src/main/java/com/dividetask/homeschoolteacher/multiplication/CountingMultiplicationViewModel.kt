@@ -32,6 +32,9 @@ data class MultiplicationState(
 private const val MAX_OPERAND = 4
 private const val GRID_SIZE = 10  // pad room for future levels
 
+/** A run of this many correct in a row passes the lesson outright. */
+private const val RUN_TARGET = 8
+
 class CountingMultiplicationViewModel : ViewModel() {
 
     private val grid: Array<IntArray> = Array(GRID_SIZE) { IntArray(GRID_SIZE) }
@@ -43,6 +46,9 @@ class CountingMultiplicationViewModel : ViewModel() {
         Storage.loadLessonPassed(LessonId.CountingMultiplication0),
     )
     val passed: StateFlow<Boolean> = _passed.asStateFlow()
+
+    // Consecutive-correct run; reaching RUN_TARGET passes the lesson.
+    private var runStreak: Int = Storage.loadWinStreak("run.CountingMultiplication0")
 
     private val _state: MutableStateFlow<MultiplicationState>
     val state: StateFlow<MultiplicationState>
@@ -70,7 +76,7 @@ class CountingMultiplicationViewModel : ViewModel() {
     fun setPassed(value: Boolean) {
         _passed.value = value
         Storage.saveLessonPassed(LessonId.CountingMultiplication0, value)
-        Storage.saveLessonManualOverride(LessonId.CountingMultiplication0, true)
+        Storage.saveLessonManualOverride(LessonId.CountingMultiplication0, value)
     }
 
     fun onAnswer(choice: Int) {
@@ -82,6 +88,8 @@ class CountingMultiplicationViewModel : ViewModel() {
         grid[problem.op1][problem.op2] = newCell
         Storage.saveMultiplicationStreak(problem.op1, problem.op2, newCell)
         _streaks.value = snapshotGrid()
+        runStreak = if (correct) runStreak + 1 else 0
+        Storage.saveWinStreak("run.CountingMultiplication0", runStreak)
         evaluatePassedFlag()
         _state.update {
             it.copy(
@@ -102,6 +110,8 @@ class CountingMultiplicationViewModel : ViewModel() {
         grid[problem.op1][problem.op2] = 0
         Storage.saveMultiplicationStreak(problem.op1, problem.op2, 0)
         _streaks.value = snapshotGrid()
+        runStreak = 0
+        Storage.saveWinStreak("run.CountingMultiplication0", 0)
         _state.update {
             it.copy(
                 feedback = MultiplicationFeedback.Revealed,
@@ -127,7 +137,7 @@ class CountingMultiplicationViewModel : ViewModel() {
         val mastered = (0..MAX_OPERAND).all { a ->
             (0..MAX_OPERAND).all { b -> grid[a][b] >= 2 }
         }
-        if (mastered && !_passed.value) {
+        if ((mastered || runStreak >= RUN_TARGET) && !_passed.value) {
             _passed.value = true
             Storage.saveLessonPassed(LessonId.CountingMultiplication0, true)
         }
