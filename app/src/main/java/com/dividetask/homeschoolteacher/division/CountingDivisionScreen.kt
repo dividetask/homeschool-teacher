@@ -39,6 +39,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.dividetask.homeschoolteacher.Tts
+import com.dividetask.homeschoolteacher.ui.FeedbackHold
 import kotlinx.coroutines.delay
 
 private val CORRECT_GREEN = Color(0xFF22C55E)
@@ -72,9 +73,9 @@ fun CountingDivisionScreen(
 
     LaunchedEffect(state.feedback, state.problem) {
         val hold = when (state.feedback) {
-            DivisionFeedback.Correct -> 900L
-            DivisionFeedback.Wrong -> 2000L
-            DivisionFeedback.Revealed -> 1600L
+            DivisionFeedback.Correct -> FeedbackHold.CORRECT_MS
+            DivisionFeedback.Wrong -> FeedbackHold.WRONG_MS
+            DivisionFeedback.Revealed -> FeedbackHold.REVEALED_MS
             DivisionFeedback.None -> return@LaunchedEffect
         }
         delay(hold)

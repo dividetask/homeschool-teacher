@@ -29,6 +29,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.dividetask.homeschoolteacher.Tts
+import com.dividetask.homeschoolteacher.ui.FeedbackHold
 import kotlinx.coroutines.delay
 
 @Composable
@@ -53,17 +54,17 @@ fun ReadingScreen(
     LaunchedEffect(state.feedback, state.animal) {
         when (state.feedback) {
             ReadingFeedback.Correct -> {
-                delay(900)
+                delay(FeedbackHold.CORRECT_MS)
                 Tts.stopAll()
                 onCompleted()
             }
             ReadingFeedback.Wrong -> {
-                delay(2000)
+                delay(FeedbackHold.WRONG_MS)
                 Tts.stopAll()
                 onCompleted()
             }
             ReadingFeedback.Revealed -> {
-                delay(1600)
+                delay(FeedbackHold.REVEALED_MS)
                 Tts.stopAll()
                 onCompleted()
             }

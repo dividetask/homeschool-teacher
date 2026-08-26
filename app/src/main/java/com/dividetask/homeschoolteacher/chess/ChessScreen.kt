@@ -40,6 +40,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.dividetask.homeschoolteacher.Tts
+import com.dividetask.homeschoolteacher.ui.FeedbackHold
 import kotlin.math.roundToInt
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -65,17 +66,17 @@ fun ChessScreen(
     LaunchedEffect(state.feedback, state.puzzle) {
         when (state.feedback) {
             ChessFeedback.Correct -> {
-                delay(900)
+                delay(FeedbackHold.CORRECT_MS)
                 Tts.stopAll()
                 onCompleted()
             }
             ChessFeedback.Wrong -> {
-                delay(2000)
+                delay(FeedbackHold.WRONG_MS)
                 Tts.stopAll()
                 onCompleted()
             }
             ChessFeedback.Revealed -> {
-                delay(1600)
+                delay(FeedbackHold.REVEALED_MS)
                 Tts.stopAll()
                 onCompleted()
             }

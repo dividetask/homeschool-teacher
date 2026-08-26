@@ -99,7 +99,7 @@ class LessonRouletteTest {
     }
 
     @Test
-    fun `unpassed lessons are picked about twice as often as passed ones`() {
+    fun `passed lessons take about one draw in ten`() {
         val unlocked = listOf(
             Lessons.get(LessonId.TicTacToe0),
             Lessons.get(LessonId.MathPictures),
@@ -113,21 +113,37 @@ class LessonRouletteTest {
         )
         val counts = mutableMapOf<LessonId, Int>()
         val rng = Random(seed = 7)
-        val iterations = 4_000
+        val iterations = 20_000
 
         repeat(iterations) {
             val picked = LessonRoulette.choose(unlocked, passed, null, rng)!!
             counts.merge(picked.id, 1) { a, b -> a + b }
         }
 
-        // Weights: TTT=2, Pictures=1, Phonemes=1. Total 4.
-        // Expected shares: 0.50, 0.25, 0.25.
+        // 10% of draws go to the two passed lessons (5% each), the other
+        // 90% to the single unpassed one.
         val tttShare = (counts[LessonId.TicTacToe0] ?: 0).toDouble() / iterations
         val picShare = (counts[LessonId.MathPictures] ?: 0).toDouble() / iterations
         val phoShare = (counts[LessonId.Phonemes0] ?: 0).toDouble() / iterations
-        assertTrue("TTT share $tttShare not ~0.50", abs(tttShare - 0.50) < 0.05)
-        assertTrue("Pictures share $picShare not ~0.25", abs(picShare - 0.25) < 0.05)
-        assertTrue("Phonemes share $phoShare not ~0.25", abs(phoShare - 0.25) < 0.05)
+        assertTrue("TTT share $tttShare not ~0.90", abs(tttShare - 0.90) < 0.02)
+        assertTrue("Pictures share $picShare not ~0.05", abs(picShare - 0.05) < 0.02)
+        assertTrue("Phonemes share $phoShare not ~0.05", abs(phoShare - 0.05) < 0.02)
+    }
+
+    @Test
+    fun `every draw is a passed lesson when nothing is left unpassed`() {
+        val unlocked = listOf(
+            Lessons.get(LessonId.TicTacToe0),
+            Lessons.get(LessonId.MathPictures),
+        )
+        val passed = mapOf(
+            LessonId.TicTacToe0 to true,
+            LessonId.MathPictures to true,
+        )
+        val rng = Random(seed = 5)
+        repeat(500) {
+            assertNotNull(LessonRoulette.choose(unlocked, passed, null, rng))
+        }
     }
 
     @Test

@@ -98,18 +98,18 @@ private fun gridOperation(op: MathOperator): GridOperation = when (op) {
  * Range used for the LEFT operand. For subtraction this is op1 ∈ 4..9
  * so the answer can't be negative; for addition variants left and right
  * share the same range (declared in [lessonRightRange] below as well).
- * Pictures (Counting Addition L0) starts at 1 because rendering 0 emoji
- * is not meaningful.
+ * The picture lessons include 0 like the rest — a zero group simply
+ * draws as blank space.
  */
 private fun lessonLeftRange(id: LessonId): IntRange = when (id) {
-    LessonId.MathPictures -> 1..4
+    LessonId.MathPictures,
     LessonId.Math0,
     LessonId.HorizontalAddition0,
     LessonId.NumberLineAddition0 -> 0..4
     LessonId.CountingAddition1,
     LessonId.Math1,
     LessonId.HorizontalAddition1,
-    LessonId.MathNumberLine -> 0..9
+    LessonId.MathNumberLine -> 0..8
     LessonId.CountingSubtraction0,
     LessonId.HorizontalSubtraction0,
     LessonId.VerticalSubtraction0,
@@ -125,14 +125,14 @@ private fun lessonLeftRange(id: LessonId): IntRange = when (id) {
 
 /** Range used for the RIGHT operand. */
 private fun lessonRightRange(id: LessonId): IntRange = when (id) {
-    LessonId.MathPictures -> 1..4
+    LessonId.MathPictures,
     LessonId.Math0,
     LessonId.HorizontalAddition0,
     LessonId.NumberLineAddition0 -> 0..4
     LessonId.CountingAddition1,
     LessonId.Math1,
     LessonId.HorizontalAddition1,
-    LessonId.MathNumberLine -> 0..9
+    LessonId.MathNumberLine -> 0..8
     LessonId.CountingSubtraction0,
     LessonId.HorizontalSubtraction0,
     LessonId.VerticalSubtraction0,

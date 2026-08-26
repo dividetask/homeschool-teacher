@@ -34,6 +34,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.dividetask.homeschoolteacher.Tts
+import com.dividetask.homeschoolteacher.ui.FeedbackHold
 import kotlinx.coroutines.delay
 
 @Composable
@@ -55,17 +56,17 @@ fun BinaryOperationsScreen(
     LaunchedEffect(state.feedback, state.problem) {
         when (state.feedback) {
             BinaryFeedback.Correct -> {
-                delay(900)
+                delay(FeedbackHold.CORRECT_MS)
                 Tts.stopAll()
                 onCompleted()
             }
             BinaryFeedback.Wrong -> {
-                delay(2000)
+                delay(FeedbackHold.WRONG_MS)
                 Tts.stopAll()
                 onCompleted()
             }
             BinaryFeedback.Revealed -> {
-                delay(1600)
+                delay(FeedbackHold.REVEALED_MS)
                 Tts.stopAll()
                 onCompleted()
             }

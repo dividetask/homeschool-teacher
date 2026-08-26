@@ -42,6 +42,7 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.dividetask.homeschoolteacher.Tts
 import com.dividetask.homeschoolteacher.lesson.LessonId
+import com.dividetask.homeschoolteacher.ui.FeedbackHold
 import kotlin.random.Random
 import kotlinx.coroutines.delay
 
@@ -64,14 +65,14 @@ fun MathScreen(
     val active by viewModel.activeLesson.collectAsStateWithLifecycle()
     val problem = state.problem
     val maxAnswer = when (active) {
-        LessonId.MathPictures -> 9          // addition operands 1..4, max sum 8 (pad to 9)
+        LessonId.MathPictures,
         LessonId.Math0,
         LessonId.HorizontalAddition0,
         LessonId.NumberLineAddition0 -> 9   // addition operands 0..4, max sum 8 (pad to 9)
         LessonId.CountingAddition1,
         LessonId.Math1,
         LessonId.HorizontalAddition1,
-        LessonId.MathNumberLine -> 18       // addition operands 0..9, max sum 18
+        LessonId.MathNumberLine -> 16       // addition operands 0..8, max sum 16
         LessonId.CountingSubtraction0,
         LessonId.HorizontalSubtraction0,
         LessonId.VerticalSubtraction0,
@@ -106,17 +107,17 @@ fun MathScreen(
     LaunchedEffect(state.feedback, state.problem) {
         when (state.feedback) {
             MathFeedback.Correct -> {
-                delay(900)
+                delay(FeedbackHold.CORRECT_MS)
                 Tts.stopAll()
                 onCompleted()
             }
             MathFeedback.Wrong -> {
-                delay(2000)
+                delay(FeedbackHold.WRONG_MS)
                 Tts.stopAll()
                 onCompleted()
             }
             MathFeedback.Revealed -> {
-                delay(1600)
+                delay(FeedbackHold.REVEALED_MS)
                 Tts.stopAll()
                 onCompleted()
             }
@@ -302,6 +303,12 @@ private fun splitGroup(count: Int): Boolean = when {
 
 @Composable
 private fun AnimalGroup(animal: String, count: Int, twoLines: Boolean) {
+    if (count == 0) {
+        // A zero operand draws as blank space — roughly one animal wide, so
+        // the equation keeps its shape and the gap reads as "none here".
+        Spacer(modifier = Modifier.width(32.dp))
+        return
+    }
     if (!twoLines) {
         Row(horizontalArrangement = Arrangement.spacedBy(2.dp)) {
             repeat(count) {

@@ -31,6 +31,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.dividetask.homeschoolteacher.Tts
+import com.dividetask.homeschoolteacher.ui.FeedbackHold
 import kotlinx.coroutines.delay
 
 @Composable
@@ -57,9 +58,9 @@ fun RhymingWordsScreen(
     LaunchedEffect(state.feedback, state.problem) {
         val hold = when (state.feedback) {
             RhymingWordsFeedback.None -> return@LaunchedEffect
-            RhymingWordsFeedback.Correct -> 1000L
-            RhymingWordsFeedback.Wrong -> 2200L
-            RhymingWordsFeedback.Revealed -> 1800L
+            RhymingWordsFeedback.Correct -> FeedbackHold.CORRECT_MS
+            RhymingWordsFeedback.Wrong -> FeedbackHold.WRONG_MS
+            RhymingWordsFeedback.Revealed -> FeedbackHold.REVEALED_MS
         }
         Tts.stopAll() // stop the word read-out and highlight once answered
         delay(hold)

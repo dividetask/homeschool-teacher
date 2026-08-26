@@ -113,7 +113,8 @@ tracks correct answers for the matching multiplication problem when
 shown via the Counting Multiplication Screen.
 
 ### `multiplication_equation_grid[op1][op2]`
-Integer 2D array, `op1` and `op2` indexed `0..4`. Product-coverage grid
+Integer 2D array, `op1` and `op2` indexed `0..15` (Level 0 fills the
+`0..4` slice, Level 1 the `0..9` slice). Product-coverage grid
 shared by the Horizontal / Vertical / Number Line multiplication screens
 (tap-the-product lessons). Separate from `multiplication_grid` (the
 counting/product lesson) and `multiplication_operands_grid`. Default zero.
@@ -125,13 +126,14 @@ identifications of the two operands in Counting Multiplication Level 1
 Default zero.
 
 ### `addition_grid[op1][op2]`
-Integer 2D array, `op1` and `op2` indexed `0..19` (length 20 each). Cell
+Integer 2D array, `op1` and `op2` indexed `0..15` (length 16 each; the
+lessons only reach 8, the rest is room to grow). Cell
 tracks correct answers for the matching addition problem when shown via
 the Vertical, Horizontal, or Number Line equation screens. Shared
 across those three screens.
 
 ### `subtraction_grid[op1][op2]`
-Integer 2D array, `op1` and `op2` indexed `0..19`. Cell tracks correct
+Integer 2D array, `op1` and `op2` indexed `0..15`. Cell tracks correct
 answers for the matching subtraction problem when shown via the
 Vertical, Horizontal, or Number Line equation screens. Shared across
 those three screens.
@@ -191,8 +193,10 @@ over 3). Example for `op1 = 3`, `op2 = 2` with the left group split:
 ```
 
 The arrangement is chosen once per problem and stays fixed until the
-next problem. For subtraction the operator becomes `-`. The single
-animal species used is chosen at random per problem.
+next problem. An operand of **0** draws as blank space about one animal
+wide, so the equation keeps its shape and the gap reads as "none here".
+For subtraction the operator becomes `-`. The single animal species used
+is chosen at random per problem.
 
 **Answer surface:** single-tap grid covering every possible answer
 within the lesson's operand range.
@@ -281,6 +285,17 @@ player piece itself may stand on any square.
 A single emoji shown large in the centre of the screen; the animal's
 English name is spoken via TTS (see Rules § TTS playback). Tapping the
 emoji replays the audio.
+
+**Answer surface:** full A–Z keypad.
+
+### Letter Sound Clip Screen
+A large tappable speaker button in the centre of the screen. On each new
+problem it plays a pre-recorded clip of a word (`<x>3.mp3`); tapping the
+speaker replays it. The learner taps the letter the word starts with.
+After any answer the matching letter clip (`<x>1.mp3`) plays as
+reinforcement, and the screen holds until it has finished (see the
+lesson's **Show answer** row). A score row above shows correct, current
+streak, and wrong counts.
 
 **Answer surface:** full A–Z keypad.
 
@@ -538,18 +553,25 @@ is an incorrect move.
 ### Show answer time
 
 After the learner answers (or gives up) the correct answer is shown
-highlighted, then the app advances. Default hold times:
+highlighted, then the app advances. Every lesson holds for the same
+times, so the pacing does not change from screen to screen:
 
 - **Correct answer:** 0.9 seconds.
 - **Wrong answer:** 2 seconds.
 - **Give up / reveal:** 1.6 seconds.
 
-A lesson definition may carry a **Show answer time** row; that single
-value then replaces all three defaults for that lesson. The row is
-present only when the lesson overrides the defaults — its absence
-means the defaults above apply. (Tic Tac Toe is a game rather than a
-single-answer problem; it instead waits the configurable
-`tictactoe.auto_restart_seconds` after a game ends.)
+Two lessons wait longer because they are still playing audio when the
+answer lands, and both say so in their own definition: **Phonemes**
+carries a **Show answer time** row (a single value replacing all three),
+and **Letter Sounds** holds until its letter clip has finished. A
+**Show answer time** row appears only on a lesson that overrides these
+values; its absence means the three above apply.
+
+(Tic Tac Toe is a game rather than a single-answer problem; it instead
+waits the configurable `tictactoe.auto_restart_seconds` after a game
+ends. The Win-or-Block puzzle screen runs its own staged timeline —
+blink the missed move, draw the winning line, let the opponent punish a
+missed block — rather than a single hold.)
 
 ### Runs per round
 
@@ -1149,10 +1171,12 @@ independently.
   keypad).
 - **Show answer:** after any answer (correct, wrong, or Give up) the
   letter clip (`<x>1.mp3`) plays as reinforcement. The lesson waits for
-  the clip to finish in full (plus a short buffer, and never less than the
-  usual feedback hold) before advancing, so it is never cut off.
-- **Pass criteria (both required):**
-  - `win_streak[3][run] >= 8` (eight correct answers in a row), AND
+  the clip to finish in full (plus a short buffer) before advancing, so
+  it is never cut off, and never less than a floor of 2 / 2.4 / 2.2
+  seconds (correct / wrong / reveal) — longer than the usual holds
+  because the shortest clips would otherwise flash past.
+- **Pass criteria (either one):**
+  - `win_streak[3][run] >= 8` (eight correct answers in a row), OR
   - `win_streak[3][letter] >= 2` for every letter that has a clip.
 
   Any wrong answer (or Give up) resets both the run streak and the
@@ -1227,9 +1251,10 @@ independently.
   Level 0)
 - **Word bank:** same as Level 0
 - **Random variables:**
-  - `position` chosen uniformly at random within the word
+  - `position` — any letter position within the word
 - **Problem selection:** per-word list selection over the set of
-  `(word, position)` pairs.
+  `(word, position)` pairs, so the position is driven by which pairs
+  still need coverage rather than drawn uniformly.
 - **Pass criteria:** `win_streak[5][word][p] >= 2` for every word
   and every letter position `p` of every word.
 
@@ -1361,19 +1386,19 @@ lesson before mastering everything below it, or skip a lesson outright.
 ## Random / Mixed mode
 
 When the **Random / Mixed** menu option is active, after every
-completed problem or game the app draws the next activity randomly
-from the pool of **all currently unlocked lessons**.
+completed round the app draws the next activity randomly from the pool
+of **all currently unlocked lessons**.
 
-**Weighting:**
+**Revision share:** one draw in ten goes to a lesson the learner has
+**already passed**; the other nine go to lessons **still unpassed**.
+Within each of the two groups the pick is uniform. When one group is
+empty — nothing passed yet, or everything passed — every draw comes
+from the other.
 
-- Unlocked but **not yet passed** lessons get weight **2**.
-- Unlocked **and already passed** lessons get weight **1**.
-
-So unfinished lessons are about twice as likely to appear as
-completed ones, but earlier (already-passed) lessons still come up
-regularly. The just-completed lesson is excluded from the next draw
-whenever the pool contains more than one entry, so two different
-lessons are never drawn back-to-back.
+**Category change:** the whole category just played is excluded from the
+next draw, so a run of Math is followed by Reading or a Game rather than
+more Math. The filter is dropped if it would leave the pool empty (e.g.
+only one category is unlocked).
 
 Each draw runs the picked lesson's **Runs per round** (see Rules §
 Runs per round) problems / games before re-drawing. Counts live in

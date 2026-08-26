@@ -29,6 +29,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.coroutines.delay
+import com.dividetask.homeschoolteacher.ui.FeedbackHold
 
 /**
  * Counting Multiplication — Level 1. Shows the same boxed animal groups as
@@ -54,9 +55,9 @@ fun MultiplicationOperandsScreen(
     LaunchedEffect(state.feedback, state.problem) {
         val hold = when (state.feedback) {
             OperandsFeedback.None -> return@LaunchedEffect
-            OperandsFeedback.Correct -> 900L
-            OperandsFeedback.Wrong -> 2000L
-            OperandsFeedback.Revealed -> 1600L
+            OperandsFeedback.Correct -> FeedbackHold.CORRECT_MS
+            OperandsFeedback.Wrong -> FeedbackHold.WRONG_MS
+            OperandsFeedback.Revealed -> FeedbackHold.REVEALED_MS
         }
         delay(hold)
         onCompleted()
