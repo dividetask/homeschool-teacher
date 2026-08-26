@@ -3,6 +3,8 @@ package com.dividetask.homeschoolteacher.division
 import androidx.lifecycle.ViewModel
 import com.dividetask.homeschoolteacher.Storage
 import com.dividetask.homeschoolteacher.lesson.LessonId
+import com.dividetask.homeschoolteacher.practice.GridOperation
+import com.dividetask.homeschoolteacher.practice.PracticeGrid
 import com.dividetask.homeschoolteacher.reading.Animal
 import com.dividetask.homeschoolteacher.reading.Animals
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -267,17 +269,20 @@ class CountingDivisionViewModel : ViewModel() {
 
     /**
      * A lesson passes when EITHER its streak reaches [RUN_TARGET], OR
-     * every askable cell has been answered right twice AND the streak has
-     * reached [LESSON_STREAK_TARGET] — the same rule the other math
-     * lessons use.
+     * every askable cell has been covered AND the streak has reached
+     * [LESSON_STREAK_TARGET] — the same rule the other math lessons use,
+     * including the lighter coverage target easy cells get (dividing by
+     * one takes one correct answer, not two).
      */
     private fun evaluatePassedFlags() {
         SUPPORTED_LESSONS.forEach { id ->
             if (manualOverride[id] == true) return@forEach
             val level = levelOf(id)
-            val covered = DIVISION_CELLS.all { (dividend, divisor) ->
-                grid[level][dividend][divisor] >= 2
-            }
+            val covered = PracticeGrid.covered(
+                cells = DIVISION_CELLS,
+                operation = GridOperation.Divide,
+                value = { dividend, divisor -> grid[level][dividend][divisor] },
+            )
             val streak = lessonStreaks.getValue(id).value
             val shouldPass = streak >= RUN_TARGET ||
                 (covered && streak >= LESSON_STREAK_TARGET)
@@ -298,25 +303,12 @@ class CountingDivisionViewModel : ViewModel() {
     /** Standard math-grid selection, restricted to the askable cells. */
     private fun chooseProblem(previous: DivisionProblem?): DivisionProblem {
         val cells = grid[levelOf(_activeLesson.value)]
-        val forceFullyRandom = Random.nextDouble() < 0.10
-        val basePool: List<Pair<Int, Int>> = if (forceFullyRandom) {
-            DIVISION_CELLS
-        } else {
-            val zeros = DIVISION_CELLS.filter { (a, b) -> cells[a][b] == 0 }
-            if (zeros.isNotEmpty()) {
-                zeros
-            } else {
-                val minVal = DIVISION_CELLS.minOf { (a, b) -> cells[a][b] }
-                DIVISION_CELLS.filter { (a, b) -> cells[a][b] == minVal }
-            }
-        }
-        val pool = if (previous != null && basePool.size > 1) {
-            basePool.filter { it.first != previous.dividend || it.second != previous.divisor }
-                .ifEmpty { basePool }
-        } else {
-            basePool
-        }
-        val (dividend, divisor) = pool[Random.nextInt(pool.size)]
+        val (dividend, divisor) = PracticeGrid.choose(
+            cells = DIVISION_CELLS,
+            operation = GridOperation.Divide,
+            value = { dividend, divisor -> cells[dividend][divisor] },
+            previous = previous?.let { it.dividend to it.divisor },
+        )
         return DivisionProblem(
             dividend = dividend,
             divisor = divisor,

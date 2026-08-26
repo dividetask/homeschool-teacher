@@ -3,6 +3,8 @@ package com.dividetask.homeschoolteacher.math
 import androidx.lifecycle.ViewModel
 import com.dividetask.homeschoolteacher.Storage
 import com.dividetask.homeschoolteacher.lesson.LessonId
+import com.dividetask.homeschoolteacher.practice.GridOperation
+import com.dividetask.homeschoolteacher.practice.PracticeGrid
 import com.dividetask.homeschoolteacher.reading.Animal
 import com.dividetask.homeschoolteacher.reading.Animals
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -83,6 +85,13 @@ private fun lessonOperator(id: LessonId): MathOperator = when (id) {
     LessonId.VerticalMultiplication1,
     LessonId.NumberLineMultiplication1 -> MathOperator.Times
     else -> MathOperator.Plus
+}
+
+/** The grid policy's name for a [MathOperator]. */
+private fun gridOperation(op: MathOperator): GridOperation = when (op) {
+    MathOperator.Plus -> GridOperation.Add
+    MathOperator.Minus -> GridOperation.Subtract
+    MathOperator.Times -> GridOperation.Multiply
 }
 
 /**
@@ -303,9 +312,11 @@ class MathViewModel : ViewModel() {
             if (manualOverride[id] == true) return@forEach
             val leftRange = lessonLeftRange(id)
             val rightRange = lessonRightRange(id)
-            val grid = gridFor(lessonOperator(id))
-            val cellsCovered = leftRange.all { a ->
-                rightRange.all { b -> grid[a][b] >= 2 }
+            val operator = lessonOperator(id)
+            val grid = gridFor(operator)
+            val cells = leftRange.flatMap { a -> rightRange.map { b -> a to b } }
+            val cellsCovered = PracticeGrid.covered(cells, gridOperation(operator)) { a, b ->
+                grid[a][b]
             }
             val streak = lessonStreaks.getValue(id).value
             val shouldPass = streak >= RUN_TARGET ||
@@ -349,25 +360,12 @@ class MathViewModel : ViewModel() {
         val grid = gridFor(operator)
         val allCells = leftRange.flatMap { a -> rightRange.map { b -> a to b } }
 
-        val forceFullyRandom = Random.nextDouble() < 0.10
-        val basePool: List<Pair<Int, Int>> = if (forceFullyRandom) {
-            allCells
-        } else {
-            val zeros = allCells.filter { (a, b) -> grid[a][b] == 0 }
-            if (zeros.isNotEmpty()) {
-                zeros
-            } else {
-                val minVal = allCells.minOf { (a, b) -> grid[a][b] }
-                allCells.filter { (a, b) -> grid[a][b] == minVal }
-            }
-        }
-        val pool = if (previous != null && basePool.size > 1) {
-            basePool.filter { it.first != previous.left || it.second != previous.right }
-                .ifEmpty { basePool }
-        } else {
-            basePool
-        }
-        val (left, right) = pool[Random.nextInt(pool.size)]
+        val (left, right) = PracticeGrid.choose(
+            cells = allCells,
+            operation = gridOperation(operator),
+            value = { a, b -> grid[a][b] },
+            previous = previous?.let { it.left to it.right },
+        )
         return if (isPictureLesson(lesson)) {
             val animal = Animals.all[Random.nextInt(Animals.all.size)]
             MathProblem(
