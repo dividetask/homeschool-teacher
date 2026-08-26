@@ -70,6 +70,7 @@ multiple levels of the same game family (e.g. `win_streak[game][level]`).
 | 8   | Binary         |
 | 9   | Multiplication |
 | 10  | Position Words |
+| 11  | Division       |
 
 ## Variables
 
@@ -134,6 +135,16 @@ Integer 2D array, `op1` and `op2` indexed `0..19`. Cell tracks correct
 answers for the matching subtraction problem when shown via the
 Vertical, Horizontal, or Number Line equation screens. Shared across
 those three screens.
+
+### `division_grid[level][dividend][divisor]`
+Integer 3D array. `level ∈ 0..1`; `dividend` indexed `0..24`; `divisor`
+indexed `0..6`. Cell tracks correct answers for `dividend ÷ divisor` at
+that level. Only the cells where the division comes out whole are ever
+asked, so the grid is **sparse by design** — `division_grid[0][7][2]`,
+for instance, stays at zero forever and is not counted towards mastery.
+Each level keeps its own coverage: answering without the pens giving the
+answer away is the point of Level 1, so Level 0's coverage must not pass
+it. Default zero.
 
 ### `lesson_passed[lesson]`
 Boolean, one per lesson. Sticky: once a lesson's pass criteria are met
@@ -323,6 +334,43 @@ grouped. When either operand is 0 the area shows "(no 🐱)" instead of
 empty space.
 
 **Answer surface:** Numeric Grid (0..max).
+
+### Animal Division Screen
+The problem stated as `X ÷ Y = ?` on its own line, with `X` animals of a
+single randomly-picked species loose in the middle of the screen and a
+column of empty **pens** down the side:
+
+```
+        12 ÷ 3 = ?
+
+  ┌────┐
+  │    │     🐰🐰🐰🐰🐰🐰
+  ├────┤     🐰🐰🐰🐰🐰🐰
+  │    │
+  ├────┤
+  │    │
+  └────┘
+```
+
+Tapping a pen selects it (a thicker, tinted border); tapping any animal
+in the middle then moves one animal into that pen. Tapping an animal
+already inside a pen sends it back to the middle, and a **Start over**
+button empties every pen at once. The arrangement resets on each new
+problem.
+
+Sharing the animals out is **only an aid** — the answer is graded off
+the tapped number, so a learner who already knows it can answer without
+moving anything, and a learner who shares them unevenly is not marked
+wrong for it.
+
+How many pens appear is what separates the two levels:
+
+- **Level 0** puts out exactly `Y` pens, so filling them evenly makes
+  the answer visible — this is the level that *shows* what dividing is.
+- **Level 1** always puts out six pens whatever `Y` is, so the learner
+  has to work out how many of them to use.
+
+**Answer surface:** Numeric Grid (0..24).
 
 ### Binary Vertical Equation Screen
 Two binary operands stacked, with a bitwise operator on the second line
@@ -533,6 +581,8 @@ over the next one.
 | 9        | Horizontal Multiplication — Level 1 | Math     | All symbolic Multiplication Diff 0 passed |
 | 9        | Vertical Multiplication — Level 1   | Math     | All symbolic Multiplication Diff 0 passed |
 | 9        | Number Line Multiplication — Level 1| Math     | All symbolic Multiplication Diff 0 passed |
+| 11       | Counting Division — Level 0         | Math     | All Multiplication Difficulty 1 passed |
+| 11       | Counting Division — Level 1         | Math     | Counting Division 0 passed        |
 | 3        | Letter Sounds — Level 0             | Reading  | —                                 |
 | 3        | Phonemes — Level 0                  | Reading  | Letter Sounds 0                   |
 | 4        | Animals — Level 0                   | Reading  | Phonemes 0                        |
@@ -998,6 +1048,42 @@ independently.
 - **Problem selection:** standard math-grid selection
 - **Pass criteria:** `subtraction_grid[op1][op2] >= 2` for every
   `op1 ∈ 4..9`, `op2 ∈ 0..4` **AND** `win_streak[7][0] >= 4`
+
+### Counting Division — Level 0
+- **Game UID:** 11
+- **Subject:** Division
+- **Difficulty:** 0
+- **Category:** Math
+- **Runs per round:** 4
+- **Unlock conditions:** All Multiplication Difficulty 1 passed (the end
+  of the multiplication chain).
+- **Screen:** Animal Division Screen, with `Y` pens
+- **Variables:** `division_grid[0]`, `win_streak[11][0]`
+- **Random variables:**
+  - `divisor ∈ 1..6`
+  - `dividend = divisor × quotient`, with `quotient` chosen so that
+    `dividend ≤ 24`. The dividend is therefore always a whole number of
+    groups and the answer is always an integer.
+- **Problem selection:** standard math-grid selection, restricted to the
+  cells above (the rest of `division_grid` is never asked)
+- **Pass criteria:** `division_grid[0][dividend][divisor] >= 2` for every
+  askable cell **AND** `win_streak[11][0] >= 4`
+
+### Counting Division — Level 1
+- **Game UID:** 11
+- **Subject:** Division
+- **Difficulty:** 1
+- **Category:** Math
+- **Runs per round:** 4
+- **Unlock conditions:** Counting Division 0 passed.
+- **Screen:** Animal Division Screen, with six pens always
+- **Variables:** `division_grid[1]` (its own slice — Level 0 progress
+  does not count towards it), `win_streak[11][1]`
+- **Random variables:** same as Level 0
+- **Problem selection:** standard math-grid selection, restricted to the
+  askable cells
+- **Pass criteria:** `division_grid[1][dividend][divisor] >= 2` for every
+  askable cell **AND** `win_streak[11][1] >= 4`
 
 ### Letter Sounds — Level 0
 - **Game UID:** 3

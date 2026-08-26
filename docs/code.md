@@ -62,6 +62,11 @@ homeschoolteacher/
 │                            NumberLineAddition0; L1: Math1
 │                            (vertical), HorizontalAddition1,
 │                            MathNumberLine.
+├── division/                Lessons: CountingDivision0/1
+│   ├── CountingDivisionViewModel.kt
+│   └── CountingDivisionScreen.kt
+│                            Share X animals into pens to see what
+│                            dividing does; the sorting is an aid only.
 ├── binary/                  Lessons: BinaryOps0, BinaryOps1
 │   ├── BinaryOperationsViewModel.kt
 │   └── BinaryOperationsScreen.kt
@@ -98,6 +103,7 @@ enum class LessonId {
     MathPictures, Math0, HorizontalAddition0, NumberLineAddition0,
     CountingAddition1, Math1, HorizontalAddition1, MathNumberLine,
     BinaryOps0, BinaryOps1,
+    CountingDivision0, CountingDivision1,
     CountingSubtraction0, HorizontalSubtraction0,
     VerticalSubtraction0, NumberLineSubtraction0,
     CountingMultiplication0,
@@ -193,6 +199,7 @@ math.startLesson(id)           // MathPictures, Math0, HorizontalAddition0,
 binary.startLesson(id)         // BinaryOps0 / BinaryOps1
 multiplication.startLesson()   // CountingMultiplication0
 multiplicationOperands.startLesson() // CountingMultiplication1
+division.startLesson(id)       // CountingDivision0 / CountingDivision1
 letterSounds.startLesson()     // LetterSounds0
 phonemes.startLesson()         // Phonemes0
 reading.startLesson()          // Reading0
@@ -287,6 +294,12 @@ All persisted state lives in one `SharedPreferences` file named
 - `math.{correct|wrong}`             — lifetime counters.
 - `subtraction.streak.<x>.<y>`       — 16×16 subtraction cell grid (shared
                                         by every subtraction variant).
+- `division.streak.<lvl>.<x>.<y>`    — 2×25×7 division coverage grid,
+                                        level × dividend × divisor. Only the
+                                        cells that divide evenly are ever
+                                        written, so it is sparse by design.
+                                        Each level keeps its own slice.
+- `division.{correct|wrong}`         — lifetime counters.
 - `binary.streak.<lvl>.<op>.<a>.<b>` — binary AND/OR/XOR coverage grid.
 - `binary.{correct|wrong}`           — lifetime counters.
 - `multiplication.streak.<a>.<b>`    — counting-multiplication (product)
