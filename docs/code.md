@@ -116,7 +116,7 @@ enum class LessonId {
     BinaryOps0, BinaryOps1,
     CountingDivision0, CountingDivision1,
     CountingSubtraction0, HorizontalSubtraction0,
-    VerticalSubtraction0, NumberLineSubtraction0,
+    VerticalSubtraction0, NumberLineSubtraction0, CountingSubtraction1,
     CountingMultiplication0,
     LetterSounds0, Phonemes0, Reading0, SightWords0, SightWords1, RhymingWords0,
 }
@@ -297,14 +297,17 @@ All persisted state lives in one `SharedPreferences` file named
                                         Set/save through
                                         `Storage.loadWinStreak/saveWinStreak`.
 - `ttt.{player|cpu|draw}Score`       — aggregate scoreboard.
-- `math.streak.<x>.<y>`              — 16×16 addition cell *grid* (a
+- `math.streak.<x>.<y>`              — 20×20 addition cell *grid* (a
                                         coverage map, NOT a win streak),
                                         shared by every addition variant
                                         (Counting, Vertical, Horizontal,
                                         Number Line) at both difficulties.
 - `math.{correct|wrong}`             — lifetime counters.
-- `subtraction.streak.<x>.<y>`       — 16×16 subtraction cell grid (shared
+- `subtraction.streak.<x>.<y>`       — 20×20 subtraction cell grid (shared
                                         by every subtraction variant).
+                                        Counting Subtraction 1 reaches
+                                        op1 = 16, so the grids are the
+                                        0..19 the docs specify, not 0..15.
 - `division.streak.<lvl>.<x>.<y>`    — 2×25×7 division coverage grid,
                                         level × dividend × divisor. Only the
                                         cells that divide evenly are ever

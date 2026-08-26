@@ -87,11 +87,17 @@ _SHEETS = (
           "numberline", 2,
           dict(_pair((0, 8), (0, 8)), operator="+", line_origin="min-operand", rows=10)),
 
-    # --- Subtraction (Level 0 only — the app has no Level 1 yet) --------
+    # --- Subtraction ----------------------------------------------------
+    # Only the counting presentation has a Level 1; the symbolic
+    # subtraction screens stay at Level 0, as in the app.
     Sheet("subtraction-counting", 0, "Counting Subtraction", "Counting Subtraction — Level 0",
           "Count the first group, take away the second, and write how many are left.",
           "counting", 2,
           dict(_pair((4, 9), (0, 4)), operator="-", animal_size=20.0, max_rows=3, rows=10)),
+    Sheet("subtraction-counting", 1, "Counting Subtraction", "Counting Subtraction — Level 1",
+          "Count the first group, take away the second, and write how many are left.",
+          "counting", 2,
+          dict(_pair((8, 16), (0, 8)), operator="-", animal_size=20.0, max_rows=4, rows=10)),
     Sheet("subtraction-horizontal", 0, "Subtraction", "Horizontal Subtraction — Level 0",
           "Write the answer in the box.",
           "horizontal", 3, dict(_pair((4, 9), (0, 4)), operator="-")),

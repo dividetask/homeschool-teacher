@@ -72,7 +72,7 @@ up. The sheets come out identical either way.
 | `addition-horizontal`       | 0, 1   | Horizontal Addition                |
 | `addition-vertical`         | 0, 1   | Vertical Addition                  |
 | `addition-numberline`       | 0, 1   | Number Line Addition               |
-| `subtraction-counting`      | 0      | Counting Subtraction               |
+| `subtraction-counting`      | 0, 1   | Counting Subtraction               |
 | `subtraction-horizontal`    | 0      | Horizontal Subtraction             |
 | `subtraction-vertical`      | 0      | Vertical Subtraction               |
 | `subtraction-numberline`    | 0      | Number Line Subtraction            |
@@ -83,9 +83,9 @@ up. The sheets come out identical either way.
 | `division-counting`         | 0      | Counting Division                  |
 | `binary`                    | 0, 1   | Binary                             |
 
-Subtraction has no Level 1 because the app has no Level 1 subtraction
-lesson yet, and division has only the counting presentation for the same
-reason. Division has no Level 1 sheet either: the app's two division
+Subtraction has a Level 1 only in its counting presentation, and division
+has only the counting presentation at all — in both cases because that's
+what the app teaches. Division has no Level 1 sheet either: the app's two division
 levels differ only in how many pens the *screen* puts out, and the pens
 aren't part of the printed sheet — so both levels would print the same
 page.
@@ -96,6 +96,12 @@ deliberately disagree with `MathViewModel.kt`, which has drifted: the doc
 puts every Addition Level 1 variant at `0..8` (the Kotlin uses `0..9`)
 and Counting Addition Level 0 at `0..4` (the Kotlin starts at 1 to avoid
 drawing an empty group). The sheets follow the doc.
+
+**Easy cells** are damped the way the app damps them (docs/lessons.md §
+Easy cells): adding or subtracting zero, multiplying by zero or one, and
+dividing by one sit out half the passes, so they come up about half as
+often as ordinary problems. Without this a page of Addition Level 1 comes
+out about a third `+ 0`.
 
 A few sheets are worth calling out:
 

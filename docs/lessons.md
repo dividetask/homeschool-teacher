@@ -599,6 +599,7 @@ over the next one.
 | 7        | Horizontal Subtraction — Level 0    | Math     | All Addition Difficulty 1 passed  |
 | 7        | Vertical Subtraction — Level 0      | Math     | All Addition Difficulty 1 passed  |
 | 7        | Number Line Subtraction — Level 0   | Math     | All Addition Difficulty 1 passed  |
+| 7        | Counting Subtraction — Level 1      | Math     | All Subtraction Difficulty 0 passed |
 | 9        | Counting Multiplication — Level 0   | Math     | All Subtraction Difficulty 0 passed |
 | 9        | Counting Multiplication — Level 1   | Math     | Counting Multiplication 0 passed  |
 | 9        | Number Line Multiplication — Level 0| Math     | Counting Multiplication 0 passed  |
@@ -895,6 +896,28 @@ over the next one.
   `(operator, op1, op2)` cell space.
 - **Pass criteria:** `binary_grid[1][operator][op1][op2] >= 2` for
   every operator and every `op1, op2 ∈ 0..7`.
+
+### Counting Subtraction — Level 1
+- **Game UID:** 7
+- **Subject:** Subtraction
+- **Difficulty:** 1
+- **Category:** Math
+- **Runs per round:** 4
+- **Unlock conditions:** All Subtraction Difficulty 0 passed.
+- **Screen:** Counting Equation Screen (subtraction operator)
+- **Variables:** `subtraction_grid`, `win_streak[7][1]`
+- **Random variables:**
+  - `op1 ∈ 8..16`, `op2 ∈ 0..8`
+- **Answer surface:** Numeric Grid (0..16)
+- **Problem selection:** standard math-grid selection
+- **Pass criteria:** `subtraction_grid[op1][op2] >= cell_target(op1, op2)`
+  for every `op1 ∈ 8..16`, `op2 ∈ 0..8` **AND** `win_streak[7][1] >= 4`
+
+This is the inverse of Addition Level 1: that tier adds operands `0..8`
+to reach sums of `0..16`, and this one takes `0..8` back off a number in
+`8..16`, so it drills the same family of facts read the other way round.
+Only the counting presentation exists at this level — the Horizontal,
+Vertical and Number Line subtraction screens stay at Level 0.
 
 ### Counting Multiplication — Level 0
 - **Game UID:** 9

@@ -63,6 +63,8 @@ private val SUPPORTED_LESSONS = setOf(
     LessonId.HorizontalSubtraction0,
     LessonId.VerticalSubtraction0,
     LessonId.NumberLineSubtraction0,
+    // Subtraction L1 (counting only)
+    LessonId.CountingSubtraction1,
     // Multiplication equations (tap the product), operands 0..4
     LessonId.HorizontalMultiplication0,
     LessonId.VerticalMultiplication0,
@@ -77,7 +79,8 @@ private fun lessonOperator(id: LessonId): MathOperator = when (id) {
     LessonId.CountingSubtraction0,
     LessonId.HorizontalSubtraction0,
     LessonId.VerticalSubtraction0,
-    LessonId.NumberLineSubtraction0 -> MathOperator.Minus
+    LessonId.NumberLineSubtraction0,
+    LessonId.CountingSubtraction1 -> MathOperator.Minus
     LessonId.HorizontalMultiplication0,
     LessonId.VerticalMultiplication0,
     LessonId.NumberLineMultiplication0,
@@ -114,6 +117,9 @@ private fun lessonLeftRange(id: LessonId): IntRange = when (id) {
     LessonId.HorizontalSubtraction0,
     LessonId.VerticalSubtraction0,
     LessonId.NumberLineSubtraction0 -> 4..9
+    // Level 1 takes 0..8 off a number in 8..16 — the inverse of the
+    // Addition Level 1 space, whose sums land in exactly that range.
+    LessonId.CountingSubtraction1 -> 8..16
     LessonId.HorizontalMultiplication0,
     LessonId.VerticalMultiplication0,
     LessonId.NumberLineMultiplication0 -> 0..4
@@ -137,6 +143,7 @@ private fun lessonRightRange(id: LessonId): IntRange = when (id) {
     LessonId.HorizontalSubtraction0,
     LessonId.VerticalSubtraction0,
     LessonId.NumberLineSubtraction0 -> 0..4
+    LessonId.CountingSubtraction1 -> 0..8
     LessonId.HorizontalMultiplication0,
     LessonId.VerticalMultiplication0,
     LessonId.NumberLineMultiplication0 -> 0..4
@@ -149,7 +156,8 @@ private fun lessonRightRange(id: LessonId): IntRange = when (id) {
 private fun isPictureLesson(id: LessonId): Boolean = when (id) {
     LessonId.MathPictures,
     LessonId.CountingAddition1,
-    LessonId.CountingSubtraction0 -> true
+    LessonId.CountingSubtraction0,
+    LessonId.CountingSubtraction1 -> true
     else -> false
 }
 

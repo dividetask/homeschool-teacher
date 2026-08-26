@@ -8,7 +8,7 @@ the space as it has room for before any problem comes round twice.
 
 import random
 from dataclasses import dataclass
-from typing import Iterator, List, Optional, Sequence, Tuple
+from typing import Callable, Iterator, List, Optional, Sequence, Tuple
 
 import animals
 import catalog
@@ -69,15 +69,46 @@ class BinaryProblem:
 BINARY_OPERATORS = ("AND", "OR", "XOR")
 
 
-def _cycle_shuffled(cells: Sequence, rng: random.Random) -> Iterator:
+def is_easy(operator: str, a: int, b: int) -> bool:
+    """Whether ``a op b`` is a cell a learner gets right on sight.
+
+    Mirrors ``PracticeGrid.isEasy`` in
+    ``shared/.../practice/PracticeGrid.kt`` and the Easy cells rule in
+    docs/lessons.md: a zero operand in addition or subtraction, a zero or
+    one operand in multiplication, dividing by one.
+    """
+    if operator in ("+", "-"):
+        return a == 0 or b == 0
+    if operator == "x":
+        return a <= 1 or b <= 1
+    if operator == "/":
+        return b <= 1 or a == 0
+    return False
+
+
+def _cycle_shuffled(
+    cells: Sequence,
+    rng: random.Random,
+    easy: Optional[Callable[[object], bool]] = None,
+) -> Iterator:
     """Yield every cell in random order, reshuffling for each new pass.
 
     A pass never repeats a problem, and the join between passes avoids
     handing out the same cell twice in a row.
+
+    Easy cells sit out half the passes, so they come up about half as
+    often as ordinary ones — the printed equivalent of the half weight
+    they carry in the app (docs/lessons.md § Easy cells). Without this a
+    page of Addition Level 1 comes out a third "+ 0".
     """
     previous = None
     while True:
-        order = list(cells)
+        order = [
+            cell for cell in cells
+            if easy is None or not easy(cell) or rng.random() < 0.5
+        ]
+        if not order:
+            order = list(cells)
         rng.shuffle(order)
         if previous is not None and len(order) > 1 and order[0] == previous:
             order[0], order[1] = order[1], order[0]
@@ -145,7 +176,9 @@ def generate(sheet: catalog.Sheet, rng: random.Random) -> Iterator:
         return
 
     if sheet.style == "division-counting":
-        for dividend, divisor in _cycle_shuffled(_division_cells(sheet.params), rng):
+        cells = _division_cells(sheet.params)
+        easy = lambda cell: is_easy("/", cell[0], cell[1])
+        for dividend, divisor in _cycle_shuffled(cells, rng, easy):
             yield Problem(
                 left=dividend,
                 right=divisor,
@@ -155,13 +188,17 @@ def generate(sheet: catalog.Sheet, rng: random.Random) -> Iterator:
         return
 
     if sheet.style in ("mult-counting", "mult-operands"):
-        for a, b in _cycle_shuffled(_arithmetic_cells(sheet.params), rng):
+        cells = _arithmetic_cells(sheet.params)
+        easy = lambda cell: is_easy("x", cell[0], cell[1])
+        for a, b in _cycle_shuffled(cells, rng, easy):
             yield Problem(left=a, right=b, operator="x", animal=rng.choice(animals.ALL))
         return
 
     operator = sheet.params["operator"]
     picture = sheet.style == "counting"
-    for a, b in _cycle_shuffled(_arithmetic_cells(sheet.params), rng):
+    cells = _arithmetic_cells(sheet.params)
+    easy = lambda cell: is_easy(operator, cell[0], cell[1])
+    for a, b in _cycle_shuffled(cells, rng, easy):
         yield Problem(
             left=a,
             right=b,
