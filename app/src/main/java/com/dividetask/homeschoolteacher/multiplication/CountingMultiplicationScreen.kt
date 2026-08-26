@@ -149,9 +149,10 @@ private fun ScoreItem(label: String, value: Int, color: Color) {
 }
 
 /**
- * Render `op2` groups, each containing `op1` copies of [emoji]. Each group
- * is drawn inside its own rounded box with a wide gap between boxes, so a
- * child can clearly see "this many groups of this many". Groups flow
+ * Render `op1` groups, each containing `op2` copies of [emoji] — multiplication
+ * is always read as "op1 groups of op2", so 4 × 3 draws four groups of three.
+ * Each group is drawn inside its own rounded box with a wide gap between boxes,
+ * so a child can clearly see "this many groups of this many". Groups flow
  * left-to-right and wrap to additional lines as needed; a single group is
  * never broken across a line because each group is its own [Row].
  */
@@ -177,7 +178,7 @@ internal fun AnimalGroups(
         horizontalArrangement = Arrangement.spacedBy(24.dp, Alignment.CenterHorizontally),
         verticalArrangement = Arrangement.spacedBy(20.dp),
     ) {
-        repeat(op2) {
+        repeat(op1) {
             Row(
                 horizontalArrangement = Arrangement.spacedBy(4.dp),
                 verticalAlignment = Alignment.CenterVertically,
@@ -189,7 +190,7 @@ internal fun AnimalGroups(
                     )
                     .padding(horizontal = 10.dp, vertical = 8.dp),
             ) {
-                repeat(op1) {
+                repeat(op2) {
                     Text(text = emoji, fontSize = 28.sp)
                 }
             }
