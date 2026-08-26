@@ -1030,16 +1030,26 @@ counting-multiplication grids.
   passed (Horizontal, Vertical, and Number Line Multiplication 0).
 - **Screen:** the matching Horizontal / Vertical / Number Line Equation
   Screen (`×`). The Number Line screen scrolls (it runs 0 to the answer +
-  10, rounded to the next ten — up to 90 for the largest products).
+  10, rounded to the next ten — up to 40, given the product ceiling
+  below).
 - **Variables:** `multiplication_equation_grid` (the same grid as Level 0,
   now covering the `0..9` slice), plus each lesson's own `win_streak`.
-- **Random variables:** `op1, op2 ∈ 0..9` (max product 81).
+- **Random variables:** `op1, op2 ∈ 0..9` (max product 81), **except**
+  Number Line Multiplication Level 1, which additionally drops any pair
+  whose product would reach **30**. The other two presentations type the
+  answer, so a large product costs nothing; the number line has to draw
+  every integer up to the answer, and a line to 90 is an unreadable smear
+  of ticks on a phone. Capping it keeps the line countable, which is the
+  point of that screen.
 - **Answer surface:** **Number Pad** — the learner types the product and
   presses **Enter** (products up to 81 are too many for a tap grid).
-- **Problem selection:** standard math-grid selection over `0..9`.
+- **Problem selection:** standard math-grid selection over `0..9` — over
+  the sub-30 cells only, for Number Line Level 1.
 - **Pass criteria:**
   `multiplication_equation_grid[op1][op2] >= cell_target(op1, op2)` for
-  every `op1, op2 ∈ 0..9` **AND** `win_streak >= 4` (per lesson).
+  every cell the lesson can ask **AND** `win_streak >= 4` (per lesson).
+  For Number Line Level 1 that is the sub-30 cells only — it is not held
+  to cells it never shows.
 
 Like Level 0, the three presentations share the grid and pass
 independently.

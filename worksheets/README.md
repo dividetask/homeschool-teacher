@@ -42,6 +42,11 @@ when you generate a sheet.
 `--list` needs no dependencies at all — ReportLab is only imported when a
 PDF is actually being drawn.
 
+Every sheet carries at most **20 problems** — past that a worksheet stops
+being one sitting's work. Sheets declare a `columns` × `rows` shape in
+`catalog.py` and the blocks grow into the resulting height budget, so a
+capped page still fills rather than sitting in the top half in small type.
+
 PDFs land in `./out` — relative to **where you ran the command**, not to
 this directory — unless `--out` says otherwise. They're named
 `<sheet>-level<N>.pdf`, and pages are US Letter. Every run prints the
@@ -99,9 +104,17 @@ drawing an empty group). The sheets follow the doc.
 
 **Easy cells** are damped the way the app damps them (docs/lessons.md §
 Easy cells): adding or subtracting zero, multiplying by zero or one, and
-dividing by one sit out half the passes, so they come up about half as
-often as ordinary problems. Without this a page of Addition Level 1 comes
-out about a third `+ 0`.
+dividing by one sit out half the passes, so any one of them is half as
+likely to appear as an ordinary problem.
+
+What that comes to on the page depends on how much of a sheet's cell
+space is easy, which varies a lot. Addition Level 1 lands at ~12%.
+Multiplication Level 0 lands at ~48%, because with operands 0..4 only
+nine of its twenty-five cells have both operands above one — most of that
+lesson's facts genuinely are easy ones. Division needed more than the
+halving: every dividend from 1 to 24 divides by one, so `÷ 1` owned 24 of
+58 cells and still filled a quarter of the page. Each divisor now gets
+equal billing per pass, which brings `÷ 1` to about 9%.
 
 A few sheets are worth calling out:
 
@@ -115,6 +128,12 @@ A few sheets are worth calling out:
 - **Binary** opens with the cheat sheet — all three single-bit truth
   tables in the same stacked layout the problems use — so a child can
   look up any column without being told which operator to use.
+- **Horizontal and Vertical Multiplication** open with a reference number
+  line, as the Level 1 addition sheets do.
+- **Number Line Multiplication Level 1** drops any pair whose product
+  reaches 30, matching the lesson: the other Level 1 presentations type
+  the answer, so a large product costs nothing, but a number line has to
+  draw every integer up to it.
 - **Number lines** all span the same number of steps on a given sheet, so
   they share a scale and can be compared down the page — the app widens
   its line per problem, which on paper just makes the page hard to read

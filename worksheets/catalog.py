@@ -16,6 +16,10 @@ logic.
 from dataclasses import dataclass, field
 from typing import Dict, Optional, Tuple
 
+# No sheet carries more than this many problems, however much room the
+# page has. Past twenty a worksheet stops being one sitting's work.
+MAX_PROBLEMS = 20
+
 
 @dataclass(frozen=True)
 class Sheet:
@@ -66,17 +70,17 @@ _SHEETS = (
           dict(_pair((0, 8), (0, 8)), operator="+", animal_size=20.0, max_rows=3, rows=10)),
     Sheet("addition-horizontal", 0, "Addition", "Horizontal Addition — Level 0",
           "Write the answer in the box.",
-          "horizontal", 3, dict(_pair((0, 4), (0, 4)), operator="+")),
+          "horizontal", 2, dict(_pair((0, 4), (0, 4)), operator="+", rows=10)),
     Sheet("addition-horizontal", 1, "Addition", "Horizontal Addition — Level 1",
           "Use the number line at the top to help. Write the answer in the box.",
-          "horizontal", 3, dict(_pair((0, 8), (0, 8)), operator="+"),
+          "horizontal", 2, dict(_pair((0, 8), (0, 8)), operator="+", rows=10),
           header="numberline"),
     Sheet("addition-vertical", 0, "Addition", "Vertical Addition — Level 0",
           "Add the two numbers and write the answer under the line.",
-          "vertical", 4, dict(_pair((0, 4), (0, 4)), operator="+")),
+          "vertical", 4, dict(_pair((0, 4), (0, 4)), operator="+", rows=5)),
     Sheet("addition-vertical", 1, "Addition", "Vertical Addition — Level 1",
           "Use the number line at the top to help. Write each answer under the line.",
-          "vertical", 4, dict(_pair((0, 8), (0, 8)), operator="+"),
+          "vertical", 4, dict(_pair((0, 8), (0, 8)), operator="+", rows=5),
           header="numberline"),
     Sheet("addition-numberline", 0, "Number Line Addition", "Number Line Addition — Level 0",
           "Start at the first number and hop forward. Write where you land.",
@@ -100,10 +104,10 @@ _SHEETS = (
           dict(_pair((8, 16), (0, 8)), operator="-", animal_size=20.0, max_rows=4, rows=10)),
     Sheet("subtraction-horizontal", 0, "Subtraction", "Horizontal Subtraction — Level 0",
           "Write the answer in the box.",
-          "horizontal", 3, dict(_pair((4, 9), (0, 4)), operator="-")),
+          "horizontal", 2, dict(_pair((4, 9), (0, 4)), operator="-", rows=10)),
     Sheet("subtraction-vertical", 0, "Subtraction", "Vertical Subtraction — Level 0",
           "Subtract and write the answer under the line.",
-          "vertical", 4, dict(_pair((4, 9), (0, 4)), operator="-")),
+          "vertical", 4, dict(_pair((4, 9), (0, 4)), operator="-", rows=5)),
     Sheet("subtraction-numberline", 0, "Number Line Subtraction", "Number Line Subtraction — Level 0",
           "Start at the first number and hop backwards. Write where you land.",
           "numberline", 2,
@@ -112,30 +116,31 @@ _SHEETS = (
     # --- Multiplication -------------------------------------------------
     Sheet("multiplication-counting", 0, "Counting Multiplication", "Counting Multiplication — Level 0",
           "Count the groups and how many are in each, then write the total.",
-          "mult-counting", 2, _pair((0, 4), (0, 4))),
+          "mult-counting", 2, dict(_pair((0, 4), (0, 4)), rows=7)),
     Sheet("multiplication-counting", 1, "Counting Multiplication", "Counting Multiplication — Level 1",
           "Write the two numbers being multiplied: how many in each group × how many groups.",
-          "mult-operands", 2, _pair((1, 4), (1, 4))),
+          "mult-operands", 2, dict(_pair((1, 4), (1, 4)), rows=6)),
     Sheet("multiplication-horizontal", 0, "Multiplication", "Horizontal Multiplication — Level 0",
           "Write the answer in the box.",
-          "horizontal", 3, dict(_pair((0, 4), (0, 4)), operator="x")),
+          "horizontal", 2, dict(_pair((0, 4), (0, 4)), operator="x", rows=10), header="numberline"),
     Sheet("multiplication-horizontal", 1, "Multiplication", "Horizontal Multiplication — Level 1",
           "Write the answer in the box.",
-          "horizontal", 3, dict(_pair((0, 9), (0, 9)), operator="x")),
+          "horizontal", 2, dict(_pair((0, 9), (0, 9)), operator="x", rows=10), header="numberline"),
     Sheet("multiplication-vertical", 0, "Multiplication", "Vertical Multiplication — Level 0",
           "Multiply and write the answer under the line.",
-          "vertical", 4, dict(_pair((0, 4), (0, 4)), operator="x")),
+          "vertical", 4, dict(_pair((0, 4), (0, 4)), operator="x", rows=5), header="numberline"),
     Sheet("multiplication-vertical", 1, "Multiplication", "Vertical Multiplication — Level 1",
           "Multiply and write the answer under the line.",
-          "vertical", 4, dict(_pair((0, 9), (0, 9)), operator="x")),
+          "vertical", 4, dict(_pair((0, 9), (0, 9)), operator="x", rows=5), header="numberline"),
     Sheet("multiplication-numberline", 0, "Number Line Multiplication", "Number Line Multiplication — Level 0",
           "Count equal hops along the number line to find each answer.",
-          "numberline", 1,
-          dict(_pair((0, 4), (0, 4)), operator="x", line_origin="zero")),
+          "numberline", 2,
+          dict(_pair((0, 4), (0, 4)), operator="x", line_origin="zero", rows=10)),
     Sheet("multiplication-numberline", 1, "Number Line Multiplication", "Number Line Multiplication — Level 1",
           "Count equal hops along the number line to find each answer.",
-          "numberline", 1,
-          dict(_pair((0, 9), (0, 9)), operator="x", line_origin="zero")),
+          "numberline", 2,
+          dict(_pair((0, 9), (0, 9)), operator="x", line_origin="zero",
+               answer_max=29, rows=10)),
 
     # --- Division -------------------------------------------------------
     # Dividend 1..24, divisor 1..6, and the dividend is always a multiple
@@ -143,15 +148,15 @@ _SHEETS = (
     Sheet("division-counting", 0, "Counting Division", "Counting Division — Level 0",
           "Share the animals into equal groups. Write how many end up in each group.",
           "division-counting", 2,
-          {"dividend_max": 24, "divisor": (1, 6)}),
+          {"dividend_max": 24, "divisor": (1, 6), "rows": 6}),
 
     # --- Binary ---------------------------------------------------------
     Sheet("binary", 0, "Binary Operations", "Binary — Level 0",
           "Use the cheat sheet at the top. Write each answer bit in the box.",
-          "binary", 4, {"bits": 1}, header="binary-cheatsheet"),
+          "binary", 4, {"bits": 1, "rows": 5}, header="binary-cheatsheet"),
     Sheet("binary", 1, "Binary Operations", "Binary — Level 1",
           "Use the cheat sheet at the top. Work one column at a time, right to left.",
-          "binary", 3, {"bits": 3}, header="binary-cheatsheet"),
+          "binary", 3, {"bits": 3, "rows": 5}, header="binary-cheatsheet"),
 )
 
 BY_SLUG: Dict[str, Sheet] = {s.slug: s for s in _SHEETS}

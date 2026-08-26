@@ -98,21 +98,23 @@ def subscript_two(c: Canvas, x: float, baseline: float, size: float) -> float:
 ANIMAL_TRACKING = 1.15
 
 
-def animal_advance(size: float) -> float:
-    return pdfmetrics.stringWidth("\U0001F431", ANIMALS, size) * ANIMAL_TRACKING
+def animal_advance(size: float, tracking: float = ANIMAL_TRACKING) -> float:
+    return pdfmetrics.stringWidth("\U0001F431", ANIMALS, size) * tracking
 
 
-def animal_line_height(size: float) -> float:
-    return size * 1.12
+def animal_line_height(size: float, leading: float = 1.12) -> float:
+    return size * leading
 
 
-def animal_grid_size(count: int, per_row: int, size: float):
+def animal_grid_size(count: int, per_row: int, size: float,
+                     tracking: float = ANIMAL_TRACKING, leading: float = 1.12):
     """(width, height) of ``count`` animals wrapped at ``per_row``."""
     if count <= 0:
         return 0.0, 0.0
     columns = min(count, per_row)
     rows = (count + per_row - 1) // per_row
-    return columns * animal_advance(size), rows * animal_line_height(size)
+    return (columns * animal_advance(size, tracking),
+            rows * animal_line_height(size, leading))
 
 
 def draw_animal_grid(
@@ -123,6 +125,8 @@ def draw_animal_grid(
     count: int,
     size: float,
     per_row: int,
+    tracking: float = ANIMAL_TRACKING,
+    leading: float = 1.12,
 ) -> None:
     """Draw ``count`` animals wrapped at ``per_row``, top-left at (x, top).
 
@@ -131,8 +135,8 @@ def draw_animal_grid(
     """
     if count <= 0:
         return
-    advance = animal_advance(size)
-    line_height = animal_line_height(size)
+    advance = animal_advance(size, tracking)
+    line_height = animal_line_height(size, leading)
     # Centre each glyph in its (tracked) cell so the extra air sits either
     # side of the animal rather than all of it on the right.
     inset = (advance - pdfmetrics.stringWidth(emoji, ANIMALS, size)) / 2.0
@@ -144,7 +148,7 @@ def draw_animal_grid(
     full_width = min(count, per_row) * advance
     while remaining > 0:
         in_row = min(remaining, per_row)
-        baseline = top - row * line_height - size * 0.86
+        baseline = top - row * line_height - size * 0.86 - (line_height - size * 1.12) / 2.0
         row_x = x + (full_width - in_row * advance) / 2.0 + inset
         for i in range(in_row):
             c.drawString(row_x + i * advance, baseline, emoji)

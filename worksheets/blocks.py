@@ -47,31 +47,68 @@ class HorizontalBlock:
     problem: Problem
     index: int
     size: float = 22.0
+    height_budget: Optional[float] = None
+
+    MAX_SIZE = 30.0
+    MAX_BOX = 44.0
 
     def _text(self) -> str:
         p = self.problem
         return f"{p.left} {p.glyph} {p.right} ="
 
+    def _metrics(self, width: float):
+        """(font, box width, box height) grown into the row budget.
+
+        With a twenty-question cap a page of short equations would
+        otherwise sit in the top half of the sheet in small type. Growing
+        into the space keeps the page composed and the writing box big
+        enough for a child's pencil.
+        """
+        natural = max(BOX_HEIGHT, self.size * 1.25)
+        budget = self.height_budget
+        if budget is None or budget <= natural + 6:
+            return self.size, BOX_WIDTH, BOX_HEIGHT
+        scale = min(
+            (budget - 6) / natural,
+            self.MAX_SIZE / self.size,
+            self.MAX_BOX / BOX_HEIGHT,
+        )
+        # Never so wide that the equation stops fitting its column.
+        text = self._text()
+        room = width - LABEL_WIDTH
+        while scale > 1.0:
+            size = self.size * scale
+            if pdfmetrics.stringWidth(text, TEXT_BOLD, size) + GAP + BOX_WIDTH * scale <= room:
+                break
+            scale -= 0.05
+        scale = max(1.0, scale)
+        return self.size * scale, BOX_WIDTH * scale, BOX_HEIGHT * scale
+
     def height(self, width: float) -> float:
-        return max(BOX_HEIGHT, self.size * 1.25) + 6
+        size, _, box_height = self._metrics(width)
+        natural = max(box_height, size * 1.25) + 6
+        if self.height_budget is None:
+            return natural
+        return max(natural, self.height_budget)
 
     def draw(self, c: Canvas, x: float, top: float, width: float) -> None:
         number_label(c, x, top, self.index)
+        size, box_width, box_height = self._metrics(width)
         band = self.height(width)
         text = self._text()
-        text_width = pdfmetrics.stringWidth(text, TEXT_BOLD, self.size)
-        content = text_width + GAP + BOX_WIDTH
+        text_width = pdfmetrics.stringWidth(text, TEXT_BOLD, size)
+        content = text_width + GAP + box_width
         start = x + LABEL_WIDTH + max(0.0, (width - LABEL_WIDTH - content) / 2.0)
 
-        c.setFont(TEXT_BOLD, self.size)
+        c.setFont(TEXT_BOLD, size)
         c.setFillColor(black)
-        c.drawString(start, _centre_baseline(top, band, self.size), text)
+        c.drawString(start, _centre_baseline(top, band, size), text)
         answer_box(
             c,
             start + text_width + GAP,
-            top - (band - BOX_HEIGHT) / 2.0,
-            BOX_WIDTH,
-            BOX_HEIGHT,
+            top - (band - box_height) / 2.0,
+            box_width,
+            box_height,
         )
 
 
@@ -82,29 +119,49 @@ class VerticalBlock:
     problem: Problem
     index: int
     size: float = 20.0
+    height_budget: Optional[float] = None
+
+    MAX_SIZE = 28.0
+
+    def _size(self, width: float) -> float:
+        natural = self.size * 2.62 + BOX_HEIGHT + 7
+        budget = self.height_budget
+        if budget is None or budget <= natural:
+            return self.size
+        grown = self.size * (budget - 7) / (natural - 7)
+        return min(self.MAX_SIZE, grown)
+
+    def _content_height(self, size: float) -> float:
+        return size * 2.62 + BOX_HEIGHT + 7
 
     def height(self, width: float) -> float:
-        return self.size * 2.62 + BOX_HEIGHT + 7
+        natural = self._content_height(self._size(width))
+        if self.height_budget is None:
+            return natural
+        return max(natural, self.height_budget)
 
     def draw(self, c: Canvas, x: float, top: float, width: float) -> None:
         number_label(c, x, top, self.index)
         p = self.problem
-        line = self.size * 1.15
+        size = self._size(width)
+        # Centre the stack in its band when the row is taller than it needs.
+        top = top - max(0.0, (self.height(width) - self._content_height(size)) / 2.0)
+        line = size * 1.15
 
         digits = max(len(str(p.left)), len(str(p.right)))
-        digit_width = pdfmetrics.stringWidth("0", TEXT_BOLD, self.size)
-        operator_width = pdfmetrics.stringWidth(p.glyph, TEXT_BOLD, self.size)
+        digit_width = pdfmetrics.stringWidth("0", TEXT_BOLD, size)
+        operator_width = pdfmetrics.stringWidth(p.glyph, TEXT_BOLD, size)
         stack_width = max(operator_width + 4 + digits * digit_width, BOX_WIDTH)
         left = x + LABEL_WIDTH + max(0.0, (width - LABEL_WIDTH - stack_width) / 2.0)
         right = left + stack_width
 
-        c.setFont(TEXT_BOLD, self.size)
+        c.setFont(TEXT_BOLD, size)
         c.setFillColor(black)
         c.drawRightString(right, top - line, str(p.left))
         c.drawRightString(right, top - 2 * line, str(p.right))
         c.drawString(left, top - 2 * line, p.glyph)
 
-        rule_y = top - 2 * line - self.size * 0.32
+        rule_y = top - 2 * line - size * 0.32
         c.setStrokeColor(black)
         c.setLineWidth(1.4)
         c.line(left, rule_y, right, rule_y)
@@ -497,9 +554,15 @@ class MultOperandsBlock:
         p = self.problem
         return _BoxedGroups(groups=p.right, per_group=p.left, emoji=p.animal.emoji)
 
+    # The pens and the two blanks are separate things to read; without
+    # real space between them, and between one problem and the next, the
+    # page runs together.
+    GAP_TO_BLANKS = 14.0
+    TRAILING = 12.0
+
     def height(self, width: float) -> float:
         inner = width - LABEL_WIDTH
-        return self._groups().height(inner) + 8 + BOX_HEIGHT
+        return self._groups().height(inner) + self.GAP_TO_BLANKS + BOX_HEIGHT + self.TRAILING
 
     def draw(self, c: Canvas, x: float, top: float, width: float) -> None:
         number_label(c, x, top, self.index)
@@ -508,7 +571,7 @@ class MultOperandsBlock:
         groups_height = groups.height(width - LABEL_WIDTH)
         groups.draw(c, left, top, width - LABEL_WIDTH)
 
-        row_top = top - groups_height - 8
+        row_top = top - groups_height - self.GAP_TO_BLANKS
         times = " × "
         times_width = pdfmetrics.stringWidth(times, TEXT_BOLD, self.size)
         answer_box(c, left, row_top, BOX_WIDTH, BOX_HEIGHT)
@@ -526,42 +589,87 @@ class DivisionCountingBlock:
 
     The animals are laid out in a plain rectangle — deliberately *not*
     pre-grouped, since sorting them into equal groups is the work the
-    lesson asks the child to picture.
+    lesson asks the child to picture. They are set loosely, with real air
+    between them both ways: a child counting twenty-four animals needs to
+    be able to tell where one ends and the next begins, and to put a
+    finger on each without covering three.
     """
 
     problem: Problem
     index: int
-    size: float = 15.0
-    per_row: int = 6
+    height_budget: Optional[float] = None
 
-    def _grid(self, width: float):
+    TRACKING = 1.45      # horizontal air, against 1.15 elsewhere
+    LEADING = 1.5        # vertical air, against 1.12 elsewhere
+    MAX_SIZE = 22.0
+    MIN_SIZE = 9.0
+    EQUATION_SIZE = 19.0
+    GAP_TO_EQUATION = 8.0
+    _layout_cache: Optional[tuple] = None
+
+    def _equation_band(self) -> float:
+        return max(BOX_HEIGHT, self.EQUATION_SIZE * 1.3) + self.GAP_TO_EQUATION
+
+    def _layout(self, width: float):
+        """(size, per_row) — the roomiest grid that fits width and budget.
+
+        Wider rows mean fewer of them, which buys vertical space; but past
+        a point the animals have to shrink to fit across. Trying each row
+        width and keeping whichever allows the largest animal balances the
+        two without hand-tuning per operand range.
+        """
+        if self._layout_cache and self._layout_cache[0] == width:
+            return self._layout_cache[1]
+        count = self.problem.left
         available = width - LABEL_WIDTH
-        size = self.size
-        per_row = self.per_row
-        while size > 8.0 and per_row * animal_advance(size) > available:
-            size -= 0.5
-        return size, per_row
+        room = None
+        if self.height_budget is not None:
+            room = self.height_budget - self._equation_band()
+
+        unit = pdfmetrics.stringWidth("\U0001F431", ANIMALS, 1.0)
+        best = (self.MIN_SIZE, max(1, count))
+        for per_row in range(2, 13):
+            rows = math.ceil(count / per_row)
+            by_width = available / (per_row * unit * self.TRACKING)
+            size = min(self.MAX_SIZE, by_width)
+            if room is not None:
+                size = min(size, room / (rows * self.LEADING))
+            if size >= best[0]:
+                best = (size, per_row)
+        size = max(self.MIN_SIZE, best[0])
+        self._layout_cache = (width, (size, best[1]))
+        return size, best[1]
 
     def height(self, width: float) -> float:
-        size, per_row = self._grid(width)
-        _, grid_height = animal_grid_size(self.problem.left, per_row, size)
-        return grid_height + 6 + max(BOX_HEIGHT, self.size * 1.3)
+        size, per_row = self._layout(width)
+        _, grid_height = animal_grid_size(
+            self.problem.left, per_row, size, self.TRACKING, self.LEADING,
+        )
+        natural = grid_height + self._equation_band()
+        if self.height_budget is None:
+            return natural
+        return max(natural, self.height_budget)
 
     def draw(self, c: Canvas, x: float, top: float, width: float) -> None:
         number_label(c, x, top, self.index)
         p = self.problem
         left = x + LABEL_WIDTH
-        size, per_row = self._grid(width)
-        _, grid_height = animal_grid_size(p.left, per_row, size)
-        draw_animal_grid(c, left, top, p.animal.emoji, p.left, size, per_row)
+        size, per_row = self._layout(width)
+        _, grid_height = animal_grid_size(
+            p.left, per_row, size, self.TRACKING, self.LEADING,
+        )
+        draw_animal_grid(
+            c, left, top, p.animal.emoji, p.left, size, per_row,
+            self.TRACKING, self.LEADING,
+        )
 
-        head = max(BOX_HEIGHT, self.size * 1.3)
-        row_top = top - grid_height - 6
+        head = max(BOX_HEIGHT, self.EQUATION_SIZE * 1.3)
+        row_top = top - grid_height - self.GAP_TO_EQUATION
         text = f"{p.left} ÷ {p.right} ="
-        text_width = pdfmetrics.stringWidth(text, TEXT_BOLD, 19.0)
-        c.setFont(TEXT_BOLD, 19.0)
+        text_width = pdfmetrics.stringWidth(text, TEXT_BOLD, self.EQUATION_SIZE)
+        c.setFont(TEXT_BOLD, self.EQUATION_SIZE)
         c.setFillColor(black)
-        c.drawString(left, row_top - head / 2.0 - 19.0 * 0.34, text)
+        c.drawString(left, row_top - head / 2.0 - self.EQUATION_SIZE * 0.34, text)
         answer_box(c, left + text_width + GAP, row_top - (head - BOX_HEIGHT) / 2.0,
                    BOX_WIDTH, BOX_HEIGHT)
 

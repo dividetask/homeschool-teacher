@@ -18,6 +18,7 @@ Only the drawing path needs ReportLab, and it is imported lazily so that
 """
 
 import argparse
+import itertools
 import os
 import random
 import sys
@@ -87,9 +88,9 @@ def _blocks_for(sheet: catalog.Sheet, rng: random.Random,
         index += 1
         problem = next(stream)
         if sheet.style == "horizontal":
-            yield blocks.HorizontalBlock(problem, index)
+            yield blocks.HorizontalBlock(problem, index, height_budget=budget)
         elif sheet.style == "vertical":
-            yield blocks.VerticalBlock(problem, index)
+            yield blocks.VerticalBlock(problem, index, height_budget=budget)
         elif sheet.style == "counting":
             yield blocks.CountingBlock(
                 problem, index,
@@ -107,7 +108,7 @@ def _blocks_for(sheet: catalog.Sheet, rng: random.Random,
         elif sheet.style == "mult-operands":
             yield blocks.MultOperandsBlock(problem, index)
         elif sheet.style == "division-counting":
-            yield blocks.DivisionCountingBlock(problem, index)
+            yield blocks.DivisionCountingBlock(problem, index, height_budget=budget)
         elif sheet.style == "binary":
             yield blocks.BinaryBlock(problem, index)
         else:
@@ -116,9 +117,7 @@ def _blocks_for(sheet: catalog.Sheet, rng: random.Random,
 
 def _cells(sheet: catalog.Sheet):
     """Every (left, right) the sheet can ask, for sizing its number line."""
-    lo_l, hi_l = sheet.params["left"]
-    lo_r, hi_r = sheet.params["right"]
-    return [(a, b) for a in range(lo_l, hi_l + 1) for b in range(lo_r, hi_r + 1)]
+    return problems.arithmetic_cells(sheet.params)
 
 
 def _answer(sheet: catalog.Sheet, left: int, right: int) -> int:
@@ -203,7 +202,10 @@ def build(sheet: catalog.Sheet, path: str, seed: Optional[int] = None) -> int:
     if rows:
         budget = (area[3] - render.ROW_GAP * (int(rows) - 1)) / float(rows)
     count = render.fill_page(
-        c, _blocks_for(sheet, rng, budget), area, sheet.columns,
+        c,
+        itertools.islice(_blocks_for(sheet, rng, budget), catalog.MAX_PROBLEMS),
+        area,
+        sheet.columns,
         max_rows=int(rows) if rows else None,
     )
     render.draw_footer(c, sheet)

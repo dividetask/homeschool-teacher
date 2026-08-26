@@ -8,7 +8,7 @@ the space as it has room for before any problem comes round twice.
 
 import random
 from dataclasses import dataclass
-from typing import Callable, Iterator, List, Optional, Sequence, Tuple
+from typing import Callable, Dict, Iterator, List, Optional, Sequence, Tuple
 
 import animals
 import catalog
@@ -131,10 +131,36 @@ def _split_flags(count: int, rng: random.Random) -> bool:
     return False
 
 
-def _arithmetic_cells(params) -> List[Tuple[int, int]]:
+def arithmetic_cells(params) -> List[Tuple[int, int]]:
+    """Every (left, right) the sheet may ask.
+
+    Usually the two ranges crossed, but a sheet may cap the answer —
+    Number Line Multiplication Level 1 drops anything reaching 30 so the
+    line stays countable, matching the lesson. Both the generator and the
+    number-line sizing ask here, so a sheet is never scaled for a problem
+    it cannot show.
+    """
     lo_l, hi_l = params["left"]
     lo_r, hi_r = params["right"]
-    return [(a, b) for a in range(lo_l, hi_l + 1) for b in range(lo_r, hi_r + 1)]
+    cells = [(a, b) for a in range(lo_l, hi_l + 1) for b in range(lo_r, hi_r + 1)]
+    ceiling = params.get("answer_max")
+    if ceiling is None:
+        return cells
+    operator = params["operator"]
+    return [(a, b) for a, b in cells if _apply(operator, a, b) <= ceiling]
+
+
+def _apply(operator: str, a: int, b: int) -> int:
+    if operator == "+":
+        return a + b
+    if operator == "-":
+        return a - b
+    if operator == "x":
+        return a * b
+    return a // b
+
+
+_arithmetic_cells = arithmetic_cells
 
 
 def _division_cells(params) -> List[Tuple[int, int]]:
@@ -151,6 +177,30 @@ def _division_cells(params) -> List[Tuple[int, int]]:
         for divisor in range(lo, hi + 1)
         for quotient in range(1, max_dividend // divisor + 1)
     ]
+
+
+def _division_pass(params, rng: random.Random) -> List[Tuple[int, int]]:
+    """One page's worth of division problems, balanced across divisors.
+
+    Walking the cell list flat over-represents dividing by one: every
+    dividend from 1 to 24 divides by it, so it owns 24 of the 58 cells and
+    fills a quarter of the page even after the easy-cell halving. Giving
+    each divisor the same number of slots per pass fixes the real problem
+    — the cell space is lopsided, not the weighting — and the easy rule
+    still halves the ÷1 slots on top of that.
+    """
+    by_divisor: Dict[int, List[Tuple[int, int]]] = {}
+    for dividend, divisor in _division_cells(params):
+        by_divisor.setdefault(divisor, []).append((dividend, divisor))
+    slots = min(len(v) for v in by_divisor.values())
+    chosen: List[Tuple[int, int]] = []
+    for divisor, cells in by_divisor.items():
+        take = slots
+        if is_easy("/", cells[0][0], divisor) and rng.random() < 0.5:
+            continue
+        chosen.extend(rng.sample(cells, min(take, len(cells))))
+    rng.shuffle(chosen)
+    return chosen
 
 
 def _binary_cells(bits: int) -> List[Tuple[str, int, int]]:
@@ -176,16 +226,18 @@ def generate(sheet: catalog.Sheet, rng: random.Random) -> Iterator:
         return
 
     if sheet.style == "division-counting":
-        cells = _division_cells(sheet.params)
-        easy = lambda cell: is_easy("/", cell[0], cell[1])
-        for dividend, divisor in _cycle_shuffled(cells, rng, easy):
-            yield Problem(
-                left=dividend,
-                right=divisor,
-                operator="/",
-                animal=rng.choice(animals.ALL),
-            )
-        return
+        previous = None
+        while True:
+            for dividend, divisor in _division_pass(sheet.params, rng):
+                if (dividend, divisor) == previous:
+                    continue
+                previous = (dividend, divisor)
+                yield Problem(
+                    left=dividend,
+                    right=divisor,
+                    operator="/",
+                    animal=rng.choice(animals.ALL),
+                )
 
     if sheet.style in ("mult-counting", "mult-operands"):
         cells = _arithmetic_cells(sheet.params)
