@@ -17,7 +17,10 @@ run reshuffles — the same command twice gives two different worksheets.
 ```
 
 That creates `.venv` beside the script and installs ReportLab, the only
-dependency. `worksheets.py` looks for that `.venv` and re-runs itself
+dependency. It needs Python 3.8 or newer; if your `python3` is older than
+3.9 it will use a newer `python3.x` from your PATH when one exists, and
+say which. Re-running it rebuilds the venv from scratch, so it's also the
+fix if the venv ends up in a bad state. `worksheets.py` looks for that `.venv` and re-runs itself
 under it when the interpreter you invoked doesn't have ReportLab — so
 after setup you can just call `./worksheets.py` and forget the venv
 exists. (If you'd rather use your own interpreter, `pip install
@@ -49,6 +52,17 @@ is gitignored, so `git status` won't show them.
 useful for printing a second copy of one a child already started.
 
 There are no answer keys: every sheet is problems only.
+
+## If it won't run
+
+**`TypeError: 'usedforsecurity' is an invalid keyword argument`** — you're
+on Python 3.8 with ReportLab 4.4.3 or newer. That release calls a hashlib
+API that only exists from Python 3.9 on, but still advertises support for
+3.7+, so pip installs it and every PDF then dies. `requirements.txt` pins
+back to 4.4.2 on old interpreters; re-run `./setup.sh` to pick the pin
+up. The sheets come out identical either way.
+
+**`ModuleNotFoundError: No module named 'reportlab'`** — run `./setup.sh`.
 
 ## The sheets
 
