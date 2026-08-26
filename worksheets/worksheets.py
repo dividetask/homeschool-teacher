@@ -75,12 +75,13 @@ def _require_reportlab() -> None:
         )
 
 
-def _blocks_for(sheet: catalog.Sheet, rng: random.Random) -> Iterator:
+def _blocks_for(sheet: catalog.Sheet, rng: random.Random,
+                budget: Optional[float] = None) -> Iterator:
     """Turn the sheet's problem stream into a stream of drawable blocks."""
     import blocks
 
     stream = problems.generate(sheet, rng)
-    highest = _number_line_range(sheet)
+    span = _number_line_span(sheet)
     index = 0
     while True:
         index += 1
@@ -90,9 +91,17 @@ def _blocks_for(sheet: catalog.Sheet, rng: random.Random) -> Iterator:
         elif sheet.style == "vertical":
             yield blocks.VerticalBlock(problem, index)
         elif sheet.style == "counting":
-            yield blocks.CountingBlock(problem, index)
+            yield blocks.CountingBlock(
+                problem, index,
+                base_size=float(sheet.params.get("animal_size", 20.0)),
+                max_rows=int(sheet.params.get("max_rows", 2)),
+                height_budget=budget,
+            )
         elif sheet.style == "numberline":
-            yield blocks.NumberLineBlock(problem, index, highest)
+            lowest = _line_origin(sheet, problem)
+            yield blocks.NumberLineBlock(
+                problem, index, lowest, lowest + span, height_budget=budget,
+            )
         elif sheet.style == "mult-counting":
             yield blocks.MultCountingBlock(problem, index)
         elif sheet.style == "mult-operands":
@@ -105,28 +114,53 @@ def _blocks_for(sheet: catalog.Sheet, rng: random.Random) -> Iterator:
             raise ValueError(f"unknown style {sheet.style!r}")
 
 
-def _number_line_range(sheet: catalog.Sheet) -> int:
-    """How far every number line on this sheet runs.
-
-    Sized once, from the sheet's largest possible answer, so all the lines
-    on a page share a scale (see NumberLineBlock).
-    """
-    import blocks
-
-    if sheet.style != "numberline":
-        return 0
+def _cells(sheet: catalog.Sheet):
+    """Every (left, right) the sheet can ask, for sizing its number line."""
     lo_l, hi_l = sheet.params["left"]
     lo_r, hi_r = sheet.params["right"]
+    return [(a, b) for a in range(lo_l, hi_l + 1) for b in range(lo_r, hi_r + 1)]
+
+
+def _answer(sheet: catalog.Sheet, left: int, right: int) -> int:
     operator = sheet.params["operator"]
     if operator == "+":
-        biggest = hi_l + hi_r
-    elif operator == "-":
-        biggest = hi_l - lo_r
-    else:
-        biggest = hi_l * hi_r
-    return blocks.next_multiple_of_ten(biggest + 10)
+        return left + right
+    if operator == "-":
+        return left - right
+    return left * right
 
 
+def _line_origin(sheet: catalog.Sheet, problem) -> int:
+    """Where this problem's number line starts.
+
+    "zero" is the usual thing. "min-operand" starts the line at the
+    smaller of the two numbers, which is what lets a Level 1 line stay
+    short enough to sit two-up on the page.
+    """
+    if sheet.params.get("line_origin") == "min-operand":
+        return min(problem.left, problem.right)
+    return 0
+
+
+def _number_line_span(sheet: catalog.Sheet) -> int:
+    """How many steps every number line on this sheet covers.
+
+    Measured across the sheet's whole problem space so one span serves
+    every problem — all the lines then share a scale, which a line
+    resized per problem would not. Rounded up to a multiple of five so
+    the labelled ticks land on round numbers.
+    """
+    if sheet.style != "numberline":
+        return 0
+    origin_is_min = sheet.params.get("line_origin") == "min-operand"
+    needed = 0
+    for left, right in _cells(sheet):
+        origin = min(left, right) if origin_is_min else 0
+        # The line has to reach both the answer and the starting operand:
+        # a subtraction hops backwards from the left operand.
+        furthest = max(_answer(sheet, left, right), left, right)
+        needed = max(needed, furthest - origin)
+    return max(10, ((needed + 1 + 4) // 5) * 5)
 def build(sheet: catalog.Sheet, path: str, seed: Optional[int] = None) -> int:
     """Write one worksheet PDF. Returns the number of problems on it."""
     _require_reportlab()
@@ -144,13 +178,34 @@ def build(sheet: catalog.Sheet, path: str, seed: Optional[int] = None) -> int:
     c.setSubject(sheet.lesson)
 
     top = render.draw_header(c, sheet)
-    if sheet.style == "binary":
+    if sheet.header:
         area_width = render.PAGE_WIDTH - 2 * render.MARGIN
-        used = blocks.draw_cheat_sheet(c, render.MARGIN, top, area_width)
-        top -= used + 18
+        if sheet.header == "binary-cheatsheet":
+            used = blocks.draw_cheat_sheet(c, render.MARGIN, top, area_width)
+        elif sheet.header == "numberline":
+            highest = max(
+                _answer(sheet, left, right) for left, right in _cells(sheet)
+            )
+            used = blocks.draw_reference_line(
+                c, render.MARGIN, top, area_width, 0, highest,
+            )
+        else:
+            raise ValueError(f"unknown header {sheet.header!r}")
+        top -= used + 14
 
     area = render.content_area(top)
-    count = render.fill_page(c, _blocks_for(sheet, rng), area, sheet.columns)
+    # A sheet that asks for a fixed number of rows gets a per-row height
+    # budget, and the blocks that can size themselves shrink into it. That
+    # makes "two columns of twenty" a property of the layout rather than
+    # something that happens to come out right for one operand range.
+    rows = sheet.params.get("rows")
+    budget = None
+    if rows:
+        budget = (area[3] - render.ROW_GAP * (int(rows) - 1)) / float(rows)
+    count = render.fill_page(
+        c, _blocks_for(sheet, rng, budget), area, sheet.columns,
+        max_rows=int(rows) if rows else None,
+    )
     render.draw_footer(c, sheet)
     c.showPage()
     c.save()

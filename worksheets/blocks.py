@@ -6,7 +6,7 @@ can pack ragged-height rows without knowing what a block contains.
 
 import math
 from dataclasses import dataclass
-from typing import List, Sequence
+from typing import List, Optional, Sequence
 
 from reportlab.lib.colors import black
 from reportlab.pdfbase import pdfmetrics
@@ -118,55 +118,93 @@ class VerticalBlock:
 class CountingBlock:
     """Two groups of animals either side of an operator.
 
-    The animal size shrinks until the whole equation fits the column, so
-    the same block works in a two-up Level 0 sheet and a one-up Level 1
-    sheet where a group can hold nine animals.
+    Each group wraps into as many rows as it needs, and the animal size
+    shrinks until the whole equation fits its column — so the same block
+    works two-up at Level 0, where a group holds at most four, and
+    two-up at Level 1, where it can hold eight.
     """
 
     problem: Problem
     index: int
-    base_size: float = 21.0
-    _size: float = 0.0
+    base_size: float = 20.0
+    max_rows: int = 2
+    pad: float = 6.0
+    height_budget: Optional[float] = None
+    _layout_cache: Optional[tuple] = None
 
-    def _group_shape(self, count: int, split: bool):
+    MIN_SIZE = 8.0
+
+    def _shape(self, count: int, rows_budget: int, split: bool):
+        """(columns, rows) for a group of ``count`` animals.
+
+        ``split`` is the app's habit of putting a small group on two
+        lines now and then, so the child sees that the count doesn't
+        depend on the arrangement (see the Counting Equation Screen in
+        docs/lessons.md). Bigger groups wrap because they have to.
+        """
         if count == 0:
             return 1, 1
-        if split:
-            return (count + 1) // 2, 2
-        return count, 1
+        rows = min(rows_budget, count)
+        if split and count >= 2:
+            rows = min(max(rows, 2), count)
+        columns = math.ceil(count / rows)
+        return columns, math.ceil(count / columns)
 
-    def _fit(self, width: float) -> float:
-        available = width - LABEL_WIDTH
+    def _content_width(self, size: float, left_cols: int, right_cols: int) -> float:
         p = self.problem
-        left_cols, _ = self._group_shape(p.left, p.split_left)
-        right_cols, _ = self._group_shape(p.right, p.split_right)
+        symbol = min(size, 22.0)
+        symbols = (
+            pdfmetrics.stringWidth(f" {p.glyph} ", TEXT_BOLD, symbol)
+            + pdfmetrics.stringWidth(" = ", TEXT_BOLD, symbol)
+        )
+        return (left_cols + right_cols) * animal_advance(size) + symbols + BOX_WIDTH
+
+    def _layout(self, width: float):
+        """Largest animal size, on the fewest rows, that fits ``width``."""
+        if self._layout_cache and self._layout_cache[0] == width:
+            return self._layout_cache[1]
+        p = self.problem
+        available = width - LABEL_WIDTH
+        chosen = None
         size = self.base_size
-        while size > 9.0:
-            symbols = pdfmetrics.stringWidth(f" {p.glyph} ", TEXT_BOLD, size) + \
-                pdfmetrics.stringWidth(" = ", TEXT_BOLD, size)
-            total = (left_cols + right_cols) * animal_advance(size) + symbols + BOX_WIDTH
-            if total <= available:
+        while chosen is None:
+            for budget in range(1, self.max_rows + 1):
+                left = self._shape(p.left, budget, p.split_left)
+                right = self._shape(p.right, budget, p.split_right)
+                if self._content_width(size, left[0], right[0]) > available:
+                    continue
+                if self.height_budget is not None:
+                    rows = max(left[1], right[1])
+                    tall = max(rows * render.animal_line_height(size), BOX_HEIGHT)
+                    if tall + self.pad > self.height_budget:
+                        continue
+                chosen = (size, left, right)
                 break
-            size -= 0.5
-        return size
+            if chosen is None:
+                if size <= self.MIN_SIZE:
+                    # Nothing fits: take the tightest shape and let it be
+                    # a hair wide rather than drawing nothing.
+                    chosen = (
+                        self.MIN_SIZE,
+                        self._shape(p.left, self.max_rows, p.split_left),
+                        self._shape(p.right, self.max_rows, p.split_right),
+                    )
+                else:
+                    size = max(self.MIN_SIZE, size - 0.5)
+        self._layout_cache = (width, chosen)
+        return chosen
 
     def height(self, width: float) -> float:
-        self._size = self._fit(width)
-        p = self.problem
-        _, left_rows = self._group_shape(p.left, p.split_left)
-        _, right_rows = self._group_shape(p.right, p.split_right)
-        rows = max(left_rows, right_rows)
-        return max(rows * render.animal_line_height(self._size), BOX_HEIGHT) + 8
+        size, left, right = self._layout(width)
+        rows = max(left[1], right[1])
+        return max(rows * render.animal_line_height(size), BOX_HEIGHT) + self.pad
 
     def draw(self, c: Canvas, x: float, top: float, width: float) -> None:
         number_label(c, x, top, self.index)
         p = self.problem
-        size = self._size or self._fit(width)
+        size, (left_cols, left_rows), (right_cols, right_rows) = self._layout(width)
         band = self.height(width)
         symbol_size = min(size, 22.0)
-
-        left_cols, left_rows = self._group_shape(p.left, p.split_left)
-        right_cols, right_rows = self._group_shape(p.right, p.split_right)
         advance = animal_advance(size)
         line_height = render.animal_line_height(size)
 
@@ -174,28 +212,28 @@ class CountingBlock:
         equals = " = "
         operator_width = pdfmetrics.stringWidth(operator, TEXT_BOLD, symbol_size)
         equals_width = pdfmetrics.stringWidth(equals, TEXT_BOLD, symbol_size)
-        content = (left_cols + right_cols) * advance + operator_width + equals_width + BOX_WIDTH
+        content = (
+            (left_cols + right_cols) * advance + operator_width + equals_width + BOX_WIDTH
+        )
         cursor = x + LABEL_WIDTH + max(0.0, (width - LABEL_WIDTH - content) / 2.0)
 
         middle = top - band / 2.0
         baseline = middle - symbol_size * 0.34
         c.setFillColor(black)
 
-        def group(count: int, cols: int, rows: int, split: bool, at: float) -> float:
-            block_height = rows * line_height
-            group_top = middle + block_height / 2.0
+        def group(count: int, columns: int, rows: int, at: float) -> float:
             if count == 0:
                 empty_pen(c, at, middle + line_height / 2.0, advance, line_height)
             else:
-                per_row = (count + 1) // 2 if split else count
-                draw_animal_grid(c, at, group_top, p.animal.emoji, count, size, per_row)
-            return at + cols * advance
+                group_top = middle + (rows * line_height) / 2.0
+                draw_animal_grid(c, at, group_top, p.animal.emoji, count, size, columns)
+            return at + columns * advance
 
-        cursor = group(p.left, left_cols, left_rows, p.split_left, cursor)
+        cursor = group(p.left, left_cols, left_rows, cursor)
         c.setFont(TEXT_BOLD, symbol_size)
         c.drawString(cursor, baseline, operator)
         cursor += operator_width
-        cursor = group(p.right, right_cols, right_rows, p.split_right, cursor)
+        cursor = group(p.right, right_cols, right_rows, cursor)
         c.setFont(TEXT_BOLD, symbol_size)
         c.drawString(cursor, baseline, equals)
         cursor += equals_width
@@ -208,68 +246,145 @@ def next_multiple_of_ten(x: int) -> int:
     return ((x + 9) // 10) * 10
 
 
+AXIS_HEIGHT = 22.0
+
+
+def draw_axis(c: Canvas, x: float, top: float, width: float,
+              lowest: int, highest: int, height: float = AXIS_HEIGHT) -> float:
+    """A labelled number line, laid out to fit inside ``height``.
+
+    Labels every tick when there's room, thinning to every 5th or 10th
+    when the steps get tight; the minor ticks still carry the counting.
+    Tick and label sizes come off ``height`` so a squeezed line stays
+    inside its band rather than colliding with whatever is below it.
+    """
+    steps = max(1, highest - lowest)
+    step = width / float(steps)
+    if step >= 13:
+        label_every = 1
+    elif step >= 6:
+        label_every = 5
+    else:
+        label_every = 10
+
+    label_size = min(8.5, max(5.0, step * 0.62), height * 0.4)
+    major_tick = min(6.0, height * 0.26)
+    axis_y = top - height + label_size + 1 + major_tick
+
+    c.saveState()
+    c.setStrokeColor(black)
+    c.setLineWidth(1.1)
+    c.line(x, axis_y, x + width, axis_y)
+    c.setFont(TEXT, label_size)
+    for n in range(lowest, highest + 1):
+        tick_x = x + (n - lowest) * step
+        major = n % label_every == 0
+        tick = major_tick if major else major_tick * 0.5
+        c.setLineWidth(1.1 if major else 0.7)
+        c.line(tick_x, axis_y - tick, tick_x, axis_y + tick)
+        if major:
+            c.setFillColor(GREY)
+            c.drawCentredString(tick_x, axis_y - major_tick - label_size - 1, str(n))
+    c.restoreState()
+    return height
+
+
 @dataclass
 class NumberLineBlock:
-    """A 0..``highest`` line with the equation printed beneath it.
+    """A number line with the equation printed beneath it.
 
-    The range is fixed per sheet rather than per problem — the app widens
-    its line to suit each problem, but on paper a line that changes length
-    every few rows is hard to read across, so every line on a sheet is the
-    same and sized to the sheet's hardest problem.
+    Every line on a sheet spans the same number of steps so they share a
+    scale and the eye can compare them, but where that span *starts* is
+    per-sheet: from zero, or from the smaller operand, which keeps a
+    Level 1 line short enough to sit two-up on the page.
+
+    Given a ``height_budget`` the block shrinks to it, taking the space
+    out of the axis and the answer box and leaving the gap between line
+    and equation alone — that gap is what makes the two read as separate
+    things, so it is the last thing worth spending.
     """
 
     problem: Problem
     index: int
+    lowest: int
     highest: int
-    size: float = 19.0
+    size: float = 17.0
+    height_budget: Optional[float] = None
 
-    LINE_HEIGHT = 26.0
+    AXIS_GAP = 12.0
+    MIN_AXIS = 15.0
+    MIN_BOX = 20.0
+
+    def _metrics(self):
+        """(axis height, gap, box height, font size, total height)."""
+        natural = AXIS_HEIGHT + self.AXIS_GAP + BOX_HEIGHT + 2
+        budget = self.height_budget
+        if budget is None or budget >= natural:
+            return AXIS_HEIGHT, self.AXIS_GAP, BOX_HEIGHT, self.size, natural
+
+        floor = self.MIN_AXIS + self.AXIS_GAP + self.MIN_BOX + 2
+        target = max(floor, budget)
+        shrinkable = AXIS_HEIGHT + BOX_HEIGHT
+        keep = (target - self.AXIS_GAP - 2) / shrinkable
+        axis = max(self.MIN_AXIS, AXIS_HEIGHT * keep)
+        box = max(self.MIN_BOX, BOX_HEIGHT * keep)
+        font = max(12.0, self.size * (box / BOX_HEIGHT))
+        return axis, self.AXIS_GAP, box, font, axis + self.AXIS_GAP + box + 2
 
     def height(self, width: float) -> float:
-        return self.LINE_HEIGHT + self.size * 1.8 + 2
+        return self._metrics()[4]
 
     def draw(self, c: Canvas, x: float, top: float, width: float) -> None:
         number_label(c, x, top, self.index)
         p = self.problem
+        axis, gap, box_height, font, _ = self._metrics()
         left = x + LABEL_WIDTH
         span = width - LABEL_WIDTH
-        step = span / float(self.highest)
+        draw_axis(c, left, top, span, self.lowest, self.highest, axis)
 
-        # Label every tick when there's room; otherwise thin out to every
-        # 5th or 10th and let the minor ticks carry the counting.
-        if step >= 13:
-            label_every = 1
-        elif step >= 6:
-            label_every = 5
-        else:
-            label_every = 10
-
-        axis_y = top - 14
-        c.saveState()
-        c.setStrokeColor(black)
-        c.setLineWidth(1.1)
-        c.line(left, axis_y, left + span, axis_y)
-        label_size = min(8.0, max(5.5, step * 0.62))
-        c.setFont(TEXT, label_size)
-        for n in range(self.highest + 1):
-            tick_x = left + n * step
-            major = n % label_every == 0
-            tick = 6 if major else 3
-            c.setLineWidth(1.1 if major else 0.7)
-            c.line(tick_x, axis_y - tick, tick_x, axis_y + tick)
-            if major:
-                c.setFillColor(GREY)
-                c.drawCentredString(tick_x, axis_y - tick - label_size - 1, str(n))
-        c.restoreState()
-
+        row_top = top - axis - gap
         text = f"{p.left} {p.glyph} {p.right} ="
-        text_width = pdfmetrics.stringWidth(text, TEXT_BOLD, self.size)
-        baseline = top - self.LINE_HEIGHT - self.size
-        c.setFont(TEXT_BOLD, self.size)
+        text_width = pdfmetrics.stringWidth(text, TEXT_BOLD, font)
+        c.setFont(TEXT_BOLD, font)
         c.setFillColor(black)
-        c.drawString(left, baseline, text)
-        answer_box(c, left + text_width + GAP, baseline + self.size * 0.78,
-                   BOX_WIDTH, BOX_HEIGHT)
+        c.drawString(left, row_top - box_height / 2.0 - font * 0.34, text)
+        answer_box(c, left + text_width + GAP, row_top, BOX_WIDTH, box_height)
+
+
+REFERENCE_PAD = 8.0
+REFERENCE_TITLE = 14.0
+
+
+def reference_line_height(width: float) -> float:
+    return AXIS_HEIGHT + REFERENCE_TITLE + 2 * REFERENCE_PAD
+
+
+def draw_reference_line(c: Canvas, x: float, top: float, width: float,
+                        lowest: int, highest: int) -> float:
+    """One number line in a panel at the top of the page.
+
+    The symbolic Level 1 sheets get this instead of a line per problem:
+    the operands are large enough that counting on fingers stops working,
+    but a line beside every question would crowd the page.
+    """
+    height = reference_line_height(width)
+    c.saveState()
+    c.setStrokeColor(render.HAIRLINE)
+    c.setLineWidth(1)
+    c.roundRect(x, top - height, width, height, 6, stroke=1, fill=0)
+    c.setFont(TEXT_BOLD, 9)
+    c.setFillColor(GREY)
+    c.drawString(x + REFERENCE_PAD, top - REFERENCE_PAD - 8, "Number line")
+    c.restoreState()
+    draw_axis(
+        c,
+        x + REFERENCE_PAD,
+        top - REFERENCE_PAD - REFERENCE_TITLE,
+        width - 2 * REFERENCE_PAD,
+        lowest,
+        highest,
+    )
+    return height
 
 
 # --- boxed groups (Counting Multiplication) --------------------------------
@@ -455,6 +570,27 @@ class DivisionCountingBlock:
 
 MIN_SLOT_WIDTH = 17.0
 SLOT_HEIGHT = 20.0
+ANSWER_GAP = 6.0
+
+
+def _answer_band(size: float, printed: bool) -> float:
+    """Height the answer line takes: a box to write in, or one line of type."""
+    return size * 1.15 if printed else SLOT_HEIGHT
+
+
+def binary_stack_height(size: float, printed_answer: bool = False) -> float:
+    """Total height of one stacked binary equation at ``size``.
+
+    Both the problems and the cheat sheet lay these out, and getting it
+    wrong silently overlaps them, so both ask here rather than guessing.
+    """
+    return (
+        size                      # first operand line
+        + size * 1.25             # second operand line
+        + size * 0.34             # drop to the rule
+        + ANSWER_GAP
+        + _answer_band(size, printed_answer)
+    )
 
 
 def _binary_metrics(bits: int, size: float, operator: str, slots: bool) -> dict:
@@ -533,11 +669,12 @@ def _draw_binary_stack(
     c.setLineWidth(1.3)
     c.line(origin + metrics["left"], rule_y, origin + metrics["right"], rule_y)
 
-    third = rule_y - 6 - SLOT_HEIGHT
+    answer_band = _answer_band(size, bool(answer))
+    third = rule_y - ANSWER_GAP - answer_band
     if answer:
         c.setFont(TEXT_BOLD, size)
         c.setFillColor(black)
-        baseline = third + SLOT_HEIGHT - size * 0.9
+        baseline = third + answer_band - size * 0.9
         c.drawString(digits_x, baseline, answer)
         subscript_two(c, marker_x, baseline, size)
     else:
@@ -548,7 +685,7 @@ def _draw_binary_stack(
         c.setLineWidth(1.1)
         for i in range(problem.bits):
             c.roundRect(slots_x + i * slot_width + 1.5, third,
-                        slot_width - 3, SLOT_HEIGHT, 3, stroke=1, fill=0)
+                        slot_width - 3, answer_band, 3, stroke=1, fill=0)
         c.restoreState()
         subscript_two(c, slots_x + metrics["slots_width"], third + 4, size)
 
@@ -562,7 +699,7 @@ class BinaryBlock:
     size: float = 17.0
 
     def height(self, width: float) -> float:
-        return self.size * 2.25 + SLOT_HEIGHT + 14
+        return binary_stack_height(self.size) + 6
 
     def draw(self, c: Canvas, x: float, top: float, width: float) -> None:
         number_label(c, x, top, self.index)
@@ -571,54 +708,60 @@ class BinaryBlock:
         _draw_binary_stack(c, left, top, self.size, self.problem, answer="")
 
 
+_CHEAT_SIZE = 14.0
+_CHEAT_PAD = 9.0
+_CHEAT_TITLE = 18.0
+_CHEAT_GAP = 10.0
+# Row pitch has to clear a whole stack, or the answer of one rule collides
+# with the first operand of the rule beneath it and the box reads as one
+# six-line run instead of four separate rules.
+_CHEAT_ROW = binary_stack_height(_CHEAT_SIZE, printed_answer=True) + 12.0
+
+
 def cheat_sheet_height(width: float) -> float:
-    """Height the binary cheat sheet panel needs at ``width``."""
-    return 3 * _CHEAT_ROW_HEIGHT + _CHEAT_TITLE_HEIGHT + 2 * _CHEAT_PAD
-
-
-_CHEAT_SIZE = 12.0
-_CHEAT_ROW_HEIGHT = 54.0
-_CHEAT_TITLE_HEIGHT = 16.0
-_CHEAT_PAD = 8.0
+    """Height the binary cheat sheet needs at ``width``."""
+    return _CHEAT_TITLE + 2 * _CHEAT_ROW + 2 * _CHEAT_PAD
 
 
 def draw_cheat_sheet(c: Canvas, x: float, top: float, width: float) -> float:
-    """The single-bit truth tables, drawn in the app's stacked layout.
+    """The single-bit truth tables — one bordered box per operator.
 
-    Every binary sheet opens with all three, so a child can look up any
-    column of any problem below without being told which operator to use.
-    Returns the height consumed.
+    All three are always shown, so a child can look up any column of any
+    problem below without being told which operator to use. Each operator
+    gets its own box with its name on it, and its four rules sit in a 2×2
+    grid inside: at three-across that leaves enough width to set them
+    bigger than a single twelve-wide row ever could.
     """
     height = cheat_sheet_height(width)
-    c.saveState()
-    c.setStrokeColor(render.HAIRLINE)
-    c.setLineWidth(1)
-    c.roundRect(x, top - height, width, height, 6, stroke=1, fill=0)
+    box_width = (width - 2 * _CHEAT_GAP) / 3.0
 
-    c.setFont(TEXT_BOLD, 10)
-    c.setFillColor(GREY)
-    c.drawString(x + _CHEAT_PAD, top - _CHEAT_PAD - 9, "Cheat sheet")
-    c.restoreState()
+    for i, operator in enumerate(BINARY_OPERATORS):
+        box_x = x + i * (box_width + _CHEAT_GAP)
+        c.saveState()
+        c.setStrokeColor(render.LIGHT)
+        c.setLineWidth(1.2)
+        c.roundRect(box_x, top - height, box_width, height, 7, stroke=1, fill=0)
+        c.setFont(TEXT_BOLD, 12)
+        c.setFillColor(black)
+        c.drawCentredString(box_x + box_width / 2.0, top - _CHEAT_PAD - 10, operator)
+        c.restoreState()
 
-    row_top = top - _CHEAT_PAD - _CHEAT_TITLE_HEIGHT
-    inner_left = x + _CHEAT_PAD
-    inner_width = width - 2 * _CHEAT_PAD
-
-    for operator in BINARY_OPERATORS:
-        cases = [(0, 0), (0, 1), (1, 0), (1, 1)]
+        # Four rules in a 2×2 grid inside the box.
+        cases = ((0, 0), (0, 1), (1, 0), (1, 1))
+        inner_left = box_x + _CHEAT_PAD
+        inner_width = box_width - 2 * _CHEAT_PAD
+        cell_width = inner_width / 2.0
         stack_width = _binary_stack_width(1, _CHEAT_SIZE, operator, slots=False)
-        step = inner_width / 4.0
-        offset = max(0.0, (step - stack_width) / 2.0)
-        for i, (a, b) in enumerate(cases):
+        offset = max(0.0, (cell_width - stack_width) / 2.0)
+        for j, (a, b) in enumerate(cases):
             problem = BinaryProblem(left=a, right=b, operator=operator, bits=1)
             _draw_binary_stack(
                 c,
-                inner_left + i * step + offset,
-                row_top,
+                inner_left + (j % 2) * cell_width + offset,
+                top - _CHEAT_PAD - _CHEAT_TITLE - (j // 2) * _CHEAT_ROW,
                 _CHEAT_SIZE,
                 problem,
                 answer=problem.binary(problem.answer),
             )
-        row_top -= _CHEAT_ROW_HEIGHT
 
     return height

@@ -90,6 +90,13 @@ levels differ only in how many pens the *screen* puts out, and the pens
 aren't part of the printed sheet — so both levels would print the same
 page.
 
+Operand ranges come from the "Random variables" line of each lesson in
+`../docs/lessons.md`, which is the source of truth. Two of them
+deliberately disagree with `MathViewModel.kt`, which has drifted: the doc
+puts every Addition Level 1 variant at `0..8` (the Kotlin uses `0..9`)
+and Counting Addition Level 0 at `0..4` (the Kotlin starts at 1 to avoid
+drawing an empty group). The sheets follow the doc.
+
 A few sheets are worth calling out:
 
 - **Counting Multiplication Level 1** asks for the two *operands* rather
@@ -102,10 +109,21 @@ A few sheets are worth calling out:
 - **Binary** opens with the cheat sheet — all three single-bit truth
   tables in the same stacked layout the problems use — so a child can
   look up any column without being told which operator to use.
-- **Number lines** are all the same length on a given sheet, sized to
-  that sheet's largest possible answer. The app widens its line per
-  problem, but a line that changes length every few rows is hard to read
-  across on paper.
+- **Number lines** all span the same number of steps on a given sheet, so
+  they share a scale and can be compared down the page — the app widens
+  its line per problem, which on paper just makes the page hard to read
+  across. Where that span *starts* is per-sheet: Level 0 lines start at
+  zero, Level 1 lines start at the smaller of the two operands, which is
+  what keeps them short enough to sit two-up.
+- **The symbolic Level 1 sheets** (horizontal and vertical) open with a
+  single reference number line instead of one per problem: the operands
+  are past counting on fingers, but a line beside all 36 questions would
+  bury the page.
+- **Sheets that ask for an exact shape** — the four "two columns of
+  twenty" ones — declare a `rows` target in `catalog.py`. The page filler
+  hands each block a matching height budget and stops at that many rows,
+  so the shape holds regardless of what the operand range does to the
+  drawing.
 
 ## Layout
 

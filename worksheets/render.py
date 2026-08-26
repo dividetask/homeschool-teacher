@@ -229,12 +229,17 @@ def fill_page(
     blocks: Iterable[Block],
     area,
     columns: int,
+    max_rows: Optional[int] = None,
 ) -> int:
     """Lay blocks into a ``columns``-wide grid until the page is full.
 
     Rows are ragged-height: each row is as tall as its tallest block, so a
     counting problem with a big group of animals doesn't force blank space
     onto the shorter problems beside it.
+
+    ``max_rows`` stops after that many rows even if more would fit, for
+    sheets that ask for an exact shape; the blocks on those sheets have
+    already been given a matching height budget, so the page still fills.
 
     Returns how many blocks were drawn. Blocks pulled from the stream but
     left undrawn are discarded — the stream is endless, so nothing is lost.
@@ -245,7 +250,10 @@ def fill_page(
     stream = iter(blocks)
     used = 0.0
     drawn = 0
+    placed_rows = 0
     while True:
+        if max_rows is not None and placed_rows >= max_rows:
+            break
         row: List[Block] = []
         for _ in range(columns):
             try:
@@ -261,6 +269,7 @@ def fill_page(
             break
 
         used += needed
+        placed_rows += 1
         row_top = top - used + row_height
         for i, block in enumerate(row):
             block.draw(c, x0 + i * (column_width + COLUMN_GAP), row_top, column_width)

@@ -1,13 +1,20 @@
 """Which worksheets exist, and the operand ranges each one draws from.
 
-Every entry mirrors a lesson in ``docs/lessons.md`` — same operands, same
-presentation — so a printed sheet drills exactly what the Android lesson
-of the same name drills. When a lesson's range changes there, change it
-here.
+``../docs/lessons.md`` is the source of truth. Every entry mirrors a
+lesson defined there — same operands, same presentation — so a printed
+sheet drills exactly what the on-screen lesson drills. When a range
+changes there, change it here; where the doc and the Kotlin disagree,
+follow the doc.
+
+Alongside the ranges each sheet carries its own layout knobs — how many
+problems sit side by side, how big the animals start out, whether the
+page opens with a reference aid. They live here rather than in
+``blocks.py`` because they're per-sheet editorial choices, not drawing
+logic.
 """
 
 from dataclasses import dataclass, field
-from typing import Dict, Tuple
+from typing import Dict, Optional, Tuple
 
 
 @dataclass(frozen=True)
@@ -15,8 +22,9 @@ class Sheet:
     """One printable worksheet.
 
     ``style`` selects the block renderer in ``blocks.py``; ``columns`` is
-    how many problems sit side by side; ``params`` carries the operand
-    ranges that style needs.
+    how many problems sit side by side; ``header`` names an aid drawn
+    once at the top of the page; ``params`` carries the operand ranges
+    and any per-style layout knobs.
     """
 
     key: str
@@ -27,6 +35,7 @@ class Sheet:
     style: str
     columns: int
     params: Dict[str, object] = field(default_factory=dict)
+    header: Optional[str] = None    # "numberline" | "binary-cheatsheet"
 
     @property
     def slug(self) -> str:
@@ -37,39 +46,52 @@ def _pair(left: Tuple[int, int], right: Tuple[int, int]) -> Dict[str, object]:
     return {"left": left, "right": right}
 
 
-# Operand ranges are inclusive (low, high), matching lessonLeftRange /
-# lessonRightRange in app/.../math/MathViewModel.kt.
+# Operand ranges are inclusive (low, high), taken from the "Random
+# variables" line of each lesson in docs/lessons.md.
+#
+# Two of these deliberately disagree with app/.../math/MathViewModel.kt,
+# which has drifted from the doc: the doc puts every Addition Level 1
+# variant at 0..8 (the Kotlin uses 0..9) and Counting Addition Level 0 at
+# 0..4 (the Kotlin starts at 1 to avoid drawing an empty group). The doc
+# wins; a zero group prints as an empty pen.
 _SHEETS = (
     # --- Addition -------------------------------------------------------
     Sheet("addition-counting", 0, "Counting Addition", "Counting Addition — Level 0",
           "Count the animals in each group, then write how many there are altogether.",
-          "counting", 2, dict(_pair((1, 4), (1, 4)), operator="+")),
+          "counting", 2,
+          dict(_pair((0, 4), (0, 4)), operator="+", animal_size=20.0, max_rows=2, rows=10)),
     Sheet("addition-counting", 1, "Counting Addition", "Counting Addition — Level 1",
           "Count the animals in each group, then write how many there are altogether.",
-          "counting", 1, dict(_pair((0, 9), (0, 9)), operator="+")),
+          "counting", 2,
+          dict(_pair((0, 8), (0, 8)), operator="+", animal_size=20.0, max_rows=3, rows=10)),
     Sheet("addition-horizontal", 0, "Addition", "Horizontal Addition — Level 0",
           "Write the answer in the box.",
           "horizontal", 3, dict(_pair((0, 4), (0, 4)), operator="+")),
     Sheet("addition-horizontal", 1, "Addition", "Horizontal Addition — Level 1",
-          "Write the answer in the box.",
-          "horizontal", 3, dict(_pair((0, 9), (0, 9)), operator="+")),
+          "Use the number line at the top to help. Write the answer in the box.",
+          "horizontal", 3, dict(_pair((0, 8), (0, 8)), operator="+"),
+          header="numberline"),
     Sheet("addition-vertical", 0, "Addition", "Vertical Addition — Level 0",
           "Add the two numbers and write the answer under the line.",
           "vertical", 4, dict(_pair((0, 4), (0, 4)), operator="+")),
     Sheet("addition-vertical", 1, "Addition", "Vertical Addition — Level 1",
-          "Add the two numbers and write the answer under the line.",
-          "vertical", 4, dict(_pair((0, 9), (0, 9)), operator="+")),
+          "Use the number line at the top to help. Write each answer under the line.",
+          "vertical", 4, dict(_pair((0, 8), (0, 8)), operator="+"),
+          header="numberline"),
     Sheet("addition-numberline", 0, "Number Line Addition", "Number Line Addition — Level 0",
-          "Hop along the number line to find each answer.",
-          "numberline", 1, dict(_pair((0, 4), (0, 4)), operator="+")),
+          "Start at the first number and hop forward. Write where you land.",
+          "numberline", 2,
+          dict(_pair((0, 4), (0, 4)), operator="+", line_origin="zero", rows=10)),
     Sheet("addition-numberline", 1, "Number Line Addition", "Number Line Addition — Level 1",
-          "Hop along the number line to find each answer.",
-          "numberline", 1, dict(_pair((0, 9), (0, 9)), operator="+")),
+          "Each line starts at the smaller number. Hop forward and write where you land.",
+          "numberline", 2,
+          dict(_pair((0, 8), (0, 8)), operator="+", line_origin="min-operand", rows=10)),
 
     # --- Subtraction (Level 0 only — the app has no Level 1 yet) --------
     Sheet("subtraction-counting", 0, "Counting Subtraction", "Counting Subtraction — Level 0",
           "Count the first group, take away the second, and write how many are left.",
-          "counting", 1, dict(_pair((4, 9), (0, 4)), operator="-")),
+          "counting", 2,
+          dict(_pair((4, 9), (0, 4)), operator="-", animal_size=20.0, max_rows=3, rows=10)),
     Sheet("subtraction-horizontal", 0, "Subtraction", "Horizontal Subtraction — Level 0",
           "Write the answer in the box.",
           "horizontal", 3, dict(_pair((4, 9), (0, 4)), operator="-")),
@@ -77,8 +99,9 @@ _SHEETS = (
           "Subtract and write the answer under the line.",
           "vertical", 4, dict(_pair((4, 9), (0, 4)), operator="-")),
     Sheet("subtraction-numberline", 0, "Number Line Subtraction", "Number Line Subtraction — Level 0",
-          "Hop backwards along the number line to find each answer.",
-          "numberline", 1, dict(_pair((4, 9), (0, 4)), operator="-")),
+          "Start at the first number and hop backwards. Write where you land.",
+          "numberline", 2,
+          dict(_pair((4, 9), (0, 4)), operator="-", line_origin="zero", rows=10)),
 
     # --- Multiplication -------------------------------------------------
     Sheet("multiplication-counting", 0, "Counting Multiplication", "Counting Multiplication — Level 0",
@@ -101,10 +124,12 @@ _SHEETS = (
           "vertical", 4, dict(_pair((0, 9), (0, 9)), operator="x")),
     Sheet("multiplication-numberline", 0, "Number Line Multiplication", "Number Line Multiplication — Level 0",
           "Count equal hops along the number line to find each answer.",
-          "numberline", 1, dict(_pair((0, 4), (0, 4)), operator="x")),
+          "numberline", 1,
+          dict(_pair((0, 4), (0, 4)), operator="x", line_origin="zero")),
     Sheet("multiplication-numberline", 1, "Number Line Multiplication", "Number Line Multiplication — Level 1",
           "Count equal hops along the number line to find each answer.",
-          "numberline", 1, dict(_pair((0, 9), (0, 9)), operator="x")),
+          "numberline", 1,
+          dict(_pair((0, 9), (0, 9)), operator="x", line_origin="zero")),
 
     # --- Division -------------------------------------------------------
     # Dividend 1..24, divisor 1..6, and the dividend is always a multiple
@@ -117,10 +142,10 @@ _SHEETS = (
     # --- Binary ---------------------------------------------------------
     Sheet("binary", 0, "Binary Operations", "Binary — Level 0",
           "Use the cheat sheet at the top. Write each answer bit in the box.",
-          "binary", 4, {"bits": 1}),
+          "binary", 4, {"bits": 1}, header="binary-cheatsheet"),
     Sheet("binary", 1, "Binary Operations", "Binary — Level 1",
           "Use the cheat sheet at the top. Work one column at a time, right to left.",
-          "binary", 3, {"bits": 3}),
+          "binary", 3, {"bits": 3}, header="binary-cheatsheet"),
 )
 
 BY_SLUG: Dict[str, Sheet] = {s.slug: s for s in _SHEETS}
