@@ -145,6 +145,7 @@ fun MathScreen(
                 problem = problem,
                 answerText = answerText,
                 feedback = state.feedback,
+                maxAnswer = maxAnswer,
             )
             LessonId.HorizontalAddition0,
             LessonId.HorizontalAddition1,
@@ -351,11 +352,15 @@ private fun NumberLineProblem(
     problem: MathProblem,
     answerText: String,
     feedback: MathFeedback,
+    maxAnswer: Int,
 ) {
-    // The line always starts at 0 and runs to the answer + 10, rounded up
-    // to the next multiple of ten — so the answer sits comfortably inside
-    // the range rather than at the far edge.
-    val highest = nextMultipleOfTen(problem.answer + 10)
+    // The line always starts at 0 and runs to the lesson's largest possible
+    // answer + 10, rounded up to the next multiple of ten. Sizing it from the
+    // lesson rather than from this problem's answer keeps the line the same
+    // length for every problem in a lesson — otherwise an easy problem (say
+    // one with a zero operand, whose answer is 0) would draw a stubby line
+    // while the next problem drew a long one.
+    val highest = nextMultipleOfTen(maxAnswer + 10)
 
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,

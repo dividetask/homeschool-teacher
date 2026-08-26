@@ -12,8 +12,9 @@ The codebase has two Gradle modules:
   set of files we can move into a Kotlin Multiplatform `commonMain`
   source set when an iOS target is added: `lesson/Lesson.kt`,
   `lesson/LessonRoulette.kt`, `chess/ChessEngine.kt`,
-  `tictactoe/GameLogic.kt`, `reading/Animal.kt`. The roulette unit
-  test (`LessonRouletteTest`) also lives here.
+  `tictactoe/GameLogic.kt`, `practice/PracticeGrid.kt`,
+  `reading/Animal.kt`. The unit tests (`LessonRouletteTest`,
+  `PracticeGridTest`) also live here.
 - **`:app`** — Android application module. Compose UI, `Storage` (built
   on SharedPreferences), `Tts` (Android `TextToSpeech`), `AppConfig`
   (parses `config.yaml`), `LessonSelector` (orchestrator wiring the
@@ -86,7 +87,17 @@ homeschoolteacher/
 
 Pure-Kotlin logic lives in `shared/src/main/java/...`: `lesson/Lesson.kt`
 (LessonId + registry), `lesson/LessonRoulette.kt` (random selection),
-`chess/ChessEngine.kt`, `tictactoe/GameLogic.kt`, `reading/Animal.kt`.
+`practice/PracticeGrid.kt` (which operand cell a math lesson asks next,
+and how much coverage each one needs), `chess/ChessEngine.kt`,
+`tictactoe/GameLogic.kt`, `reading/Animal.kt`.
+
+`PracticeGrid` is shared by every operand-grid lesson — addition,
+subtraction, both multiplication families and division. It also decides
+which cells are **easy** (a zero operand; multiplying by zero or one;
+dividing by one): those need one correct answer instead of two before
+they count as covered, and are drawn at half the weight of an ordinary
+cell so they come up half as often. See `docs/lessons.md` §
+Rules → Easy cells.
 
 `app/src/main/assets/config.yaml` is the runtime config; it ships
 inside the APK and is read on app start.

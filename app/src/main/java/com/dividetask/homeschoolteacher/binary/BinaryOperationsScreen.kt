@@ -73,13 +73,13 @@ fun BinaryOperationsScreen(
         }
     }
 
-    // The cheat sheet is hidden behind a button. Showing it starts an
-    // 8-second auto-hide; pressing the button again hides it early. Resets
+    // The cheat sheet is hidden behind a button. Showing it starts a
+    // 16-second auto-hide; pressing the button again hides it early. Resets
     // to hidden on each new problem.
     var showCheat by remember(state.problem) { mutableStateOf(false) }
     LaunchedEffect(showCheat) {
         if (showCheat) {
-            delay(8000)
+            delay(16000)
             showCheat = false
         }
     }

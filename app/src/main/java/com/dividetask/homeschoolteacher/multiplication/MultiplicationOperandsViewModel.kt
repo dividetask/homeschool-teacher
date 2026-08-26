@@ -3,6 +3,8 @@ package com.dividetask.homeschoolteacher.multiplication
 import androidx.lifecycle.ViewModel
 import com.dividetask.homeschoolteacher.Storage
 import com.dividetask.homeschoolteacher.lesson.LessonId
+import com.dividetask.homeschoolteacher.practice.GridOperation
+import com.dividetask.homeschoolteacher.practice.PracticeGrid
 import com.dividetask.homeschoolteacher.reading.Animal
 import com.dividetask.homeschoolteacher.reading.Animals
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -37,6 +39,10 @@ private const val GRID_SIZE = 10  // pad room for future levels
 
 /** A run of this many correct in a row passes the lesson outright. */
 private const val RUN_TARGET = 8
+
+/** Every problem this lesson can ask. */
+private val ALL_CELLS: List<Pair<Int, Int>> =
+    (MIN_OPERAND..MAX_OPERAND).flatMap { a -> (MIN_OPERAND..MAX_OPERAND).map { b -> a to b } }
 
 /**
  * Runner for "Counting Multiplication — Level 1". Same boxed animal groups
@@ -167,8 +173,8 @@ class MultiplicationOperandsViewModel : ViewModel() {
 
     private fun evaluatePassedFlag() {
         if (Storage.loadLessonManualOverride(LessonId.CountingMultiplication1)) return
-        val mastered = (MIN_OPERAND..MAX_OPERAND).all { a ->
-            (MIN_OPERAND..MAX_OPERAND).all { b -> grid[a][b] >= 2 }
+        val mastered = PracticeGrid.covered(ALL_CELLS, GridOperation.Multiply) { a, b ->
+            grid[a][b]
         }
         if ((mastered || runStreak >= RUN_TARGET) && !_passed.value) {
             _passed.value = true
@@ -179,22 +185,12 @@ class MultiplicationOperandsViewModel : ViewModel() {
     private fun snapshotGrid(): List<List<Int>> = grid.map { it.toList() }
 
     private fun chooseProblem(previous: OperandsProblem?): OperandsProblem {
-        val allCells: List<Pair<Int, Int>> =
-            (MIN_OPERAND..MAX_OPERAND).flatMap { a -> (MIN_OPERAND..MAX_OPERAND).map { b -> a to b } }
-        val wildcard = Random.nextInt(1, 11)
-        val pool: List<Pair<Int, Int>> = if (wildcard == 1) {
-            allCells
-        } else {
-            val minVal = allCells.minOf { (a, b) -> grid[a][b] }
-            allCells.filter { (a, b) -> grid[a][b] == minVal }
-        }
-        val finalPool = if (previous != null && pool.size > 1) {
-            pool.filter { (a, b) -> a != previous.op1 || b != previous.op2 }
-                .ifEmpty { pool }
-        } else {
-            pool
-        }
-        val (op1, op2) = finalPool[Random.nextInt(finalPool.size)]
+        val (op1, op2) = PracticeGrid.choose(
+            cells = ALL_CELLS,
+            operation = GridOperation.Multiply,
+            value = { a, b -> grid[a][b] },
+            previous = previous?.let { it.op1 to it.op2 },
+        )
         val animal = Animals.all[Random.nextInt(Animals.all.size)]
         return OperandsProblem(op1 = op1, op2 = op2, animal = animal)
     }
