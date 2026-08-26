@@ -182,12 +182,12 @@ def _division_cells(params) -> List[Tuple[int, int]]:
 def _division_pass(params, rng: random.Random) -> List[Tuple[int, int]]:
     """One page's worth of division problems, balanced across divisors.
 
-    Walking the cell list flat over-represents dividing by one: every
-    dividend from 1 to 24 divides by it, so it owns 24 of the 58 cells and
-    fills a quarter of the page even after the easy-cell halving. Giving
-    each divisor the same number of slots per pass fixes the real problem
-    — the cell space is lopsided, not the weighting — and the easy rule
-    still halves the ÷1 slots on top of that.
+    This is docs/lessons.md § Balanced operands, in the shuffled-pass form
+    the sheets use: where the app divides a cell's pick weight by the
+    number of cells sharing its divisor, a pass gives every divisor the
+    same number of slots, which comes to the same thing. The easy-cell
+    rule still halves the ÷1 slots on top of that, so dividing by one
+    lands at about a twelfth of the page rather than a quarter.
     """
     by_divisor: Dict[int, List[Tuple[int, int]]] = {}
     for dividend, divisor in _division_cells(params):

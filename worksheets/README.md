@@ -42,10 +42,23 @@ when you generate a sheet.
 `--list` needs no dependencies at all — ReportLab is only imported when a
 PDF is actually being drawn.
 
-Every sheet carries at most **20 problems** — past that a worksheet stops
-being one sitting's work. Sheets declare a `columns` × `rows` shape in
-`catalog.py` and the blocks grow into the resulting height budget, so a
-capped page still fills rather than sitting in the top half in small type.
+Every sheet carries **12 to 20 problems**. Past twenty a worksheet stops
+being one sitting's work; under twelve it isn't worth printing. Sheets
+declare a `columns` × `rows` shape in `catalog.py` and the blocks grow
+into the resulting height budget, so a capped page still fills rather
+than sitting in the top half in small type, and a sheet that comes in
+under the floor fails the build instead of shipping thin.
+
+Four sheets sit below twenty because their problems are physically
+bigger: Counting Division and Counting Multiplication 1 hold twelve,
+Counting Multiplication 0 fourteen, Binary 1 fifteen.
+
+```
+./worksheets.py --check
+```
+
+builds every sheet several times over and reports the counts. A sheet
+whose count varies between shuffles has a block outgrowing its shape.
 
 PDFs land in `./out` — relative to **where you ran the command**, not to
 this directory — unless `--out` says otherwise. They're named
@@ -113,8 +126,11 @@ Multiplication Level 0 lands at ~48%, because with operands 0..4 only
 nine of its twenty-five cells have both operands above one — most of that
 lesson's facts genuinely are easy ones. Division needed more than the
 halving: every dividend from 1 to 24 divides by one, so `÷ 1` owned 24 of
-58 cells and still filled a quarter of the page. Each divisor now gets
-equal billing per pass, which brings `÷ 1` to about 9%.
+58 cells and still filled a quarter of the page. It is now **balanced on
+the divisor** (docs/lessons.md § Balanced operands) — each divisor gets
+equal billing per pass, which brings `÷ 1` to about 9%. The app applies
+the same rule, weighting rather than slotting; `PracticeGrid.choose`
+takes a `balanceBy` key.
 
 A few sheets are worth calling out:
 

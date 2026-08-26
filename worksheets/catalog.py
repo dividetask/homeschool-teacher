@@ -20,6 +20,12 @@ from typing import Dict, Optional, Tuple
 # page has. Past twenty a worksheet stops being one sitting's work.
 MAX_PROBLEMS = 20
 
+# Nor fewer than this. A sheet coming in under the floor means its blocks
+# outgrew the shape declared for it, which is a layout bug rather than
+# something to ship — building it fails loudly instead. Run
+# `worksheets.py --check` to verify every sheet across several shuffles.
+MIN_PROBLEMS = 12
+
 
 @dataclass(frozen=True)
 class Sheet:

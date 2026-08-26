@@ -308,6 +308,9 @@ class CountingDivisionViewModel : ViewModel() {
             operation = GridOperation.Divide,
             value = { dividend, divisor -> cells[dividend][divisor] },
             previous = previous?.let { it.dividend to it.divisor },
+            // Balance on the divisor: every dividend from 1 to 24 divides
+            // by one, so without this a quarter of the round is "÷ 1".
+            balanceBy = { _, divisor -> divisor },
         )
         return DivisionProblem(
             dividend = dividend,

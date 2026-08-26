@@ -211,6 +211,14 @@ def build(sheet: catalog.Sheet, path: str, seed: Optional[int] = None) -> int:
     render.draw_footer(c, sheet)
     c.showPage()
     c.save()
+
+    if count < catalog.MIN_PROBLEMS:
+        raise SystemExit(
+            f"worksheets: {sheet.slug} came out with {count} problems, under the "
+            f"{catalog.MIN_PROBLEMS} minimum.\n"
+            "Its blocks have outgrown the shape declared in catalog.py — widen "
+            "the shape or shrink the block rather than shipping a thin page."
+        )
     return count
 
 
@@ -231,6 +239,40 @@ def _resolve(names: Sequence[str], level: Optional[int]) -> List[catalog.Sheet]:
             except KeyError as exc:
                 raise SystemExit(f"worksheets: {exc.args[0]}")
     return chosen
+
+
+def _check(seeds: int = 8) -> int:
+    """Build every sheet a few times over and report the problem counts.
+
+    A sheet's count should be identical whatever the shuffle: the shape is
+    declared, not discovered. A range here means some operand combination
+    is pushing a block past its budget.
+    """
+    import tempfile
+
+    counts = {}
+    with tempfile.TemporaryDirectory() as tmp:
+        for seed in range(seeds):
+            for sheet in catalog.ALL:
+                n = build(sheet, os.path.join(tmp, f"{sheet.slug}.pdf"), seed)
+                counts.setdefault(sheet.slug, set()).add(n)
+
+    width = max(len(k) for k in counts)
+    unstable = 0
+    print(f"{seeds} shuffles of each sheet "
+          f"(floor {catalog.MIN_PROBLEMS}, cap {catalog.MAX_PROBLEMS})\n")
+    for slug in sorted(counts, key=lambda k: (min(counts[k]), k)):
+        seen = sorted(counts[slug])
+        note = ""
+        if len(seen) > 1:
+            note = "   varies with the shuffle"
+            unstable += 1
+        print(f"  {slug.ljust(width)}  {', '.join(str(n) for n in seen)}{note}")
+    if unstable:
+        print(f"\n{unstable} sheet(s) vary between shuffles.")
+        return 1
+    print("\nEvery sheet is stable and within bounds.")
+    return 0
 
 
 def _list_sheets() -> None:
@@ -259,7 +301,13 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     parser.add_argument("--seed", type=int, default=None,
                         help="fix the shuffle so a sheet can be reproduced exactly")
     parser.add_argument("--list", action="store_true", help="list the available worksheets")
+    parser.add_argument("--check", action="store_true",
+                        help="build every sheet several times and report problem counts")
     args = parser.parse_args(argv)
+
+    if args.check:
+        _require_reportlab()
+        return _check()
 
     if args.list or (not args.names and not args.all):
         _list_sheets()

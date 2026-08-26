@@ -85,6 +85,16 @@ homeschoolteacher/
     └── RhymingWords.kt / RhymingWordsViewModel.kt / RhymingWordsScreen.kt
 ```
 
+`shared/.../practice/PracticeGrid.kt` holds the shared grid policy: which
+cell a lesson asks next and how many correct answers a cell needs to
+count as covered. Easy cells (adding or subtracting zero, multiplying by
+zero or one, dividing by one) need one instead of two and are drawn at
+half weight. A lesson may also pass `balanceBy` to make every value of
+one operand come up equally often — division does, on the divisor, since
+every dividend from 1 to 24 divides by one and would otherwise fill a
+quarter of the round. It is pure, so `PracticeGridTest` exercises it
+without Android.
+
 Pure-Kotlin logic lives in `shared/src/main/java/...`: `lesson/Lesson.kt`
 (LessonId + registry), `lesson/LessonRoulette.kt` (random selection),
 `practice/PracticeGrid.kt` (which operand cell a math lesson asks next,

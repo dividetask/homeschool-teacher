@@ -467,6 +467,27 @@ Two things follow, wherever a lesson uses an operand grid:
 Grids that are not arithmetic (the binary AND/OR/XOR grids, the per-word
 reading lists) have no easy cells: every one of their cells needs 2.
 
+### Balanced operands
+
+A lesson's cells are not always spread evenly across its operands.
+Division is the clear case: the dividend runs `1..24` and only the pairs
+that divide exactly are ever asked, so `÷ 1` owns **24** of the 58 cells
+while `÷ 5` and `÷ 6` own four each. Drawing uniformly over cells spends
+a quarter of every round dividing by one, and the easy-cell halving only
+takes that to an eighth — the problem is the shape of the cell space, not
+the weight of any one cell.
+
+Where a lesson names a **balance operand**, every distinct value of that
+operand comes up equally often, however many cells it owns: a cell's pick
+weight is divided by the number of cells in the pool sharing its balance
+value. This multiplies with the easy-cell weight rather than replacing
+it, so `÷ 1` is damped twice — once for being a sixth of the divisors,
+once for being easy.
+
+Only the division lessons name one, and it is the **divisor**. That takes
+`÷ 1` from a quarter of the problems to about a **twelfth**, and leaves
+the other five divisors level with each other.
+
 ### Random problem selection (math grid)
 
 For lessons that use a 2D operand grid:
@@ -479,8 +500,10 @@ For lessons that use a 2D operand grid:
    that has never been asked outranks one already answered right once.
 
 Every draw is weighted: an easy cell counts half as much as an ordinary
-one (see Rules § Easy cells). Ties are otherwise broken uniformly at
-random.
+one (see Rules § Easy cells), and where the lesson names a balance
+operand, a cell counts for less the more cells share its value of that
+operand (see Rules § Balanced operands). Ties are otherwise broken
+uniformly at random.
 
 The next-problem selection avoids repeating the previous problem when
 the candidate pool has more than one entry.
@@ -1130,7 +1153,9 @@ independently.
     `dividend ≤ 24`. The dividend is therefore always a whole number of
     groups and the answer is always an integer.
 - **Problem selection:** standard math-grid selection, restricted to the
-  cells above (the rest of `division_grid` is never asked)
+  cells above (the rest of `division_grid` is never asked), **balanced on
+  the divisor** (see Rules § Balanced operands) so dividing by one does
+  not crowd out the rest
 - **Pass criteria:**
   `division_grid[0][dividend][divisor] >= cell_target(dividend, divisor)`
   for every askable cell **AND** `win_streak[11][0] >= 4`
@@ -1147,7 +1172,7 @@ independently.
   does not count towards it), `win_streak[11][1]`
 - **Random variables:** same as Level 0
 - **Problem selection:** standard math-grid selection, restricted to the
-  askable cells
+  askable cells, balanced on the divisor as at Level 0
 - **Pass criteria:**
   `division_grid[1][dividend][divisor] >= cell_target(dividend, divisor)`
   for every askable cell **AND** `win_streak[11][1] >= 4`
@@ -1168,7 +1193,9 @@ independently.
     `dividend ≤ 24`. The dividend is therefore always a whole number of
     groups and the answer is always an integer.
 - **Problem selection:** standard math-grid selection, restricted to the
-  cells above (the rest of `division_grid` is never asked)
+  cells above (the rest of `division_grid` is never asked), **balanced on
+  the divisor** (see Rules § Balanced operands) so dividing by one does
+  not crowd out the rest
 - **Pass criteria:** `division_grid[0][dividend][divisor] >= 2` for every
   askable cell **AND** `win_streak[11][0] >= 4`
 
@@ -1184,7 +1211,7 @@ independently.
   does not count towards it), `win_streak[11][1]`
 - **Random variables:** same as Level 0
 - **Problem selection:** standard math-grid selection, restricted to the
-  askable cells
+  askable cells, balanced on the divisor as at Level 0
 - **Pass criteria:** `division_grid[1][dividend][divisor] >= 2` for every
   askable cell **AND** `win_streak[11][1] >= 4`
 
