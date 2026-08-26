@@ -39,8 +39,11 @@ when you generate a sheet.
 `--list` needs no dependencies at all — ReportLab is only imported when a
 PDF is actually being drawn.
 
-PDFs land in `./out` unless `--out` says otherwise, named
-`<sheet>-level<N>.pdf`. Pages are US Letter.
+PDFs land in `./out` — relative to **where you ran the command**, not to
+this directory — unless `--out` says otherwise. They're named
+`<sheet>-level<N>.pdf`, and pages are US Letter. Every run prints the
+absolute directory it wrote to, so there's no guessing; note that `out/`
+is gitignored, so `git status` won't show them.
 
 `--seed N` fixes the shuffle, so a sheet can be regenerated exactly —
 useful for printing a second copy of one a child already started.

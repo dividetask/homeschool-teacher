@@ -197,7 +197,8 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     parser.add_argument("--level", type=int, default=None,
                         help="build only this level (default: every level the sheet has)")
     parser.add_argument("--out", default="out",
-                        help="directory to write PDFs into (default: ./out)")
+                        help="directory to write PDFs into, relative to where "
+                             "you're standing unless absolute (default: ./out)")
     parser.add_argument("--seed", type=int, default=None,
                         help="fix the shuffle so a sheet can be reproduced exactly")
     parser.add_argument("--list", action="store_true", help="list the available worksheets")
@@ -211,14 +212,23 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     if args.all and args.level is not None:
         sheets = [s for s in sheets if s.level == args.level]
 
-    os.makedirs(args.out, exist_ok=True)
+    # Resolve before printing: "out/foo.pdf" doesn't tell you which "out",
+    # and the answer depends on where you ran this from.
+    out_dir = os.path.abspath(args.out)
+    os.makedirs(out_dir, exist_ok=True)
+    print(f"Writing to {out_dir}\n")
+
+    width = max(len(f"{s.slug}.pdf") for s in sheets)
     for sheet in sheets:
-        path = os.path.join(args.out, f"{sheet.slug}.pdf")
+        name = f"{sheet.slug}.pdf"
         # Vary the seed per sheet so --seed still gives every sheet in a
         # batch its own problem set rather than the same shuffle.
         seed = None if args.seed is None else args.seed + hash(sheet.slug) % 100000
-        count = build(sheet, path, seed)
-        print(f"{path}  ({count} problems)")
+        count = build(sheet, os.path.join(out_dir, name), seed)
+        print(f"  {name.ljust(width)}  {count} problems")
+
+    sheet_word = "worksheet" if len(sheets) == 1 else "worksheets"
+    print(f"\n{len(sheets)} {sheet_word} written to {out_dir}")
     return 0
 
 
