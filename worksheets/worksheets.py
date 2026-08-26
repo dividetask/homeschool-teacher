@@ -6,11 +6,15 @@ same presentation — and is filled with as many problems as the page
 holds. Every run reshuffles, so the same command twice gives two
 different worksheets.
 
+    ./setup.sh                                  # once, to install ReportLab
     ./worksheets.py addition-horizontal --level 1
     ./worksheets.py division-counting binary
     ./worksheets.py --all --out ~/worksheets
 
 Run with no arguments to list what's available.
+
+Only the drawing path needs ReportLab, and it is imported lazily so that
+--list and the argument errors still work on a bare interpreter.
 """
 
 import argparse
@@ -19,14 +23,62 @@ import random
 import sys
 from typing import Iterator, List, Optional, Sequence
 
-import blocks
 import catalog
 import problems
-import render
+
+VENV_PYTHON = os.path.join(
+    os.path.dirname(os.path.abspath(__file__)), ".venv", "bin", "python",
+)
+_REEXEC_GUARD = "HST_WORKSHEETS_REEXEC"
+
+
+def _reexec_into_venv() -> None:
+    """Re-run under ``.venv`` when ReportLab is missing from this Python.
+
+    So ``./worksheets.py`` works straight from a shell after setup.sh,
+    without the caller having to remember the venv's interpreter. The
+    guard variable stops this recursing if the venv is broken too.
+    """
+    if os.environ.get(_REEXEC_GUARD):
+        return
+    try:
+        import reportlab  # noqa: F401
+        return
+    except ImportError:
+        pass
+    if not os.path.exists(VENV_PYTHON):
+        return
+    # Compare the paths as written, not resolved: a venv's ``python`` is a
+    # symlink to the base interpreter, so realpath() makes every venv look
+    # like the one already running and this would never fire.
+    if os.path.abspath(VENV_PYTHON) == os.path.abspath(sys.executable):
+        return
+    os.environ[_REEXEC_GUARD] = "1"
+    os.execv(VENV_PYTHON, [VENV_PYTHON, os.path.abspath(__file__)] + sys.argv[1:])
+
+
+def _require_reportlab() -> None:
+    """Fail with instructions rather than a bare ImportError traceback."""
+    try:
+        import reportlab  # noqa: F401
+    except ImportError:
+        raise SystemExit(
+            "worksheets: ReportLab is not installed, so no PDF can be drawn.\n"
+            "\n"
+            "    ./setup.sh\n"
+            "\n"
+            "creates a .venv beside this script and installs it; after that\n"
+            "./worksheets.py picks the .venv up on its own. To use your own\n"
+            "interpreter instead, install ReportLab into it and run that:\n"
+            "\n"
+            "    python3 -m pip install reportlab\n"
+        )
 
 
 def _blocks_for(sheet: catalog.Sheet, rng: random.Random) -> Iterator:
     """Turn the sheet's problem stream into a stream of drawable blocks."""
+    import blocks
+
     stream = problems.generate(sheet, rng)
     highest = _number_line_range(sheet)
     index = 0
@@ -59,6 +111,8 @@ def _number_line_range(sheet: catalog.Sheet) -> int:
     Sized once, from the sheet's largest possible answer, so all the lines
     on a page share a scale (see NumberLineBlock).
     """
+    import blocks
+
     if sheet.style != "numberline":
         return 0
     lo_l, hi_l = sheet.params["left"]
@@ -75,10 +129,14 @@ def _number_line_range(sheet: catalog.Sheet) -> int:
 
 def build(sheet: catalog.Sheet, path: str, seed: Optional[int] = None) -> int:
     """Write one worksheet PDF. Returns the number of problems on it."""
+    _require_reportlab()
+
+    import blocks
+    import render
+    from reportlab.pdfgen.canvas import Canvas
+
     render.register_fonts()
     rng = random.Random(seed)
-
-    from reportlab.pdfgen.canvas import Canvas
 
     c = Canvas(path, pagesize=render.PAGE_SIZE)
     c.setTitle(f"{sheet.title} — Level {sheet.level}")
@@ -129,6 +187,7 @@ def _list_sheets() -> None:
 
 
 def main(argv: Optional[Sequence[str]] = None) -> int:
+    _reexec_into_venv()
     parser = argparse.ArgumentParser(
         prog="worksheets.py",
         description="Generate printable PDF worksheets for the Homeschool Teacher lessons.",
@@ -164,4 +223,11 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    try:
+        sys.exit(main())
+    except BrokenPipeError:
+        # `worksheets.py --list | head` closes the pipe early. Point the
+        # rest of stdout at /dev/null so the interpreter doesn't report a
+        # second failure while flushing on the way out.
+        os.dup2(os.open(os.devnull, os.O_WRONLY), sys.stdout.fileno())
+        sys.exit(0)

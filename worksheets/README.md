@@ -13,21 +13,31 @@ run reshuffles — the same command twice gives two different worksheets.
 ## Setup
 
 ```
-python3 -m venv .venv
-.venv/bin/pip install -r requirements.txt
+./setup.sh
 ```
 
-ReportLab is the only dependency. The fonts are vendored (see
-`fonts/SOURCE.md`), so nothing is downloaded when you generate a sheet.
+That creates `.venv` beside the script and installs ReportLab, the only
+dependency. `worksheets.py` looks for that `.venv` and re-runs itself
+under it when the interpreter you invoked doesn't have ReportLab — so
+after setup you can just call `./worksheets.py` and forget the venv
+exists. (If you'd rather use your own interpreter, `pip install
+reportlab` into it and run `python worksheets.py`; the `.venv` lookup
+only kicks in when ReportLab is missing.)
+
+The fonts are vendored (see `fonts/SOURCE.md`), so nothing is downloaded
+when you generate a sheet.
 
 ## Use
 
 ```
-.venv/bin/python worksheets.py --list                     # what's available
-.venv/bin/python worksheets.py addition-horizontal        # every level of one sheet
-.venv/bin/python worksheets.py division-counting --level 0
-.venv/bin/python worksheets.py --all --out ~/worksheets   # the whole set
+./worksheets.py --list                     # what's available
+./worksheets.py addition-horizontal        # every level of one sheet
+./worksheets.py division-counting --level 0
+./worksheets.py --all --out ~/worksheets   # the whole set
 ```
+
+`--list` needs no dependencies at all — ReportLab is only imported when a
+PDF is actually being drawn.
 
 PDFs land in `./out` unless `--out` says otherwise, named
 `<sheet>-level<N>.pdf`. Pages are US Letter.
