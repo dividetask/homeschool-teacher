@@ -221,8 +221,13 @@ The two operands stacked, with the operator on the second line:
 A horizontal number line drawn above the equation, with the equation
 below (`X op Y = ?`). The number line:
 
-- **always starts at 0** and runs to `next_multiple_of_ten(answer + 10)`
-  — so the answer sits comfortably inside the range, never at the edge;
+- **always starts at 0** and runs to
+  `next_multiple_of_ten(lesson_max_answer + 10)`, where
+  `lesson_max_answer` is the largest answer the lesson can ask — so the
+  line is the same length for every problem in a lesson (sizing it off
+  the current answer instead would draw a stubby line for an easy
+  problem, such as one with a zero operand, and a long one for the next),
+  and every answer sits comfortably inside the range, never at the edge;
 - **labels every integer** with a tick;
 - **scrolls horizontally** — the learner drags it left/right with a
   finger (it is wider than the screen);
@@ -316,16 +321,17 @@ answers, then they are revealed alongside the green/red feedback. A
 **Answer surface:** A–Z Keypad.
 
 ### Counting Multiplication Screen
-The equation displayed on its own line followed by `op2` groups, each
-containing `op1` copies of a randomly-picked animal emoji. **Each group
-is drawn inside its own rounded box, with a wide gap between boxes**, so
-the "this many groups of this many" structure is clear. Groups flow
-left-to-right and wrap to additional lines as needed; a single group is
-never split across a line. Example for `op1 = 2`, `op2 = 4`:
+The equation displayed on its own line followed by `op1` groups, each
+containing `op2` copies of a randomly-picked animal emoji — multiplication
+is always read as "`op1` groups of `op2`". **Each group is drawn inside
+its own rounded box, with a wide gap between boxes**, so the "this many
+groups of this many" structure is clear. Groups flow left-to-right and
+wrap to additional lines as needed; a single group is never split across
+a line. Example for `op1 = 2`, `op2 = 4`:
 
 ```
 2 × 4 = ?
-[🐱🐱]  [🐱🐱]  [🐱🐱]  [🐱🐱]
+[🐱🐱🐱🐱]  [🐱🐱🐱🐱]
 ```
 
 For products that don't fit on one line (e.g. `4 × 4 = 16`), the
@@ -395,7 +401,7 @@ and size as the problem itself** (operands stacked, `₂` subscripts, rule
 line, result). AND shows the AND table; OR the OR table; XOR the XOR
 table. For Level 0 these four are every possible question; for Level 1
 they are the per-column rule for each of the three bits. Pressing the
-button again hides it; otherwise it auto-hides after 8 seconds (or on a
+button again hides it; otherwise it auto-hides after 16 seconds (or on a
 tap). It resets to hidden on each new problem.
 
 **Answer surface:** Binary Keypad with `bits` slots.
@@ -1006,8 +1012,8 @@ counting-multiplication grids.
 - **Unlock conditions:** all three symbolic Multiplication Level 0 lessons
   passed (Horizontal, Vertical, and Number Line Multiplication 0).
 - **Screen:** the matching Horizontal / Vertical / Number Line Equation
-  Screen (`×`). The Number Line screen scrolls (it runs 0 to the answer +
-  10, rounded to the next ten — up to 90 for the largest products).
+  Screen (`×`). The Number Line screen scrolls (it runs 0 to 90 — the
+  largest product, 81, plus 10, rounded to the next ten).
 - **Variables:** `multiplication_equation_grid` (the same grid as Level 0,
   now covering the `0..9` slice), plus each lesson's own `win_streak`.
 - **Random variables:** `op1, op2 ∈ 0..9` (max product 81).
