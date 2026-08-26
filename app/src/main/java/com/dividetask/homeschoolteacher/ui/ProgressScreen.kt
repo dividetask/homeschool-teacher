@@ -33,6 +33,9 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.dividetask.homeschoolteacher.binary.BinaryOperationsViewModel
 import com.dividetask.homeschoolteacher.binary.BinaryOperator
 import com.dividetask.homeschoolteacher.chess.ChessViewModel
+import com.dividetask.homeschoolteacher.division.CountingDivisionViewModel
+import com.dividetask.homeschoolteacher.division.MAX_DIVIDEND
+import com.dividetask.homeschoolteacher.division.MAX_DIVISOR
 import com.dividetask.homeschoolteacher.multiplication.CountingMultiplicationViewModel
 import com.dividetask.homeschoolteacher.multiplication.MultiplicationOperandsViewModel
 import com.dividetask.homeschoolteacher.lesson.LessonDefinition
@@ -63,6 +66,7 @@ fun ProgressScreen(
     binary: BinaryOperationsViewModel,
     multiplication: CountingMultiplicationViewModel,
     multiplicationOperands: MultiplicationOperandsViewModel,
+    division: CountingDivisionViewModel,
     letterSounds: LetterSoundsViewModel,
     phonemes: PhonemesViewModel,
     reading: ReadingViewModel,
@@ -110,6 +114,9 @@ fun ProgressScreen(
 
     val operandsStreaks by multiplicationOperands.streaks.collectAsStateWithLifecycle()
     val operandsState by multiplicationOperands.state.collectAsStateWithLifecycle()
+
+    val divisionStreaks by division.streaks.collectAsStateWithLifecycle()
+    val divisionState by division.state.collectAsStateWithLifecycle()
 
     val subtractionStreaks by math.subtractionGrid.collectAsStateWithLifecycle()
     val multEquationStreaks by math.multiplicationGrid.collectAsStateWithLifecycle()
@@ -413,6 +420,39 @@ fun ProgressScreen(
 
         Section(LessonId.NumberLineMultiplication1) {
             InfoRow("Correct streak", "${mathLessonStreaks[LessonId.NumberLineMultiplication1]} / 4")
+        }
+
+        Section(LessonId.CountingDivision0) {
+            InfoRow("Correct (lifetime)", divisionState.correctCount.toString())
+            InfoRow("Wrong (lifetime)", divisionState.wrongCount.toString())
+            InfoRow(
+                "Correct streak",
+                "${division.lessonStreak(LessonId.CountingDivision0).value} / 4",
+            )
+            Text(
+                text = "Streak grid for dividend ÷ divisor. Only the cells " +
+                    "that divide evenly are ever asked, so the blanks are " +
+                    "expected — mastery is judged over the marked cells only.",
+                fontSize = 12.sp,
+                color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f),
+            )
+            DivisionStreakGrid(divisionStreaks.getOrNull(0).orEmpty())
+        }
+
+        Section(LessonId.CountingDivision1) {
+            InfoRow(
+                "Correct streak",
+                "${division.lessonStreak(LessonId.CountingDivision1).value} / 4",
+            )
+            Text(
+                text = "Same problems as Level 0, but the screen always puts " +
+                    "out six pens instead of one per group, so the sharing no " +
+                    "longer hands over the answer. Keeps its own coverage — " +
+                    "Level 0's does not count towards it.",
+                fontSize = 12.sp,
+                color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f),
+            )
+            DivisionStreakGrid(divisionStreaks.getOrNull(1).orEmpty())
         }
 
         Section(LessonId.Reading0) {
@@ -962,6 +1002,48 @@ private fun PhonemesTable(streaks: Map<String, Int>) {    Column(
                                 color = MaterialTheme.colorScheme.onBackground,
                             )
                         }
+                    }
+                }
+            }
+        }
+    }
+}
+
+/**
+ * Coverage for dividend ÷ divisor. Rows are dividends 1..24, columns are
+ * divisors 1..6, and cells that don't divide evenly are drawn as blanks
+ * because no problem will ever ask them.
+ */
+@Composable
+private fun DivisionStreakGrid(streaks: List<List<Int>>) {
+    if (streaks.isEmpty()) return
+    Column(
+        modifier = Modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(2.dp),
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(2.dp),
+        ) {
+            Box(modifier = Modifier.heightIn(min = 22.dp).padding(end = 2.dp))
+            (1..MAX_DIVISOR).forEach { c ->
+                HeaderCell(c.toString(), modifier = Modifier.weight(1f))
+            }
+        }
+        (1..MAX_DIVIDEND).forEach { dividend ->
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(2.dp),
+            ) {
+                HeaderCell(dividend.toString())
+                (1..MAX_DIVISOR).forEach { divisor ->
+                    if (dividend % divisor == 0) {
+                        StreakCell(
+                            streaks.getOrNull(dividend)?.getOrNull(divisor) ?: 0,
+                            modifier = Modifier.weight(1f),
+                        )
+                    } else {
+                        Box(modifier = Modifier.weight(1f).heightIn(min = 22.dp))
                     }
                 }
             }

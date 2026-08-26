@@ -128,6 +128,41 @@ object Storage {
         prefs().edit().putInt("multgrid.streak.$a.$b", value).apply()
     }
 
+    // --- Math (Division) ---
+    // grid[level][dividend][divisor], dividend 0..24 and divisor 0..6.
+    // Only the cells where the division comes out whole are ever written,
+    // so the grid is sparse by design — see DIVISION_CELLS in
+    // division/CountingDivisionViewModel.kt. The two levels ask the same
+    // questions with different on-screen scaffolding, so each keeps its
+    // own coverage: Level 1 has to be earned without the pens giving the
+    // answer away.
+    fun loadDivisionStreaks(): Array<Array<IntArray>> =
+        Array(2) { level ->
+            Array(25) { dividend ->
+                IntArray(7) { divisor ->
+                    prefs().getInt("division.streak.$level.$dividend.$divisor", 0)
+                }
+            }
+        }
+
+    fun saveDivisionStreak(level: Int, dividend: Int, divisor: Int, value: Int) {
+        prefs().edit()
+            .putInt("division.streak.$level.$dividend.$divisor", value)
+            .apply()
+    }
+
+    fun loadDivisionCounts(): Pair<Int, Int> {
+        val p = prefs()
+        return p.getInt("division.correct", 0) to p.getInt("division.wrong", 0)
+    }
+
+    fun saveDivisionCounts(correct: Int, wrong: Int) {
+        prefs().edit()
+            .putInt("division.correct", correct)
+            .putInt("division.wrong", wrong)
+            .apply()
+    }
+
     // --- Tic Tac Toe ---
     fun loadTttScores(): Triple<Int, Int, Int> {
         val p = prefs()

@@ -37,6 +37,8 @@ enum class LessonId {
     HorizontalMultiplication1,
     VerticalMultiplication1,
     NumberLineMultiplication1,
+    CountingDivision0,
+    CountingDivision1,
     LetterSounds0,
     Phonemes0,
     Reading0,
@@ -87,6 +89,11 @@ object Lessons {
         LessonId.HorizontalMultiplication0,
         LessonId.VerticalMultiplication0,
         LessonId.NumberLineMultiplication0,
+    )
+    private val MULTIPLICATION_EQ_L1 = listOf(
+        LessonId.HorizontalMultiplication1,
+        LessonId.VerticalMultiplication1,
+        LessonId.NumberLineMultiplication1,
     )
 
     val definitions: Map<LessonId, LessonDefinition> = listOf(
@@ -154,6 +161,14 @@ object Lessons {
         LessonDefinition(LessonId.HorizontalMultiplication1, "Horizontal Multiplication — Level 1", Category.Math, MULTIPLICATION_EQ_L0),
         LessonDefinition(LessonId.VerticalMultiplication1, "Vertical Multiplication — Level 1", Category.Math, MULTIPLICATION_EQ_L0),
         LessonDefinition(LessonId.NumberLineMultiplication1, "Number Line Multiplication — Level 1", Category.Math, MULTIPLICATION_EQ_L0),
+        // Division. Both levels ask the same question — share X animals
+        // into Y equal groups and say how many land in each — and differ
+        // only in how much the screen scaffolds it: Level 0 puts out
+        // exactly Y pens, Level 1 always puts out six. Level 0 opens once
+        // the whole Multiplication Level 1 tier is passed, which is the
+        // end of the multiplication chain.
+        LessonDefinition(LessonId.CountingDivision0, "Counting Division — Level 0", Category.Math, MULTIPLICATION_EQ_L1),
+        LessonDefinition(LessonId.CountingDivision1, "Counting Division — Level 1", Category.Math, listOf(LessonId.CountingDivision0)),
         // Letter Sounds is the head of the Reading chain: a recorded word
         // clip plays and the learner taps the letter it starts with.
         // Everything else in Reading now sits behind it (Phonemes requires

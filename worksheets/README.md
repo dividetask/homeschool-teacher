@@ -57,8 +57,11 @@ There are no answer keys: every sheet is problems only.
 | `binary`                    | 0, 1   | Binary                             |
 
 Subtraction has no Level 1 because the app has no Level 1 subtraction
-lesson yet; division has only the counting presentation for the same
-reason.
+lesson yet, and division has only the counting presentation for the same
+reason. Division has no Level 1 sheet either: the app's two division
+levels differ only in how many pens the *screen* puts out, and the pens
+aren't part of the printed sheet — so both levels would print the same
+page.
 
 A few sheets are worth calling out:
 
