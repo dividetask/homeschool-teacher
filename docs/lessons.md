@@ -911,8 +911,9 @@ over the next one.
 - **Answer surface:** Numeric Grid (0..16)
 - **Problem selection:** standard math-grid selection over the
   `(op1, op2)` cell space.
-- **Pass criteria:** `multiplication_grid[op1][op2] >= cell_target(op1,
-  op2)` for every `op1, op2 ∈ 0..4`.
+- **Pass criteria:**
+  `multiplication_grid[op1][op2] >= cell_target(op1, op2)` for every
+  `op1, op2 ∈ 0..4`.
 
 ### Counting Multiplication — Level 1
 - **Game UID:** 9
@@ -935,8 +936,9 @@ over the next one.
   undoes the first pick before submitting.
 - **Problem selection:** standard math-grid selection over the
   `(op1, op2) ∈ 1..4` cell space.
-- **Pass criteria:** `multiplication_operands_grid[op1][op2] >=
-  cell_target(op1, op2)` for every `op1, op2 ∈ 1..4`.
+- **Pass criteria:**
+  `multiplication_operands_grid[op1][op2] >= cell_target(op1, op2)` for
+  every `op1, op2 ∈ 1..4`.
 
 ### Horizontal Multiplication — Level 0
 - **Game UID:** 9
@@ -951,9 +953,9 @@ over the next one.
   - `op1, op2 ∈ 0..4` (max product 16)
 - **Answer surface:** Numeric Grid (0..16)
 - **Problem selection:** standard math-grid selection
-- **Pass criteria:** `multiplication_equation_grid[op1][op2] >=
-  cell_target(op1, op2)` for every `op1, op2 ∈ 0..4` **AND** `win_streak
-  >= 4`
+- **Pass criteria:**
+  `multiplication_equation_grid[op1][op2] >= cell_target(op1, op2)` for
+  every `op1, op2 ∈ 0..4` **AND** `win_streak >= 4`
 
 ### Vertical Multiplication — Level 0
 - **Game UID:** 9
@@ -968,9 +970,9 @@ over the next one.
   - `op1, op2 ∈ 0..4`
 - **Answer surface:** Numeric Grid (0..16)
 - **Problem selection:** standard math-grid selection
-- **Pass criteria:** `multiplication_equation_grid[op1][op2] >=
-  cell_target(op1, op2)` for every `op1, op2 ∈ 0..4` **AND** `win_streak
-  >= 4`
+- **Pass criteria:**
+  `multiplication_equation_grid[op1][op2] >= cell_target(op1, op2)` for
+  every `op1, op2 ∈ 0..4` **AND** `win_streak >= 4`
 
 ### Number Line Multiplication — Level 0
 - **Game UID:** 9
@@ -986,9 +988,9 @@ over the next one.
   - `op1, op2 ∈ 0..4`
 - **Answer surface:** Numeric Grid (0..16)
 - **Problem selection:** standard math-grid selection
-- **Pass criteria:** `multiplication_equation_grid[op1][op2] >=
-  cell_target(op1, op2)` for every `op1, op2 ∈ 0..4` **AND** `win_streak
-  >= 4`
+- **Pass criteria:**
+  `multiplication_equation_grid[op1][op2] >= cell_target(op1, op2)` for
+  every `op1, op2 ∈ 0..4` **AND** `win_streak >= 4`
 
 The three share one `multiplication_equation_grid` (product coverage) but
 each keeps its own streak, so they pass independently — mirroring the
@@ -1012,9 +1014,9 @@ counting-multiplication grids.
 - **Answer surface:** **Number Pad** — the learner types the product and
   presses **Enter** (products up to 81 are too many for a tap grid).
 - **Problem selection:** standard math-grid selection over `0..9`.
-- **Pass criteria:** `multiplication_equation_grid[op1][op2] >=
-  cell_target(op1, op2)` for every `op1, op2 ∈ 0..9` **AND** `win_streak
-  >= 4` (per lesson).
+- **Pass criteria:**
+  `multiplication_equation_grid[op1][op2] >= cell_target(op1, op2)` for
+  every `op1, op2 ∈ 0..9` **AND** `win_streak >= 4` (per lesson).
 
 Like Level 0, the three presentations share the grid and pass
 independently.
@@ -1031,9 +1033,8 @@ independently.
 - **Random variables:**
   - `op1 ∈ 4..9`, `op2 ∈ 0..4`
 - **Problem selection:** standard math-grid selection
-- **Pass criteria:** `subtraction_grid[op1][op2] >= cell_target(op1,
-  op2)` for every `op1 ∈ 4..9`, `op2 ∈ 0..4` **AND** `win_streak[7][0]
-  >= 4`
+- **Pass criteria:** `subtraction_grid[op1][op2] >= cell_target(op1, op2)`
+  for every `op1 ∈ 4..9`, `op2 ∈ 0..4` **AND** `win_streak[7][0] >= 4`
 
 ### Horizontal Subtraction — Level 0
 - **Game UID:** 7
@@ -1047,9 +1048,8 @@ independently.
 - **Random variables:**
   - `op1 ∈ 4..9`, `op2 ∈ 0..4`
 - **Problem selection:** standard math-grid selection
-- **Pass criteria:** `subtraction_grid[op1][op2] >= cell_target(op1,
-  op2)` for every `op1 ∈ 4..9`, `op2 ∈ 0..4` **AND** `win_streak[7][0]
-  >= 4`
+- **Pass criteria:** `subtraction_grid[op1][op2] >= cell_target(op1, op2)`
+  for every `op1 ∈ 4..9`, `op2 ∈ 0..4` **AND** `win_streak[7][0] >= 4`
 
 ### Vertical Subtraction — Level 0
 - **Game UID:** 7
@@ -1063,9 +1063,8 @@ independently.
 - **Random variables:**
   - `op1 ∈ 4..9`, `op2 ∈ 0..4`
 - **Problem selection:** standard math-grid selection
-- **Pass criteria:** `subtraction_grid[op1][op2] >= cell_target(op1,
-  op2)` for every `op1 ∈ 4..9`, `op2 ∈ 0..4` **AND** `win_streak[7][0]
-  >= 4`
+- **Pass criteria:** `subtraction_grid[op1][op2] >= cell_target(op1, op2)`
+  for every `op1 ∈ 4..9`, `op2 ∈ 0..4` **AND** `win_streak[7][0] >= 4`
 
 ### Number Line Subtraction — Level 0
 - **Game UID:** 7
@@ -1079,9 +1078,8 @@ independently.
 - **Random variables:**
   - `op1 ∈ 4..9`, `op2 ∈ 0..4`
 - **Problem selection:** standard math-grid selection
-- **Pass criteria:** `subtraction_grid[op1][op2] >= cell_target(op1,
-  op2)` for every `op1 ∈ 4..9`, `op2 ∈ 0..4` **AND** `win_streak[7][0]
-  >= 4`
+- **Pass criteria:** `subtraction_grid[op1][op2] >= cell_target(op1, op2)`
+  for every `op1 ∈ 4..9`, `op2 ∈ 0..4` **AND** `win_streak[7][0] >= 4`
 
 ### Counting Division — Level 0
 - **Game UID:** 11
@@ -1100,9 +1098,9 @@ independently.
     groups and the answer is always an integer.
 - **Problem selection:** standard math-grid selection, restricted to the
   cells above (the rest of `division_grid` is never asked)
-- **Pass criteria:** `division_grid[0][dividend][divisor] >=
-  cell_target(dividend, divisor)` for every askable cell **AND**
-  `win_streak[11][0] >= 4`
+- **Pass criteria:**
+  `division_grid[0][dividend][divisor] >= cell_target(dividend, divisor)`
+  for every askable cell **AND** `win_streak[11][0] >= 4`
 
 ### Counting Division — Level 1
 - **Game UID:** 11
@@ -1117,9 +1115,9 @@ independently.
 - **Random variables:** same as Level 0
 - **Problem selection:** standard math-grid selection, restricted to the
   askable cells
-- **Pass criteria:** `division_grid[1][dividend][divisor] >=
-  cell_target(dividend, divisor)` for every askable cell **AND**
-  `win_streak[11][1] >= 4`
+- **Pass criteria:**
+  `division_grid[1][dividend][divisor] >= cell_target(dividend, divisor)`
+  for every askable cell **AND** `win_streak[11][1] >= 4`
 
 ### Letter Sounds — Level 0
 - **Game UID:** 3
