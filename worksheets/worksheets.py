@@ -105,8 +105,6 @@ def _blocks_for(sheet: catalog.Sheet, rng: random.Random,
             )
         elif sheet.style == "mult-counting":
             yield blocks.MultCountingBlock(problem, index, height_budget=budget)
-        elif sheet.style == "mult-operands":
-            yield blocks.MultOperandsBlock(problem, index, height_budget=budget)
         elif sheet.style == "counting-blanks":
             yield blocks.CountingBlanksBlock(
                 problem, index,

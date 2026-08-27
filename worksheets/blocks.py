@@ -465,6 +465,11 @@ def draw_reference_line(c: Canvas, x: float, top: float, width: float,
 class _BoxedGroups:
     """Shared layout for ``groups`` pens of ``per_group`` animals.
 
+    Multiplication is always read as "op1 groups of op2" here, as in the
+    app and docs/lessons.md § Counting Multiplication Screen — `4 × 3`
+    draws four pens of three, not three of four. Callers pass the
+    operands in that order.
+
     Pens wrap onto extra lines when they don't fit across the column, and
     a pen is never split across a line — that "this many groups of this
     many" shape is the whole point of the picture.
@@ -543,7 +548,7 @@ def fit_pens(groups: int, per_group: int, emoji: str, width: float,
 
 @dataclass
 class MultCountingBlock:
-    """``X × Y = [ ]`` above Y pens of X animals."""
+    """``X × Y = [ ]`` above X pens of Y animals."""
 
     problem: Problem
     index: int
@@ -558,7 +563,7 @@ class MultCountingBlock:
         budget = None
         if self.height_budget is not None:
             budget = self.height_budget - self._head() - 6
-        return fit_pens(p.right, p.left, p.animal.emoji, width - LABEL_WIDTH, budget)
+        return fit_pens(p.left, p.right, p.animal.emoji, width - LABEL_WIDTH, budget)
 
     def height(self, width: float) -> float:
         inner = width - LABEL_WIDTH
@@ -581,62 +586,6 @@ class MultCountingBlock:
         answer_box(c, left + text_width + GAP, top - (head - BOX_HEIGHT) / 2.0,
                    BOX_WIDTH, BOX_HEIGHT)
         self._groups(width).draw(c, left, top - head - 6, width - LABEL_WIDTH)
-
-
-@dataclass
-class MultOperandsBlock:
-    """Pens of animals above ``[ ] × [ ]`` — name the two operands.
-
-    Mirrors Counting Multiplication Level 1, where the learner picks how
-    many are in each group and how many groups there are rather than the
-    product.
-    """
-
-    problem: Problem
-    index: int
-    size: float = 19.0
-    height_budget: Optional[float] = None
-
-    def _groups(self, width: float) -> _BoxedGroups:
-        p = self.problem
-        budget = None
-        if self.height_budget is not None:
-            budget = self.height_budget - self.GAP_TO_BLANKS - BOX_HEIGHT
-        return fit_pens(p.right, p.left, p.animal.emoji, width - LABEL_WIDTH, budget)
-
-    # The pens and the two blanks are separate things to read; without
-    # real space between them the page runs together. The gap *between*
-    # problems is the row budget's surplus, which falls below the block —
-    # so trailing padding is only needed when there is no budget.
-    GAP_TO_BLANKS = 14.0
-    TRAILING = 12.0
-
-    def _trailing(self) -> float:
-        return 0.0 if self.height_budget is not None else self.TRAILING
-
-    def height(self, width: float) -> float:
-        inner = width - LABEL_WIDTH
-        natural = (self._groups(width).height(inner)
-                   + self.GAP_TO_BLANKS + BOX_HEIGHT + self._trailing())
-        if self.height_budget is None:
-            return natural
-        return max(natural, self.height_budget)
-
-    def draw(self, c: Canvas, x: float, top: float, width: float) -> None:
-        number_label(c, x, top, self.index)
-        left = x + LABEL_WIDTH
-        groups = self._groups(width)
-        groups_height = groups.height(width - LABEL_WIDTH)
-        groups.draw(c, left, top, width - LABEL_WIDTH)
-
-        row_top = top - groups_height - self.GAP_TO_BLANKS
-        times = " × "
-        times_width = pdfmetrics.stringWidth(times, TEXT_BOLD, self.size)
-        answer_box(c, left, row_top, BOX_WIDTH, BOX_HEIGHT)
-        c.setFont(TEXT_BOLD, self.size)
-        c.setFillColor(black)
-        c.drawString(left + BOX_WIDTH, row_top - BOX_HEIGHT / 2.0 - self.size * 0.34, times)
-        answer_box(c, left + BOX_WIDTH + times_width, row_top, BOX_WIDTH, BOX_HEIGHT)
 
 
 # --- write the whole sentence ---------------------------------------------
@@ -748,7 +697,8 @@ class GroupedBlanksBlock:
             # holds the quotient.
             pens, per_pen = p.right, p.left // p.right
         else:
-            pens, per_pen = p.right, p.left
+            # op1 groups of op2 — see _BoxedGroups.
+            pens, per_pen = p.left, p.right
         budget = None
         if self.height_budget is not None:
             budget = self.height_budget - self.GAP - BOX_HEIGHT

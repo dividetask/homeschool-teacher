@@ -98,7 +98,6 @@ up. The sheets come out identical either way.
 | `subtraction-numberline`         | 0      | Number Line Subtraction       |
 | `multiplication-counting`        | 0      | Counting Multiplication       |
 | `multiplication-counting-blanks` | 0      | Counting Multiplication       |
-| `multiplication-operands`        | 0      | Multiplication Operands       |
 | `multiplication-horizontal`      | 0, 1   | Horizontal Multiplication     |
 | `multiplication-vertical`        | 0, 1   | Vertical Multiplication       |
 | `multiplication-numberline`      | 0, 1   | Number Line Multiplication    |
@@ -110,8 +109,20 @@ The `-blanks` sheets are the write-the-whole-sentence variant of each
 counting sheet: instead of being handed `3 + 2 = ▢`, the child reads both
 numbers off the picture and writes `▢ + ▢ = ▢`. Multiplication and
 division share one picture there — so many pens holding so many each —
-because they *are* the same picture: multiplication reads it as `per pen
-× pens = total`, division reads it as `total ÷ pens = per pen`.
+because they *are* the same picture: multiplication reads it as `pens ×
+per pen = total`, division reads it as `total ÷ pens = per pen`.
+
+`multiplication-counting-blanks` also covers what the Multiplication
+Operands lesson drills — reading the two numbers off the pens — and asks
+for the product besides, so there is no separate operands sheet; it would
+print the same page. It drops zero from the range the way division drops
+a zero divisor: `0 × 3` draws no animals, and a picture of nothing has no
+sentence to read off it.
+
+**Multiplication is always `op1` groups of `op2`**, matching the app and
+`../docs/lessons.md` § Counting Multiplication Screen — `4 × 3` draws
+four pens of three, not three of four. Division follows from the same
+reading: the divisor is how many pens.
 
 Subtraction has no Level 1 in its symbolic presentations, and division
 has no symbolic presentations at all, because that's what the app

@@ -268,7 +268,7 @@ def generate(sheet: catalog.Sheet, rng: random.Random) -> Iterator:
                     animal=rng.choice(animals.ALL),
                 )
 
-    if sheet.style in ("mult-counting", "mult-operands", "grouped-blanks"):
+    if sheet.style in ("mult-counting", "grouped-blanks"):
         cells = _arithmetic_cells(sheet.params)
         easy = lambda cell: is_easy("x", cell[0], cell[1])
         for a, b in _cycle_shuffled(cells, rng, easy):

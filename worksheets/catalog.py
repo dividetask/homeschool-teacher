@@ -182,18 +182,20 @@ _SHEETS = (
     Sheet("multiplication-counting", 0, "Counting Multiplication", "Counting Multiplication — Level 0",
           "Count the groups and how many are in each, then write the total.",
           "mult-counting", 2, mul_params(0, rows=7)),
-    # Filling in the operands became its own lesson rather than a harder
-    # level of Counting Multiplication, with its own 1..4 operand picker,
-    # so the sheet follows it out.
-    Sheet("multiplication-operands", 0, "Multiplication Operands",
-          "Multiplication Operands — Level 0",
-          "Write the two numbers being multiplied: how many in each group × how many groups.",
-          "mult-operands", 2,
-          {"left": (1, 4), "right": (1, 4), "operator": "x", "rows": 6}),
+    # The write-the-sentence multiplication sheet. It also covers what the
+    # Multiplication Operands lesson drills — reading the two numbers off
+    # the pens — and asks for the product besides, so there is no separate
+    # operands sheet: it would print the same page.
+    #
+    # Zero is dropped from the range here, the way division drops a zero
+    # divisor: `0 × 3` draws no animals, and a picture of nothing has no
+    # sentence to read off it. The answer-first sheet keeps zero, since
+    # there the equation is given.
     Sheet("multiplication-counting-blanks", 0, "Counting Multiplication — Sentence",
           "Counting Multiplication — Level 0",
-          "Count the groups and how many are in each, then write the whole number sentence.",
-          "grouped-blanks", 2, mul_params(0, rows=6)),
+          "Count how many groups and how many are in each, then write the "
+          "whole number sentence.",
+          "grouped-blanks", 2, mul_params(0, left=(1, 4), right=(1, 4), rows=6)),
     Sheet("multiplication-horizontal", 0, "Multiplication", "Horizontal Multiplication — Level 0",
           "Write the answer in the box.",
           "horizontal", 2, mul_params(0, rows=10), header="numberline"),
