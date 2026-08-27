@@ -254,7 +254,10 @@ class CountingBlock:
     def height(self, width: float) -> float:
         size, left, right = self._layout(width)
         rows = max(left[1], right[1])
-        return max(rows * render.animal_line_height(size), BOX_HEIGHT) + self.pad
+        natural = max(rows * render.animal_line_height(size), BOX_HEIGHT) + self.pad
+        if self.height_budget is None:
+            return natural
+        return max(natural, self.height_budget)
 
     def _render(self, c: Canvas, x: float, top: float, width: float,
                 with_answer: bool) -> None:
@@ -404,7 +407,10 @@ class NumberLineBlock:
         return axis, self.AXIS_GAP, box, font, axis + self.AXIS_GAP + box + 2
 
     def height(self, width: float) -> float:
-        return self._metrics()[4]
+        natural = self._metrics()[4]
+        if self.height_budget is None:
+            return natural
+        return max(natural, self.height_budget)
 
     def draw(self, c: Canvas, x: float, top: float, width: float) -> None:
         number_label(c, x, top, self.index)
@@ -487,7 +493,12 @@ class _BoxedGroups:
         # A pen reads best as one row of animals. Wrapping starts only
         # past six, where a single row would make the pen too wide to sit
         # beside its neighbours.
-        per_row = min(self.per_group, 6)
+        per_row = max(1, min(self.per_group, 6))
+        if self.per_group == 0:
+            # An empty pen still has to be a pen, and wide enough to say
+            # so — `5 × 0` is five boxes with nothing in them.
+            width = pdfmetrics.stringWidth("none", TEXT, 9.0) + 6
+            return width + 2 * self.pad, self.size * 1.4 + 2 * self.pad, per_row
         inner_w, inner_h = animal_grid_size(self.per_group, per_row, self.size)
         return inner_w + 2 * self.pad, inner_h + 2 * self.pad, per_row
 
@@ -499,16 +510,21 @@ class _BoxedGroups:
         return pen_w, pen_h, per_row, per_line, height
 
     def height(self, width: float) -> float:
-        if self.groups == 0 or self.per_group == 0:
+        if self.groups == 0:
             return 22.0
         return self.layout(width)[4]
 
     def draw(self, c: Canvas, x: float, top: float, width: float) -> None:
-        if self.groups == 0 or self.per_group == 0:
+        # A zero operand is drawn according to which one it is: `0 × 5` is
+        # no groups at all, `5 × 0` is five groups that happen to be
+        # empty. One shared "(no animals)" for both would hide exactly the
+        # distinction the lesson teaches — see docs/lessons.md § Counting
+        # Multiplication Screen.
+        if self.groups == 0:
             c.saveState()
             c.setFont(TEXT, 10)
             c.setFillColor(LIGHT)
-            c.drawString(x, top - 14, "(no animals)")
+            c.drawString(x, top - 14, "(no groups)")
             c.restoreState()
             return
         pen_w, pen_h, per_row, per_line, _ = self.layout(width)
@@ -521,10 +537,16 @@ class _BoxedGroups:
             pen_x = x + column * (pen_w + self.pen_gap)
             pen_top = top - line * (pen_h + self.row_gap)
             c.roundRect(pen_x, pen_top - pen_h, pen_w, pen_h, 5, stroke=1, fill=0)
-            draw_animal_grid(
-                c, pen_x + self.pad, pen_top - self.pad,
-                self.emoji, self.per_group, self.size, per_row,
-            )
+            if self.per_group == 0:
+                c.setFont(TEXT, min(9.0, pen_h * 0.5))
+                c.setFillColor(LIGHT)
+                c.drawCentredString(pen_x + pen_w / 2.0,
+                                    pen_top - pen_h / 2.0 - 3, "none")
+            else:
+                draw_animal_grid(
+                    c, pen_x + self.pad, pen_top - self.pad,
+                    self.emoji, self.per_group, self.size, per_row,
+                )
         c.restoreState()
 
 
@@ -949,9 +971,13 @@ class BinaryBlock:
     problem: BinaryProblem
     index: int
     size: float = 17.0
+    height_budget: Optional[float] = None
 
     def height(self, width: float) -> float:
-        return binary_stack_height(self.size) + 6
+        natural = binary_stack_height(self.size) + 6
+        if self.height_budget is None:
+            return natural
+        return max(natural, self.height_budget)
 
     def draw(self, c: Canvas, x: float, top: float, width: float) -> None:
         number_label(c, x, top, self.index)

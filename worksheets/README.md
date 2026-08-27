@@ -42,16 +42,12 @@ when you generate a sheet.
 `--list` needs no dependencies at all — ReportLab is only imported when a
 PDF is actually being drawn.
 
-Every sheet carries **12 to 20 problems**. Past twenty a worksheet stops
-being one sitting's work; under twelve it isn't worth printing. Sheets
-declare a `columns` × `rows` shape in `catalog.py` and the blocks grow
-into the resulting height budget, so a capped page still fills rather
-than sitting in the top half in small type, and a sheet that comes in
-under the floor fails the build instead of shipping thin.
-
-Four sheets sit below twenty because their problems are physically
-bigger: Counting Division and Counting Multiplication 1 hold twelve,
-Counting Multiplication 0 fourteen, Binary 1 fifteen.
+Every sheet carries exactly **12 problems** — one sitting's work. Sheets
+declare a `columns` × `rows` shape in `catalog.py` multiplying to twelve,
+and the blocks grow into the resulting height budget, so the page fills
+rather than sitting in the top half in small type. A sheet that comes out
+short means a block outgrew its shape, and fails the build rather than
+shipping thin.
 
 ```
 ./worksheets.py --check
@@ -87,37 +83,37 @@ up. The sheets come out identical either way.
 | Sheet                            | Levels | Mirrors                       |
 | -------------------------------- | ------ | ----------------------------- |
 | `addition-counting`              | 0, 1   | Counting Addition             |
-| `addition-counting-blanks`       | 0, 1   | Counting Addition             |
+| `addition-construction`          | 0, 1   | Counting Addition             |
 | `addition-horizontal`            | 0, 1   | Horizontal Addition           |
 | `addition-vertical`              | 0, 1   | Vertical Addition             |
 | `addition-numberline`            | 0, 1   | Number Line Addition          |
 | `subtraction-counting`           | 0, 1   | Counting Subtraction          |
-| `subtraction-counting-blanks`    | 0, 1   | Counting Subtraction          |
+| `subtraction-construction`       | 0, 1   | Counting Subtraction          |
 | `subtraction-horizontal`         | 0      | Horizontal Subtraction        |
 | `subtraction-vertical`           | 0      | Vertical Subtraction          |
 | `subtraction-numberline`         | 0      | Number Line Subtraction       |
 | `multiplication-counting`        | 0      | Counting Multiplication       |
-| `multiplication-counting-blanks` | 0      | Counting Multiplication       |
+| `multiplication-construction`    | 0      | Counting Multiplication       |
 | `multiplication-horizontal`      | 0, 1   | Horizontal Multiplication     |
 | `multiplication-vertical`        | 0, 1   | Vertical Multiplication       |
 | `multiplication-numberline`      | 0, 1   | Number Line Multiplication    |
 | `division-counting`              | 0, 1   | Counting Division             |
-| `division-counting-blanks`       | 0, 1   | Counting Division             |
+| `division-construction`          | 0, 1   | Counting Division             |
 | `binary`                         | 0, 1   | Binary                        |
 
-The `-blanks` sheets are the write-the-whole-sentence variant of each
-counting sheet: instead of being handed `3 + 2 = ▢`, the child reads both
-numbers off the picture and writes `▢ + ▢ = ▢`. Multiplication and
+The `-construction` sheets are the build-the-whole-equation variant of
+each counting sheet: instead of being handed `3 + 2 = ▢`, the child reads
+both numbers off the picture and writes `▢ + ▢ = ▢`. Multiplication and
 division share one picture there — so many pens holding so many each —
 because they *are* the same picture: multiplication reads it as `pens ×
 per pen = total`, division reads it as `total ÷ pens = per pen`.
 
-`multiplication-counting-blanks` also covers what the Multiplication
+`multiplication-construction` also covers what the Multiplication
 Operands lesson drills — reading the two numbers off the pens — and asks
 for the product besides, so there is no separate operands sheet; it would
 print the same page. It drops zero from the range the way division drops
-a zero divisor: `0 × 3` draws no animals, and a picture of nothing has no
-sentence to read off it.
+a zero divisor: `0 × 3` draws no groups at all, and there is no equation
+to read off nothing.
 
 **Multiplication is always `op1` groups of `op2`**, matching the app and
 `../docs/lessons.md` § Counting Multiplication Screen — `4 × 3` draws

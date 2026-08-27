@@ -121,7 +121,7 @@ def _blocks_for(sheet: catalog.Sheet, rng: random.Random,
         elif sheet.style == "division-counting":
             yield blocks.DivisionCountingBlock(problem, index, height_budget=budget)
         elif sheet.style == "binary":
-            yield blocks.BinaryBlock(problem, index)
+            yield blocks.BinaryBlock(problem, index, height_budget=budget)
         else:
             raise ValueError(f"unknown style {sheet.style!r}")
 
@@ -170,7 +170,13 @@ def _number_line_span(sheet: catalog.Sheet) -> int:
         # a subtraction hops backwards from the left operand.
         furthest = max(_answer(sheet, left, right), left, right)
         needed = max(needed, furthest - origin)
-    return max(10, ((needed + 1 + 4) // 5) * 5)
+    span = max(10, ((needed + 1 + 4) // 5) * 5)
+    # Never draw past the sheet's own answer ceiling: a Multiplication
+    # Level 1 line running to 45 offers five numbers no problem can reach.
+    ceiling = sheet.params.get("answer_max")
+    if ceiling is not None:
+        span = min(span, int(ceiling))
+    return span
 def build(sheet: catalog.Sheet, path: str, seed: Optional[int] = None) -> int:
     """Write one worksheet PDF. Returns the number of problems on it."""
     _require_reportlab()

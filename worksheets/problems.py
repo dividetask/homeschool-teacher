@@ -86,30 +86,69 @@ def is_easy(operator: str, a: int, b: int) -> bool:
     return False
 
 
+# Most of a page the easy cells may take between them. Mirrors
+# PracticeGrid.EASY_SHARE_CAP; see docs/lessons.md § Easy cells.
+EASY_SHARE_CAP = 1.0 / 6.0
+
+
+def _easy_slots(ordinary: int, easy: int) -> int:
+    """How many easy cells belong in one pass.
+
+    Half of them, per the easy-cell rule — but never more than the cap
+    allows against the ordinary cells beside them. Returning a *count*
+    rather than rolling per cell is what keeps a page predictable: rolling
+    each easy cell independently gave pages that were half empty of them
+    and pages that were full, with the average right and no page like it.
+    """
+    if easy == 0 or ordinary == 0:
+        return 0
+    allowed = round(ordinary * EASY_SHARE_CAP / (1.0 - EASY_SHARE_CAP))
+    return max(1, min(easy // 2 or 1, allowed))
+
+
+def _build_pass(
+    cells: Sequence,
+    rng: random.Random,
+    easy: Optional[Callable[[object], bool]] = None,
+    balance: Optional[Callable[[object], int]] = None,
+) -> List:
+    """One pass over the problem space, honouring both damping rules.
+
+    Ordinary cells all appear. Where the lesson names a balance operand
+    (docs/lessons.md § Balanced operands) every value of it gets the same
+    number of slots, so a value that owns more cells does not crowd out
+    one that owns fewer. Easy cells then fill [_easy_slots] places.
+    """
+    ordinary = [c for c in cells if easy is None or not easy(c)]
+    easy_cells = [c for c in cells if easy is not None and easy(c)]
+
+    if balance is not None and ordinary:
+        by_key: Dict[int, List] = {}
+        for cell in ordinary:
+            by_key.setdefault(balance(cell), []).append(cell)
+        slots = min(len(v) for v in by_key.values())
+        ordinary = [c for group in by_key.values() for c in rng.sample(group, slots)]
+
+    chosen = list(ordinary)
+    slots = _easy_slots(len(ordinary), len(easy_cells))
+    if slots:
+        chosen.extend(rng.sample(easy_cells, slots))
+    rng.shuffle(chosen)
+    return chosen
+
+
 def _cycle_shuffled(
     cells: Sequence,
     rng: random.Random,
     easy: Optional[Callable[[object], bool]] = None,
+    balance: Optional[Callable[[object], int]] = None,
 ) -> Iterator:
-    """Yield every cell in random order, reshuffling for each new pass.
-
-    A pass never repeats a problem, and the join between passes avoids
-    handing out the same cell twice in a row.
-
-    Easy cells sit out half the passes, so they come up about half as
-    often as ordinary ones — the printed equivalent of the half weight
-    they carry in the app (docs/lessons.md § Easy cells). Without this a
-    page of Addition Level 1 comes out a third "+ 0".
-    """
+    """Yield passes back to back, never repeating across the join."""
     previous = None
     while True:
-        order = [
-            cell for cell in cells
-            if easy is None or not easy(cell) or rng.random() < 0.5
-        ]
+        order = _build_pass(cells, rng, easy, balance)
         if not order:
             order = list(cells)
-        rng.shuffle(order)
         if previous is not None and len(order) > 1 and order[0] == previous:
             order[0], order[1] = order[1], order[0]
         for cell in order:
@@ -192,30 +231,6 @@ def _division_cells(params) -> List[Tuple[int, int]]:
     ]
 
 
-def _division_pass(params, rng: random.Random) -> List[Tuple[int, int]]:
-    """One page's worth of division problems, balanced across divisors.
-
-    This is docs/lessons.md § Balanced operands, in the shuffled-pass form
-    the sheets use: where the app divides a cell's pick weight by the
-    number of cells sharing its divisor, a pass gives every divisor the
-    same number of slots, which comes to the same thing. The easy-cell
-    rule still halves the ÷1 slots on top of that, so dividing by one
-    lands at about a twelfth of the page rather than a quarter.
-    """
-    by_divisor: Dict[int, List[Tuple[int, int]]] = {}
-    for dividend, divisor in _division_cells(params):
-        by_divisor.setdefault(divisor, []).append((dividend, divisor))
-    slots = min(len(v) for v in by_divisor.values())
-    chosen: List[Tuple[int, int]] = []
-    for divisor, cells in by_divisor.items():
-        take = slots
-        if is_easy("/", cells[0][0], divisor) and rng.random() < 0.5:
-            continue
-        chosen.extend(rng.sample(cells, min(take, len(cells))))
-    rng.shuffle(chosen)
-    return chosen
-
-
 def _binary_cells(bits: int) -> List[Tuple[str, int, int]]:
     top = (1 << bits) - 1
     return [
@@ -238,35 +253,23 @@ def generate(sheet: catalog.Sheet, rng: random.Random) -> Iterator:
             yield BinaryProblem(left=a, right=b, operator=op, bits=sheet.params["bits"])
         return
 
-    if sheet.style == "division-counting":
-        previous = None
-        while True:
-            for dividend, divisor in _division_pass(sheet.params, rng):
-                if (dividend, divisor) == previous:
-                    continue
-                previous = (dividend, divisor)
-                yield Problem(
-                    left=dividend,
-                    right=divisor,
-                    operator="/",
-                    animal=rng.choice(animals.ALL),
-                )
-
-    if sheet.style == "grouped-blanks" and sheet.params.get("operator") == "/":
-        # Division, but drawn already shared out: the pens are the picture
-        # the child reads the sentence off, so it uses the division cells.
-        previous = None
-        while True:
-            for dividend, divisor in _division_pass(sheet.params, rng):
-                if (dividend, divisor) == previous:
-                    continue
-                previous = (dividend, divisor)
-                yield Problem(
-                    left=dividend,
-                    right=divisor,
-                    operator="/",
-                    animal=rng.choice(animals.ALL),
-                )
+    if sheet.style == "division-counting" or (
+        sheet.style == "grouped-blanks" and sheet.params.get("operator") == "/"
+    ):
+        # Division is balanced on the divisor: every dividend from 1 up
+        # divides by one, so it owns far more cells than the rest.
+        for dividend, divisor in _cycle_shuffled(
+            _division_cells(sheet.params), rng,
+            easy=lambda cell: is_easy("/", cell[0], cell[1]),
+            balance=lambda cell: cell[1],
+        ):
+            yield Problem(
+                left=dividend,
+                right=divisor,
+                operator="/",
+                animal=rng.choice(animals.ALL),
+            )
+        return
 
     if sheet.style in ("mult-counting", "grouped-blanks"):
         cells = _arithmetic_cells(sheet.params)

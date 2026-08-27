@@ -353,8 +353,20 @@ a line. Example for `op1 = 2`, `op2 = 4`:
 
 For products that don't fit on one line (e.g. `4 × 4 = 16`), the
 boxed groups wrap onto two or three lines while staying visually
-grouped. When either operand is 0 the area shows "(no 🐱)" instead of
-empty space.
+grouped.
+
+**A zero operand is drawn according to which one it is**, since `0 × 5`
+and `5 × 0` are different pictures and must not look alike:
+
+- `op1 = 0` — *no groups at all*. There is nothing to box, so the area
+  shows **"(no groups)"**.
+- `op2 = 0` — *`op1` groups, each empty*. The boxes are drawn as usual,
+  `op1` of them, each holding **"(none)"** where its animals would be.
+- `0 × 0` — no groups, so it reads as `op1 = 0` does.
+
+Showing a single "(no 🐱)" for both cases, as the screen did before this
+was written down, loses the distinction the lesson is teaching: the point
+of `5 × 0` is that five groups of nothing is still nothing.
 
 **Answer surface:** Numeric Grid (0..max).
 
@@ -530,13 +542,27 @@ Some cells are right on sight and are not worth drilling like the rest:
 | Multiplication | either operand is `0` or `1`                           |
 | Division       | `divisor <= 1` (or `dividend == 0`, never asked)       |
 
-Two things follow, wherever a lesson uses an operand grid:
+Three things follow, wherever a lesson uses an operand grid:
 
 - **`cell_target(op1, op2)`** — the count a cell needs before it counts
   as covered — is **1** for an easy cell and **2** for every other cell.
 - Easy cells are drawn at **half the weight** of an ordinary cell, so
   they come up about half as often. This holds both while the lesson is
   still being covered and once every cell is covered.
+- The easy cells **together** never take more than **one problem in six**.
+  Halving each cell is not enough where most of a lesson's cells are
+  easy: Multiplication Difficulty 0 has sixteen easy cells against nine
+  ordinary ones, so half weight still leaves nearly half of every round
+  on `× 0` and `× 1`. The cap binds only in that case — every other
+  lesson already sits under it and is left exactly as it was.
+
+| Lesson                          | Easy share, half weight only | With the cap |
+| ------------------------------- | ---------------------------- | ------------ |
+| Multiplication Difficulty 0     | 47%                          | **17%**      |
+| Addition / Subtraction Diff 0   | 22%                          | **17%**      |
+| Division Difficulty 0           | 14%                          | 14%          |
+| Addition / Subtraction Diff 1   | 12%                          | 12%          |
+| Division Difficulty 1           | 7%                           | 7%           |
 
 Grids that are not arithmetic (the binary AND/OR/XOR grids, the per-word
 reading lists) have no easy cells: every one of their cells needs 2 and
