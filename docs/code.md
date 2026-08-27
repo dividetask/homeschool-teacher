@@ -63,6 +63,12 @@ homeschoolteacher/
 │                            NumberLineAddition0; L1: Math1
 │                            (vertical), HorizontalAddition1,
 │                            MathNumberLine.
+├── intro/                   Worked examples played before a round.
+│   ├── LessonIntro.kt       Which lessons have one; shared operand roll.
+│   └── CountingAdditionIntro.kt
+│                            Not lessons: no state, no scoring. The
+│                            selector shows one at the start of a round
+│                            and the lesson follows when it ends.
 ├── division/                Lessons: CountingDivision0/1
 │   ├── CountingDivisionViewModel.kt
 │   └── CountingDivisionScreen.kt

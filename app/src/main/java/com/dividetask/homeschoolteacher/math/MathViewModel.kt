@@ -116,7 +116,7 @@ private fun gridOperation(op: MathOperator): GridOperation = when (op) {
  * built from this by [lessonCells], which differs per operation — the
  * range does not.
  */
-private fun lessonRange(id: LessonId): IntRange = when (id) {
+internal fun lessonRange(id: LessonId): IntRange = when (id) {
     LessonId.MathPictures,
     LessonId.Math0,
     LessonId.HorizontalAddition0,

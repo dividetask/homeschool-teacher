@@ -72,6 +72,7 @@ import com.dividetask.homeschoolteacher.tictactoe.GameScreen
 import com.dividetask.homeschoolteacher.tictactoe.GameViewModel
 import com.dividetask.homeschoolteacher.tictactoe.TttPuzzleScreen
 import com.dividetask.homeschoolteacher.tictactoe.TttPuzzleViewModel
+import com.dividetask.homeschoolteacher.intro.LessonIntros
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
@@ -98,6 +99,9 @@ fun HomeschoolTeacherApp() {
 
     val mode by selector.mode.collectAsStateWithLifecycle()
     val current by selector.currentLesson.collectAsStateWithLifecycle()
+    val intro by selector.intro.collectAsStateWithLifecycle()
+    // Held in a local so the null check below narrows the type.
+    val playing: LessonId? = intro
     val passed by selector.passedMap.collectAsStateWithLifecycle()
     val manualUnlock by selector.manualUnlockMap.collectAsStateWithLifecycle()
 
@@ -207,6 +211,15 @@ fun HomeschoolTeacherApp() {
                         manualUnlockMap = manualUnlock,
                         onToggleManualUnlock = { id, value -> selector.setManualUnlock(id, value) },
                         onSetPassed = { id, value -> selector.setPassed(id, value) },
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                } else if (playing != null) {
+                    // A round opens with its worked example, if it has one.
+                    // The lesson's first problem is already prepared behind
+                    // this; it appears when the animation finishes.
+                    LessonIntros.Play(
+                        id = playing,
+                        onFinished = selector::onIntroFinished,
                         modifier = Modifier.fillMaxWidth(),
                     )
                 } else {

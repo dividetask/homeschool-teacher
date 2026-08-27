@@ -19,6 +19,7 @@ import com.dividetask.homeschoolteacher.reading.RhymingWordsViewModel
 import com.dividetask.homeschoolteacher.reading.SightWordsViewModel
 import com.dividetask.homeschoolteacher.tictactoe.GameViewModel
 import com.dividetask.homeschoolteacher.tictactoe.TttPuzzleViewModel
+import com.dividetask.homeschoolteacher.intro.LessonIntros
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -163,6 +164,25 @@ class LessonSelector(
     private var remaining: Int = 1
     private var lastCompletedCategory: Category? = null
 
+    /**
+     * The lesson whose worked example is playing, or null once it has —
+     * an intro is a preamble to a round, not a lesson of its own, so it
+     * lives here rather than in the catalog. Set when a round starts and
+     * cleared by [onIntroFinished]; a round of four questions therefore
+     * sees it once, before the first of them.
+     */
+    private val _intro = MutableStateFlow<LessonId?>(null)
+    val intro: StateFlow<LessonId?> = _intro.asStateFlow()
+
+    /** Called by the intro when its animation has played out. */
+    fun onIntroFinished() {
+        _intro.value = null
+    }
+
+    private fun startRound(id: LessonId) {
+        _intro.value = if (LessonIntros.exists(id)) id else null
+    }
+
     init {
         // Default mode is Random. Roll the first lesson immediately.
         rollRandomLesson(excludeCategory = null)
@@ -179,6 +199,7 @@ class LessonSelector(
         // state would fire twice (once for the stale state, once for the new
         // one) and any audio cue for the first item would be cut off.
         startInstance(id)
+        startRound(id)
         _currentLesson.value = id
     }
 
@@ -191,6 +212,7 @@ class LessonSelector(
 
     /** Switch to the progress / debug view. Activity ViewModels are untouched. */
     fun selectProgress() {
+        _intro.value = null
         _mode.value = SelectionMode.Progress
     }
 
@@ -215,6 +237,7 @@ class LessonSelector(
         // Same ordering as selectLesson: start the instance first so the
         // screen mounts with the new state already in place.
         startInstance(pickedDef.id)
+        startRound(pickedDef.id)
         _currentLesson.value = pickedDef.id
     }
 

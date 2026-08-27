@@ -159,6 +159,36 @@ object Tts {
         }
     }
 
+    /**
+     * Say [text] once at normal speed, without the slow repeats [speak]
+     * does. Used by the lesson intros, which narrate a worked example: a
+     * sentence read three times at three speeds would run longer than the
+     * animation it belongs to.
+     *
+     * Like every other call here it interrupts whatever is being said, so
+     * a step landing early never talks over the step before it.
+     */
+    fun say(text: String) {
+        if (!ready) return
+        currentSequence?.cancel()
+        currentSequence = scope.launch {
+            val e = engine ?: return@launch
+            e.stop()
+            pendingUtterances.values.forEach { it.complete(Unit) }
+            pendingUtterances.clear()
+            kotlinx.coroutines.delay(POST_STOP_SETTLE_MS)
+            val id = "homeschool-tts-say-${System.nanoTime()}"
+            val completion = CompletableDeferred<Unit>()
+            pendingUtterances[id] = completion
+            e.setSpeechRate(1.0f)
+            if (e.speak(text, TextToSpeech.QUEUE_FLUSH, null, id) != TextToSpeech.SUCCESS) {
+                pendingUtterances.remove(id)
+                return@launch
+            }
+            completion.await()
+        }
+    }
+
     fun speak(text: String) {
         if (!ready) {
             pending = text
