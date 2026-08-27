@@ -96,8 +96,9 @@ up. The sheets come out identical either way.
 | `subtraction-horizontal`         | 0      | Horizontal Subtraction        |
 | `subtraction-vertical`           | 0      | Vertical Subtraction          |
 | `subtraction-numberline`         | 0      | Number Line Subtraction       |
-| `multiplication-counting`        | 0, 1   | Counting Multiplication       |
-| `multiplication-counting-blanks` | 0, 1   | Counting Multiplication       |
+| `multiplication-counting`        | 0      | Counting Multiplication       |
+| `multiplication-counting-blanks` | 0      | Counting Multiplication       |
+| `multiplication-operands`        | 0      | Multiplication Operands       |
 | `multiplication-horizontal`      | 0, 1   | Horizontal Multiplication     |
 | `multiplication-vertical`        | 0, 1   | Vertical Multiplication       |
 | `multiplication-numberline`      | 0, 1   | Number Line Multiplication    |
@@ -127,9 +128,13 @@ drift from its lesson by hand-editing a bound:
 | Addition / Subtraction    | `op1, op2 ∈ 0..4`          | `op1, op2 ∈ 0..8`          |
 | Multiplication / Division | `X, Y ∈ 0..4`, `Z ∈ 0..16` | `X, Y ∈ 0..8`, `Z ∈ 0..40` |
 
-Subtraction keeps `op1 >= op2` so no answer is negative; division drops a
-zero divisor and a zero dividend; and `Z` is a ceiling, so pairs like
-`7 × 8` are simply never asked.
+Read each pair of families as one triple from either side: the forward
+operation takes `X` and `Y` from the range and lets `Z` fall out, the
+backward one takes `X` and the *answer* from the range and derives the
+`Z` it starts from. So subtraction's first operand runs to twice the
+ceiling and its answer can never be negative, and division's dividend is
+always a whole number of groups. `Z` is a ceiling, so pairs like `7 × 8`
+are simply never asked.
 
 A few sheets are worth calling out:
 

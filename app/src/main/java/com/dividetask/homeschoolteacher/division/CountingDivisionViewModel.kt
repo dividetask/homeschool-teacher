@@ -98,8 +98,9 @@ internal fun divisionCells(level: Int): List<Pair<Int, Int>> =
  * Runs both animal-division lessons. They ask the same questions and
  * differ only in how much scaffolding the screen gives: Level 0 puts out
  * exactly as many pens as the divisor, so filling them evenly shows the
- * answer; Level 1 always puts out six and leaves the learner to work out
- * how many to use.
+ * answer; Level 1 always puts out [LEVEL1_GROUPS] of them — as many as
+ * the widest divisor the level can ask — and leaves the learner to work
+ * out how many to use.
  *
  * Each level keeps its own coverage grid, the way the binary lessons do:
  * doing it without the pens giving the answer away is the whole point of
