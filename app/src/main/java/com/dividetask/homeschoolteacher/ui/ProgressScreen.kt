@@ -34,8 +34,8 @@ import com.dividetask.homeschoolteacher.binary.BinaryOperationsViewModel
 import com.dividetask.homeschoolteacher.binary.BinaryOperator
 import com.dividetask.homeschoolteacher.chess.ChessViewModel
 import com.dividetask.homeschoolteacher.division.CountingDivisionViewModel
-import com.dividetask.homeschoolteacher.division.MAX_DIVIDEND
 import com.dividetask.homeschoolteacher.division.MAX_DIVISOR
+import com.dividetask.homeschoolteacher.division.divisionCells
 import com.dividetask.homeschoolteacher.multiplication.CountingMultiplicationViewModel
 import com.dividetask.homeschoolteacher.multiplication.MultiplicationOperandsViewModel
 import com.dividetask.homeschoolteacher.practice.GridOperation
@@ -455,7 +455,7 @@ fun ProgressScreen(
                 fontSize = 12.sp,
                 color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f),
             )
-            DivisionStreakGrid(divisionStreaks.getOrNull(0).orEmpty())
+            DivisionStreakGrid(divisionStreaks.getOrNull(0).orEmpty(), level = 0)
         }
 
         Section(LessonId.CountingDivision1) {
@@ -471,7 +471,7 @@ fun ProgressScreen(
                 fontSize = 12.sp,
                 color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f),
             )
-            DivisionStreakGrid(divisionStreaks.getOrNull(1).orEmpty())
+            DivisionStreakGrid(divisionStreaks.getOrNull(1).orEmpty(), level = 1)
         }
 
         Section(LessonId.Reading0) {
@@ -1051,13 +1051,15 @@ private fun PhonemesTable(streaks: Map<String, Int>) {    Column(
 }
 
 /**
- * Coverage for dividend ÷ divisor. Rows are dividends 1..24, columns are
- * divisors 1..6, and cells that don't divide evenly are drawn as blanks
- * because no problem will ever ask them.
+ * Coverage for dividend ÷ divisor at one level. Rows are the dividends
+ * that level can ask, columns are divisors, and any pair the level never
+ * asks is drawn as a blank.
  */
 @Composable
-private fun DivisionStreakGrid(streaks: List<List<Int>>) {
+private fun DivisionStreakGrid(streaks: List<List<Int>>, level: Int) {
     if (streaks.isEmpty()) return
+    val askable = divisionCells(level).toSet()
+    val dividends = askable.map { it.first }.distinct().sorted()
     Column(
         modifier = Modifier.fillMaxWidth(),
         verticalArrangement = Arrangement.spacedBy(2.dp),
@@ -1071,14 +1073,14 @@ private fun DivisionStreakGrid(streaks: List<List<Int>>) {
                 HeaderCell(c.toString(), modifier = Modifier.weight(1f))
             }
         }
-        (1..MAX_DIVIDEND).forEach { dividend ->
+        dividends.forEach { dividend ->
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(2.dp),
             ) {
                 HeaderCell(dividend.toString())
                 (1..MAX_DIVISOR).forEach { divisor ->
-                    if (dividend % divisor == 0) {
+                    if (dividend to divisor in askable) {
                         StreakCell(
                             streaks.getOrNull(dividend)?.getOrNull(divisor) ?: 0,
                             modifier = Modifier.weight(1f),

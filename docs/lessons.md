@@ -114,7 +114,7 @@ shown via the Counting Multiplication Screen.
 
 ### `multiplication_equation_grid[op1][op2]`
 Integer 2D array, `op1` and `op2` indexed `0..15` (Level 0 fills the
-`0..4` slice, Level 1 the `0..9` slice). Product-coverage grid
+`0..4` slice, Level 1 the `0..8` slice). Product-coverage grid
 shared by the Horizontal / Vertical / Number Line multiplication screens
 (tap-the-product lessons). Separate from `multiplication_grid` (the
 counting/product lesson) and `multiplication_operands_grid`. Default zero.
@@ -140,8 +140,8 @@ Vertical, Horizontal, or Number Line equation screens. Shared across
 those three screens.
 
 ### `division_grid[level][dividend][divisor]`
-Integer 3D array. `level ∈ 0..1`; `dividend` indexed `0..24`; `divisor`
-indexed `0..6`. Cell tracks correct answers for `dividend ÷ divisor` at
+Integer 3D array. `level ∈ 0..1`; `dividend` indexed `0..40`; `divisor`
+indexed `0..8`. Cell tracks correct answers for `dividend ÷ divisor` at
 that level. Only the cells where the division comes out whole are ever
 asked, so the grid is **sparse by design** — `division_grid[0][7][2]`,
 for instance, stays at zero forever and is not counted towards mastery.
@@ -394,7 +394,9 @@ How many pens appear is what separates the two levels:
   count of pens never gives the answer away and the learner has to work
   out how many of them to use.
 
-**Answer surface:** Numeric Grid (0..24).
+**Answer surface:** Numeric Grid (0..8) — the answer is how many
+land in each pen, which never passes the level's operand ceiling, not
+the dividend.
 
 ### Binary Vertical Equation Screen
 Two binary operands stacked, with a bitwise operator on the second line
@@ -1012,7 +1014,8 @@ over the next one.
 - **Variables:** `subtraction_grid`, `win_streak[7][1]`
 - **Random variables:** the standard range for this family and
   Difficulty (see Rules § Standard operand ranges)
-- **Answer surface:** Numeric Grid (0..16)
+- **Answer surface:** Numeric Grid (0..9) — the largest difference is 8,
+  padded to a full row
 - **Problem selection:** standard math-grid selection
 - **Pass criteria:** `subtraction_grid[op1][op2] >= cell_target(op1, op2)`
   for every cell the lesson can ask **AND** `win_streak[7][1] >= 4`

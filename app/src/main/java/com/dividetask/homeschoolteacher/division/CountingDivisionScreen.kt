@@ -132,7 +132,7 @@ fun CountingDivisionScreen(
         )
 
         NumericGrid(
-            maxAnswer = MAX_DIVIDEND,
+            maxAnswer = MAX_QUOTIENT,
             selected = state.selected,
             correct = problem.answer,
             answered = state.feedback != DivisionFeedback.None,

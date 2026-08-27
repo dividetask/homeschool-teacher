@@ -44,11 +44,24 @@ data class DivisionState(
     val poolCount: Int get() = problem.dividend - groupCounts.sum()
 }
 
-/** Largest number of animals a problem ever shows. */
-const val MAX_DIVIDEND = 24
+/**
+ * The two levels take the standard Difficulty 0 and 1 ranges for the
+ * multiplication family, read as `Z ÷ X = Y` (docs/lessons.md § Standard
+ * operand ranges): divisor and quotient both `1..4` with a dividend to
+ * 16 at Level 0, both `1..8` with a dividend to 40 at Level 1.
+ */
+private fun maxOperand(level: Int): Int = if (level == 0) 4 else 8
 
-/** Divisors run 1..6 — one per pen on the Level 1 screen. */
-const val MAX_DIVISOR = 6
+private fun maxDividend(level: Int): Int = if (level == 0) 16 else 40
+
+/** Largest number of animals a problem ever shows. */
+const val MAX_DIVIDEND = 40
+
+/** Largest divisor, and so the most pens a problem ever puts out. */
+const val MAX_DIVISOR = 8
+
+/** Largest answer — the quotient never passes the operand ceiling. */
+const val MAX_QUOTIENT = MAX_DIVISOR
 
 /** Pens shown by Level 1, whatever the divisor is. */
 const val LEVEL1_GROUPS = MAX_DIVISOR
@@ -65,16 +78,20 @@ private val SUPPORTED_LESSONS = setOf(
 )
 
 /**
- * Every (dividend, divisor) a division problem can use: divisor 1..6, and
- * a dividend that is a whole number of groups of it, up to [MAX_DIVIDEND].
+ * Every (dividend, divisor) a level can ask: a divisor and a quotient
+ * from that level's range, and the dividend they multiply to, dropped
+ * when it passes the level's ceiling.
  *
  * Note this leaves most of the coverage grid empty — there is no problem
  * for, say, 7 ÷ 2 — so mastery is judged over these cells only and the
  * grid on the Progress screen is deliberately sparse.
  */
-internal val DIVISION_CELLS: List<Pair<Int, Int>> =
-    (1..MAX_DIVISOR).flatMap { divisor ->
-        (1..MAX_DIVIDEND / divisor).map { quotient -> divisor * quotient to divisor }
+internal fun divisionCells(level: Int): List<Pair<Int, Int>> =
+    (1..maxOperand(level)).flatMap { divisor ->
+        (1..maxOperand(level))
+            .map { quotient -> divisor * quotient }
+            .filter { dividend -> dividend <= maxDividend(level) }
+            .map { dividend -> dividend to divisor }
     }
 
 /**
@@ -90,8 +107,8 @@ internal val DIVISION_CELLS: List<Pair<Int, Int>> =
  */
 class CountingDivisionViewModel : ViewModel() {
 
-    // grid[level][dividend][divisor]; only the cells in DIVISION_CELLS
-    // are ever written.
+    // grid[level][dividend][divisor]; only the cells a level can ask
+    // (see divisionCells) are ever written.
     private val grid: Array<Array<IntArray>> = Storage.loadDivisionStreaks()
 
     private val _gridFlow = MutableStateFlow(snapshotGrid())
@@ -279,7 +296,7 @@ class CountingDivisionViewModel : ViewModel() {
             if (manualOverride[id] == true) return@forEach
             val level = levelOf(id)
             val covered = PracticeGrid.covered(
-                cells = DIVISION_CELLS,
+                cells = divisionCells(level),
                 operation = GridOperation.Divide,
                 value = { dividend, divisor -> grid[level][dividend][divisor] },
             )
@@ -302,14 +319,16 @@ class CountingDivisionViewModel : ViewModel() {
 
     /** Standard math-grid selection, restricted to the askable cells. */
     private fun chooseProblem(previous: DivisionProblem?): DivisionProblem {
-        val cells = grid[levelOf(_activeLesson.value)]
+        val level = levelOf(_activeLesson.value)
+        val cells = grid[level]
         val (dividend, divisor) = PracticeGrid.choose(
-            cells = DIVISION_CELLS,
+            cells = divisionCells(level),
             operation = GridOperation.Divide,
             value = { dividend, divisor -> cells[dividend][divisor] },
             previous = previous?.let { it.dividend to it.divisor },
-            // Balance on the divisor: every dividend from 1 to 24 divides
-            // by one, so without this a quarter of the round is "÷ 1".
+            // Balance on the divisor: the small divisors own far more cells
+            // than the big ones (every dividend divides by one), so without
+            // this they crowd out exactly the ones a learner finds hard.
             balanceBy = { _, divisor -> divisor },
         )
         return DivisionProblem(

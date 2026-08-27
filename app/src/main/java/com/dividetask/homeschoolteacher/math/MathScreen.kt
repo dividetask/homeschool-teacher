@@ -77,16 +77,16 @@ fun MathScreen(
         LessonId.CountingSubtraction0,
         LessonId.HorizontalSubtraction0,
         LessonId.VerticalSubtraction0,
-        LessonId.NumberLineSubtraction0 -> 9 // subtraction op1 4..9, op2 0..4, max diff 9
-        LessonId.CountingSubtraction1 -> 16 // subtraction op1 8..16, op2 0..8, max diff 16
+        LessonId.NumberLineSubtraction0 -> 9 // subtraction operands 0..4, max diff 4 (pad to 9)
+        LessonId.CountingSubtraction1 -> 9  // subtraction operands 0..8, max diff 8 (pad to 9)
         LessonId.HorizontalMultiplication0,
         LessonId.VerticalMultiplication0,
         LessonId.NumberLineMultiplication0 -> 16 // multiplication operands 0..4, max product 16
+        // The whole Level 1 tier stops at the same product, so the number
+        // line stays countable and all three screens ask the same problems.
         LessonId.HorizontalMultiplication1,
-        LessonId.VerticalMultiplication1 -> 81 // multiplication operands 0..9, max product 81
-        // Number Line Level 1 drops any pair whose product reaches 30, so
-        // the line it has to draw stays countable.
-        LessonId.NumberLineMultiplication1 -> 29
+        LessonId.VerticalMultiplication1,
+        LessonId.NumberLineMultiplication1 -> 40
         else -> 9
     }
 
@@ -141,7 +141,8 @@ fun MathScreen(
         when (active) {
             LessonId.MathPictures,
             LessonId.CountingAddition1,
-            LessonId.CountingSubtraction0 -> PictureProblem(problem)
+            LessonId.CountingSubtraction0,
+            LessonId.CountingSubtraction1 -> PictureProblem(problem)
             LessonId.MathNumberLine,
             LessonId.NumberLineAddition0,
             LessonId.NumberLineSubtraction0,

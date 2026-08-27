@@ -132,7 +132,7 @@ object Storage {
     }
 
     // --- Math (Division) ---
-    // grid[level][dividend][divisor], dividend 0..24 and divisor 0..6.
+    // grid[level][dividend][divisor], dividend 0..40 and divisor 0..8.
     // Only the cells where the division comes out whole are ever written,
     // so the grid is sparse by design — see DIVISION_CELLS in
     // division/CountingDivisionViewModel.kt. The two levels ask the same
@@ -141,8 +141,8 @@ object Storage {
     // answer away.
     fun loadDivisionStreaks(): Array<Array<IntArray>> =
         Array(2) { level ->
-            Array(25) { dividend ->
-                IntArray(7) { divisor ->
+            Array(41) { dividend ->
+                IntArray(9) { divisor ->
                     prefs().getInt("division.streak.$level.$dividend.$divisor", 0)
                 }
             }
