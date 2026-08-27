@@ -256,7 +256,15 @@ class CountingBlock:
         rows = max(left[1], right[1])
         return max(rows * render.animal_line_height(size), BOX_HEIGHT) + self.pad
 
-    def draw(self, c: Canvas, x: float, top: float, width: float) -> None:
+    def _render(self, c: Canvas, x: float, top: float, width: float,
+                with_answer: bool) -> None:
+        """Draw the two groups and the operator.
+
+        ``with_answer`` adds the ``= [ ]`` tail. The write-the-sentence
+        sheet wants the picture without it, since its blanks row carries
+        the equals and the answer instead — sharing this keeps the two
+        sheets' pictures identical rather than merely similar.
+        """
         number_label(c, x, top, self.index)
         p = self.problem
         size, (left_cols, left_rows), (right_cols, right_rows) = self._layout(width)
@@ -269,9 +277,8 @@ class CountingBlock:
         equals = " = "
         operator_width = pdfmetrics.stringWidth(operator, TEXT_BOLD, symbol_size)
         equals_width = pdfmetrics.stringWidth(equals, TEXT_BOLD, symbol_size)
-        content = (
-            (left_cols + right_cols) * advance + operator_width + equals_width + BOX_WIDTH
-        )
+        tail = (equals_width + BOX_WIDTH) if with_answer else 0.0
+        content = (left_cols + right_cols) * advance + operator_width + tail
         cursor = x + LABEL_WIDTH + max(0.0, (width - LABEL_WIDTH - content) / 2.0)
 
         middle = top - band / 2.0
@@ -291,10 +298,18 @@ class CountingBlock:
         c.drawString(cursor, baseline, operator)
         cursor += operator_width
         cursor = group(p.right, right_cols, right_rows, cursor)
-        c.setFont(TEXT_BOLD, symbol_size)
-        c.drawString(cursor, baseline, equals)
-        cursor += equals_width
-        answer_box(c, cursor, middle + BOX_HEIGHT / 2.0, BOX_WIDTH, BOX_HEIGHT)
+        if with_answer:
+            c.setFont(TEXT_BOLD, symbol_size)
+            c.drawString(cursor, baseline, equals)
+            cursor += equals_width
+            answer_box(c, cursor, middle + BOX_HEIGHT / 2.0, BOX_WIDTH, BOX_HEIGHT)
+
+    def draw(self, c: Canvas, x: float, top: float, width: float) -> None:
+        self._render(c, x, top, width, with_answer=True)
+
+    def draw_groups_only(self, c: Canvas, x: float, top: float, width: float) -> None:
+        """The picture without the ``= [ ]`` tail."""
+        self._render(c, x, top, width, with_answer=False)
 
 
 # --- number line -----------------------------------------------------------
@@ -464,7 +479,10 @@ class _BoxedGroups:
     row_gap: float = 6.0
 
     def _pen_size(self):
-        per_row = min(self.per_group, 4)
+        # A pen reads best as one row of animals. Wrapping starts only
+        # past six, where a single row would make the pen too wide to sit
+        # beside its neighbours.
+        per_row = min(self.per_group, 6)
         inner_w, inner_h = animal_grid_size(self.per_group, per_row, self.size)
         return inner_w + 2 * self.pad, inner_h + 2 * self.pad, per_row
 
@@ -505,6 +523,24 @@ class _BoxedGroups:
         c.restoreState()
 
 
+def fit_pens(groups: int, per_group: int, emoji: str, width: float,
+             budget: Optional[float], max_size: float = 14.0,
+             min_size: float = 5.0) -> "_BoxedGroups":
+    """The largest pens of ``per_group`` animals that fit ``budget``.
+
+    Level 1 multiplication reaches eight pens of five, or five of eight —
+    forty animals where Level 0 had sixteen — so a fixed animal size
+    either wastes the page at Level 0 or runs off it at Level 1.
+    """
+    size = max_size
+    while size > min_size:
+        pens = _BoxedGroups(groups=groups, per_group=per_group, emoji=emoji, size=size)
+        if budget is None or pens.height(width) <= budget:
+            return pens
+        size -= 0.5
+    return _BoxedGroups(groups=groups, per_group=per_group, emoji=emoji, size=min_size)
+
+
 @dataclass
 class MultCountingBlock:
     """``X × Y = [ ]`` above Y pens of X animals."""
@@ -512,14 +548,24 @@ class MultCountingBlock:
     problem: Problem
     index: int
     size: float = 19.0
+    height_budget: Optional[float] = None
 
-    def _groups(self) -> _BoxedGroups:
+    def _head(self) -> float:
+        return max(BOX_HEIGHT, self.size * 1.3)
+
+    def _groups(self, width: float) -> _BoxedGroups:
         p = self.problem
-        return _BoxedGroups(groups=p.right, per_group=p.left, emoji=p.animal.emoji)
+        budget = None
+        if self.height_budget is not None:
+            budget = self.height_budget - self._head() - 6
+        return fit_pens(p.right, p.left, p.animal.emoji, width - LABEL_WIDTH, budget)
 
     def height(self, width: float) -> float:
         inner = width - LABEL_WIDTH
-        return max(BOX_HEIGHT, self.size * 1.3) + 6 + self._groups().height(inner)
+        natural = self._head() + 6 + self._groups(width).height(inner)
+        if self.height_budget is None:
+            return natural
+        return max(natural, self.height_budget)
 
     def draw(self, c: Canvas, x: float, top: float, width: float) -> None:
         number_label(c, x, top, self.index)
@@ -527,14 +573,14 @@ class MultCountingBlock:
         left = x + LABEL_WIDTH
         text = f"{p.left} × {p.right} ="
         text_width = pdfmetrics.stringWidth(text, TEXT_BOLD, self.size)
-        head = max(BOX_HEIGHT, self.size * 1.3)
+        head = self._head()
 
         c.setFont(TEXT_BOLD, self.size)
         c.setFillColor(black)
         c.drawString(left, top - head / 2.0 - self.size * 0.34, text)
         answer_box(c, left + text_width + GAP, top - (head - BOX_HEIGHT) / 2.0,
                    BOX_WIDTH, BOX_HEIGHT)
-        self._groups().draw(c, left, top - head - 6, width - LABEL_WIDTH)
+        self._groups(width).draw(c, left, top - head - 6, width - LABEL_WIDTH)
 
 
 @dataclass
@@ -549,25 +595,37 @@ class MultOperandsBlock:
     problem: Problem
     index: int
     size: float = 19.0
+    height_budget: Optional[float] = None
 
-    def _groups(self) -> _BoxedGroups:
+    def _groups(self, width: float) -> _BoxedGroups:
         p = self.problem
-        return _BoxedGroups(groups=p.right, per_group=p.left, emoji=p.animal.emoji)
+        budget = None
+        if self.height_budget is not None:
+            budget = self.height_budget - self.GAP_TO_BLANKS - BOX_HEIGHT
+        return fit_pens(p.right, p.left, p.animal.emoji, width - LABEL_WIDTH, budget)
 
     # The pens and the two blanks are separate things to read; without
-    # real space between them, and between one problem and the next, the
-    # page runs together.
+    # real space between them the page runs together. The gap *between*
+    # problems is the row budget's surplus, which falls below the block —
+    # so trailing padding is only needed when there is no budget.
     GAP_TO_BLANKS = 14.0
     TRAILING = 12.0
 
+    def _trailing(self) -> float:
+        return 0.0 if self.height_budget is not None else self.TRAILING
+
     def height(self, width: float) -> float:
         inner = width - LABEL_WIDTH
-        return self._groups().height(inner) + self.GAP_TO_BLANKS + BOX_HEIGHT + self.TRAILING
+        natural = (self._groups(width).height(inner)
+                   + self.GAP_TO_BLANKS + BOX_HEIGHT + self._trailing())
+        if self.height_budget is None:
+            return natural
+        return max(natural, self.height_budget)
 
     def draw(self, c: Canvas, x: float, top: float, width: float) -> None:
         number_label(c, x, top, self.index)
         left = x + LABEL_WIDTH
-        groups = self._groups()
+        groups = self._groups(width)
         groups_height = groups.height(width - LABEL_WIDTH)
         groups.draw(c, left, top, width - LABEL_WIDTH)
 
@@ -579,6 +637,142 @@ class MultOperandsBlock:
         c.setFillColor(black)
         c.drawString(left + BOX_WIDTH, row_top - BOX_HEIGHT / 2.0 - self.size * 0.34, times)
         answer_box(c, left + BOX_WIDTH + times_width, row_top, BOX_WIDTH, BOX_HEIGHT)
+
+
+# --- write the whole sentence ---------------------------------------------
+
+def _blank_row(c: Canvas, x: float, top: float, glyph: str, size: float,
+               box_w: float, box_h: float) -> float:
+    """``[ ] op [ ] = [ ]``. Returns the width used."""
+    parts = [None, f" {glyph} ", None, " = ", None]
+    widths = [
+        box_w if p is None else pdfmetrics.stringWidth(p, TEXT_BOLD, size)
+        for p in parts
+    ]
+    cursor = x
+    baseline = top - box_h / 2.0 - size * 0.34
+    for part, w in zip(parts, widths):
+        if part is None:
+            answer_box(c, cursor, top, box_w, box_h)
+        else:
+            c.setFont(TEXT_BOLD, size)
+            c.setFillColor(black)
+            c.drawString(cursor, baseline, part)
+        cursor += w
+    return cursor - x
+
+
+def _blank_row_width(glyph: str, size: float, box_w: float) -> float:
+    return (3 * box_w
+            + pdfmetrics.stringWidth(f" {glyph} ", TEXT_BOLD, size)
+            + pdfmetrics.stringWidth(" = ", TEXT_BOLD, size))
+
+
+@dataclass
+class CountingBlanksBlock:
+    """Two groups of animals above ``[ ] op [ ] = [ ]``.
+
+    The plain counting sheet hands the child the sentence and asks only
+    for the answer. This one hands over nothing: they have to read both
+    numbers off the picture and write the sentence themselves, which is
+    the step where counting turns into arithmetic.
+    """
+
+    problem: Problem
+    index: int
+    base_size: float = 20.0
+    max_rows: int = 2
+    height_budget: Optional[float] = None
+    size: float = 19.0
+    GAP = 10.0
+
+    def __post_init__(self):
+        # Hand the picture whatever the blanks row leaves over, so the
+        # animals shrink to fit rather than pushing rows off the page.
+        picture_budget = None
+        if self.height_budget is not None:
+            picture_budget = self.height_budget - self.GAP - BOX_HEIGHT
+        self._picture = CountingBlock(
+            self.problem, self.index, self.base_size, self.max_rows,
+            height_budget=picture_budget,
+        )
+
+    def _picture_height(self, width: float) -> float:
+        return self._picture.height(width)
+
+    def height(self, width: float) -> float:
+        natural = self._picture_height(width) + self.GAP + BOX_HEIGHT
+        if self.height_budget is None:
+            return natural
+        return max(natural, self.height_budget)
+
+    def draw(self, c: Canvas, x: float, top: float, width: float) -> None:
+        # The picture block draws the animals and the operator; its own
+        # answer box is replaced by the blanks row underneath, so ask it
+        # to lay out the groups only.
+        self._picture.draw_groups_only(c, x, top, width)
+        picture = self._picture_height(width)
+        row_top = top - picture - self.GAP
+        row_width = _blank_row_width(self.problem.glyph, self.size, BOX_WIDTH)
+        left = x + LABEL_WIDTH + max(0.0, (width - LABEL_WIDTH - row_width) / 2.0)
+        _blank_row(c, left, row_top, self.problem.glyph, self.size,
+                   BOX_WIDTH, BOX_HEIGHT)
+
+
+@dataclass
+class GroupedBlanksBlock:
+    """Pens of animals above ``[ ] op [ ] = [ ]``.
+
+    Serves multiplication and division from the same picture, because
+    they *are* the same picture: so many pens holding so many each.
+    Multiplication reads it as `per pen × pens = total`; division reads
+    the same pens as `total ÷ pens = per pen`, which is what makes the
+    pair click.
+    """
+
+    problem: Problem
+    index: int
+    operator: str = "x"
+    height_budget: Optional[float] = None
+    size: float = 19.0
+    GAP = 12.0
+    TRAILING = 8.0
+
+    def _trailing(self) -> float:
+        return 0.0 if self.height_budget is not None else self.TRAILING
+
+    def _pens(self, width: float) -> _BoxedGroups:
+        p = self.problem
+        if self.operator == "/":
+            # (dividend, divisor): the divisor is how many pens, and each
+            # holds the quotient.
+            pens, per_pen = p.right, p.left // p.right
+        else:
+            pens, per_pen = p.right, p.left
+        budget = None
+        if self.height_budget is not None:
+            budget = self.height_budget - self.GAP - BOX_HEIGHT
+        return fit_pens(pens, per_pen, p.animal.emoji, width - LABEL_WIDTH, budget)
+
+    def height(self, width: float) -> float:
+        inner = width - LABEL_WIDTH
+        natural = self._pens(width).height(inner) + self.GAP + BOX_HEIGHT + self._trailing()
+        if self.height_budget is None:
+            return natural
+        return max(natural, self.height_budget)
+
+    def draw(self, c: Canvas, x: float, top: float, width: float) -> None:
+        number_label(c, x, top, self.index)
+        left = x + LABEL_WIDTH
+        pens = self._pens(width)
+        pens_height = pens.height(width - LABEL_WIDTH)
+        pens.draw(c, left, top, width - LABEL_WIDTH)
+
+        glyph = "÷" if self.operator == "/" else "×"
+        row_top = top - pens_height - self.GAP
+        row_width = _blank_row_width(glyph, self.size, BOX_WIDTH)
+        start = x + LABEL_WIDTH + max(0.0, (width - LABEL_WIDTH - row_width) / 2.0)
+        _blank_row(c, start, row_top, glyph, self.size, BOX_WIDTH, BOX_HEIGHT)
 
 
 # --- division --------------------------------------------------------------

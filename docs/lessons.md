@@ -367,8 +367,10 @@ How many pens appear is what separates the two levels:
 
 - **Level 0** puts out exactly `Y` pens, so filling them evenly makes
   the answer visible — this is the level that *shows* what dividing is.
-- **Level 1** always puts out six pens whatever `Y` is, so the learner
-  has to work out how many of them to use.
+- **Level 1** always puts out **eight** pens — as many as the widest
+  divisor the level can ask — whatever the divisor actually is, so the
+  count of pens never gives the answer away and the learner has to work
+  out how many of them to use.
 
 **Answer surface:** Numeric Grid (0..24).
 
@@ -445,6 +447,40 @@ the only slot and submits immediately).
 
 Shared rule sets referenced by multiple lessons.
 
+### Standard operand ranges
+
+Every Math lesson outside Binary draws from one of four ranges, chosen by
+its **operation family** and its **Difficulty**. A lesson states its
+Difficulty and inherits the range; it does not invent its own.
+
+`Z` is the big number in both multiplication families — the product a
+multiplication asks for, and the dividend a division starts from — so a
+Level 1 sheet of either never runs past 40.
+
+| Family                     | Difficulty 0            | Difficulty 1            |
+| -------------------------- | ----------------------- | ----------------------- |
+| Addition / Subtraction     | `op1, op2 ∈ 0..4`       | `op1, op2 ∈ 0..8`       |
+| Multiplication / Division  | `X, Y ∈ 0..4`, `Z ∈ 0..16` | `X, Y ∈ 0..8`, `Z ∈ 0..40` |
+
+Read the multiplication families as one triple seen from either side:
+`X × Y = Z` for multiplication, `Z ÷ X = Y` for division.
+
+Three constraints fall out of the ranges rather than being stated per
+lesson:
+
+- **Subtraction keeps `op1 >= op2`**, so an answer is never negative.
+  Both operands still come from the family range.
+- **Division excludes a zero divisor and a zero dividend.** `X` and `Y`
+  each run `1..4` / `1..8`; `Z` is their product. Dividing zero by
+  something is degenerate, and dividing by zero is undefined.
+- **`Z` is a ceiling, not a guarantee.** Where `X × Y` would exceed it —
+  `7 × 8` at Difficulty 1 — that pair is simply not asked. So the
+  Difficulty 1 grids are sparse in their top-right corner, the same way
+  the division grid is sparse everywhere `X` does not divide `Z`.
+
+Pass criteria are judged over the cells a lesson can actually ask, never
+over cells its ceiling rules out.
+
 ### Easy cells
 
 Some cells are right on sight and are not worth drilling like the rest:
@@ -470,23 +506,23 @@ reading lists) have no easy cells: every one of their cells needs 2.
 ### Balanced operands
 
 A lesson's cells are not always spread evenly across its operands.
-Division is the clear case: the dividend runs `1..24` and only the pairs
-that divide exactly are ever asked, so `÷ 1` owns **24** of the 58 cells
-while `÷ 5` and `÷ 6` own four each. Drawing uniformly over cells spends
-a quarter of every round dividing by one, and the easy-cell halving only
-takes that to an eighth — the problem is the shape of the cell space, not
-the weight of any one cell.
+Division is the clear case, because the dividend has to be a whole
+number of groups: at Difficulty 1 the divisors `1..5` each own eight
+cells, while `÷ 6` owns six and `÷ 7` and `÷ 8` own five apiece — the
+bigger the divisor, the fewer quotients fit under the `Z` ceiling. Left
+alone, the small divisors crowd out exactly the ones a learner finds
+hard.
 
 Where a lesson names a **balance operand**, every distinct value of that
 operand comes up equally often, however many cells it owns: a cell's pick
 weight is divided by the number of cells in the pool sharing its balance
 value. This multiplies with the easy-cell weight rather than replacing
-it, so `÷ 1` is damped twice — once for being a sixth of the divisors,
+it, so `÷ 1` is damped twice — once for being one divisor of several,
 once for being easy.
 
-Only the division lessons name one, and it is the **divisor**. That takes
-`÷ 1` from a quarter of the problems to about a **twelfth**, and leaves
-the other five divisors level with each other.
+Only the division lessons name one, and it is the **divisor**. It leaves
+`÷ 1` at roughly a fifteenth of Difficulty 1 problems and the other
+seven divisors level with each other.
 
 ### Random problem selection (math grid)
 
@@ -771,12 +807,12 @@ over the next one.
 - **Unlock conditions:** always.
 - **Screen:** Counting Equation Screen (addition operator)
 - **Variables:** `addition_grid`, `win_streak[2][0]`
-- **Random variables:**
-  - `op1, op2 ∈ 0..4`
+- **Random variables:** the standard range for this family and
+  Difficulty (see Rules § Standard operand ranges)
 - **Problem selection:** standard math-grid selection
   (see Rules § Random problem selection (math grid))
 - **Pass criteria:** `addition_grid[op1][op2] >= cell_target(op1, op2)`
-  for every `op1, op2 ∈ 0..4` **AND** `win_streak[2][0] >= 4`
+  for every cell the lesson can ask **AND** `win_streak[2][0] >= 4`
 
 ### Horizontal Addition — Level 0
 - **Game UID:** 2
@@ -787,11 +823,11 @@ over the next one.
 - **Unlock conditions:** always.
 - **Screen:** Horizontal Equation Screen (addition operator)
 - **Variables:** `addition_grid`, `win_streak[2][0]`
-- **Random variables:**
-  - `op1, op2 ∈ 0..4`
+- **Random variables:** the standard range for this family and
+  Difficulty (see Rules § Standard operand ranges)
 - **Problem selection:** standard math-grid selection
 - **Pass criteria:** `addition_grid[op1][op2] >= cell_target(op1, op2)`
-  for every `op1, op2 ∈ 0..4` **AND** `win_streak[2][0] >= 4`
+  for every cell the lesson can ask **AND** `win_streak[2][0] >= 4`
 
 ### Vertical Addition — Level 0
 - **Game UID:** 2
@@ -802,11 +838,11 @@ over the next one.
 - **Unlock conditions:** always.
 - **Screen:** Vertical Equation Screen (addition operator)
 - **Variables:** `addition_grid`, `win_streak[2][0]`
-- **Random variables:**
-  - `op1, op2 ∈ 0..4`
+- **Random variables:** the standard range for this family and
+  Difficulty (see Rules § Standard operand ranges)
 - **Problem selection:** standard math-grid selection
 - **Pass criteria:** `addition_grid[op1][op2] >= cell_target(op1, op2)`
-  for every `op1, op2 ∈ 0..4` **AND** `win_streak[2][0] >= 4`
+  for every cell the lesson can ask **AND** `win_streak[2][0] >= 4`
 
 ### Number Line Addition — Level 0
 - **Game UID:** 2
@@ -817,11 +853,11 @@ over the next one.
 - **Unlock conditions:** always.
 - **Screen:** Number Line Equation Screen (addition operator)
 - **Variables:** `addition_grid`, `win_streak[2][0]`
-- **Random variables:**
-  - `op1, op2 ∈ 0..4`
+- **Random variables:** the standard range for this family and
+  Difficulty (see Rules § Standard operand ranges)
 - **Problem selection:** standard math-grid selection
 - **Pass criteria:** `addition_grid[op1][op2] >= cell_target(op1, op2)`
-  for every `op1, op2 ∈ 0..4` **AND** `win_streak[2][0] >= 4`
+  for every cell the lesson can ask **AND** `win_streak[2][0] >= 4`
 
 ### Counting Addition — Level 1
 - **Game UID:** 2
@@ -833,11 +869,11 @@ over the next one.
   Line Addition 1 passed.
 - **Screen:** Counting Equation Screen (addition operator)
 - **Variables:** `addition_grid`, `win_streak[Counting Addition 1]`
-- **Random variables:**
-  - `op1, op2 ∈ 0..8`
+- **Random variables:** the standard range for this family and
+  Difficulty (see Rules § Standard operand ranges)
 - **Problem selection:** standard math-grid selection
 - **Pass criteria:** `addition_grid[op1][op2] >= cell_target(op1, op2)`
-  for every `op1, op2 ∈ 0..8` **AND** `win_streak[2][1] >= 4`
+  for every cell the lesson can ask **AND** `win_streak[2][1] >= 4`
 
 ### Horizontal Addition — Level 1
 - **Game UID:** 2
@@ -848,11 +884,11 @@ over the next one.
 - **Unlock conditions:** All Addition Difficulty 0 passed and Number Line Addition 1 passed.
 - **Screen:** Horizontal Equation Screen (addition operator)
 - **Variables:** `addition_grid`, `win_streak[2][1]`
-- **Random variables:**
-  - `op1, op2 ∈ 0..8`
+- **Random variables:** the standard range for this family and
+  Difficulty (see Rules § Standard operand ranges)
 - **Problem selection:** standard math-grid selection
 - **Pass criteria:** `addition_grid[op1][op2] >= cell_target(op1, op2)`
-  for every `op1, op2 ∈ 0..8` **AND** `win_streak[2][1] >= 4`
+  for every cell the lesson can ask **AND** `win_streak[2][1] >= 4`
 
 ### Vertical Addition — Level 1
 - **Game UID:** 2
@@ -863,11 +899,11 @@ over the next one.
 - **Unlock conditions:** All Addition Difficulty 0 passed and Number Line Addition 1 passed.
 - **Screen:** Vertical Equation Screen (addition operator)
 - **Variables:** `addition_grid`, `win_streak[2][1]`
-- **Random variables:**
-  - `op1, op2 ∈ 0..8`
+- **Random variables:** the standard range for this family and
+  Difficulty (see Rules § Standard operand ranges)
 - **Problem selection:** standard math-grid selection
 - **Pass criteria:** `addition_grid[op1][op2] >= cell_target(op1, op2)`
-  for every `op1, op2 ∈ 0..8` **AND** `win_streak[2][1] >= 4`
+  for every cell the lesson can ask **AND** `win_streak[2][1] >= 4`
 
 ### Number Line Addition — Level 1
 - **Game UID:** 2
@@ -878,11 +914,11 @@ over the next one.
 - **Unlock conditions:** Number Line Addition 0 passed.
 - **Screen:** Number Line Equation Screen (addition operator)
 - **Variables:** `addition_grid`, `win_streak[2][1]`
-- **Random variables:**
-  - `op1, op2 ∈ 0..8`
+- **Random variables:** the standard range for this family and
+  Difficulty (see Rules § Standard operand ranges)
 - **Problem selection:** standard math-grid selection
 - **Pass criteria:** `addition_grid[op1][op2] >= cell_target(op1, op2)`
-  for every `op1, op2 ∈ 0..8` **AND** `win_streak[2][1] >= 4`
+  for every cell the lesson can ask **AND** `win_streak[2][1] >= 4`
 
 ### Binary — Level 0
 - **Game UID:** 8
@@ -929,18 +965,17 @@ over the next one.
 - **Unlock conditions:** All Subtraction Difficulty 0 passed.
 - **Screen:** Counting Equation Screen (subtraction operator)
 - **Variables:** `subtraction_grid`, `win_streak[7][1]`
-- **Random variables:**
-  - `op1 ∈ 8..16`, `op2 ∈ 0..8`
+- **Random variables:** the standard range for this family and
+  Difficulty (see Rules § Standard operand ranges)
 - **Answer surface:** Numeric Grid (0..16)
 - **Problem selection:** standard math-grid selection
 - **Pass criteria:** `subtraction_grid[op1][op2] >= cell_target(op1, op2)`
-  for every `op1 ∈ 8..16`, `op2 ∈ 0..8` **AND** `win_streak[7][1] >= 4`
+  for every cell the lesson can ask **AND** `win_streak[7][1] >= 4`
 
-This is the inverse of Addition Level 1: that tier adds operands `0..8`
-to reach sums of `0..16`, and this one takes `0..8` back off a number in
-`8..16`, so it drills the same family of facts read the other way round.
-Only the counting presentation exists at this level — the Horizontal,
-Vertical and Number Line subtraction screens stay at Level 0.
+Both operands come from the same `0..8` range as Addition Level 1, with
+`op1 >= op2` so the answer is never negative. Only the counting
+presentation exists at this level — the Horizontal, Vertical and Number
+Line subtraction screens stay at Level 0.
 
 ### Counting Multiplication — Level 0
 - **Game UID:** 9
@@ -951,15 +986,14 @@ Vertical and Number Line subtraction screens stay at Level 0.
 - **Unlock conditions:** All Subtraction Difficulty 0 passed.
 - **Screen:** Counting Multiplication Screen
 - **Variables:** `multiplication_grid`
-- **Random variables:**
-  - `op1, op2 ∈ 0..4` (max product 16)
+- **Random variables:** the standard range for this family and
+  Difficulty (see Rules § Standard operand ranges)
   - A random animal emoji per problem (independent of streak)
 - **Answer surface:** Numeric Grid (0..16)
 - **Problem selection:** standard math-grid selection over the
   `(op1, op2)` cell space.
 - **Pass criteria:**
-  `multiplication_grid[op1][op2] >= cell_target(op1, op2)` for every
-  `op1, op2 ∈ 0..4`.
+  `multiplication_grid[op1][op2] >= cell_target(op1, op2)` for every cell the lesson can ask.
 
 ### Counting Multiplication — Level 1
 - **Game UID:** 9
@@ -973,8 +1007,9 @@ Vertical and Number Line subtraction screens stay at Level 0.
   Picker (below) instead of the numeric grid. The product is never shown.
 - **Variables:** `multiplication_operands_grid` — a separate coverage
   grid from Level 0, cells indexed `(op1, op2) ∈ 1..4`.
-- **Random variables:**
-  - `op1, op2 ∈ 1..4` (**never 0**)
+- **Random variables:** the standard range for this family and
+  Difficulty (see Rules § Standard operand ranges) — the operand
+  picker means neither operand is 0
   - A random animal emoji per problem
 - **Answer surface:** Operand Picker — buttons `1..4`; the first tap fills
   the first operand blank, the second tap fills the second and submits.
@@ -984,7 +1019,7 @@ Vertical and Number Line subtraction screens stay at Level 0.
   `(op1, op2) ∈ 1..4` cell space.
 - **Pass criteria:**
   `multiplication_operands_grid[op1][op2] >= cell_target(op1, op2)` for
-  every `op1, op2 ∈ 1..4`.
+  every cell the lesson can ask.
 
 ### Horizontal Multiplication — Level 0
 - **Game UID:** 9
@@ -995,8 +1030,8 @@ Vertical and Number Line subtraction screens stay at Level 0.
 - **Unlock conditions:** Number Line Multiplication — Level 0 passed.
 - **Screen:** Horizontal Equation Screen (`×` operator)
 - **Variables:** `multiplication_equation_grid`, `win_streak[9][Horizontal]`
-- **Random variables:**
-  - `op1, op2 ∈ 0..4` (max product 16)
+- **Random variables:** the standard range for this family and
+  Difficulty (see Rules § Standard operand ranges)
 - **Answer surface:** Numeric Grid (0..16)
 - **Problem selection:** standard math-grid selection
 - **Pass criteria:**
@@ -1012,8 +1047,8 @@ Vertical and Number Line subtraction screens stay at Level 0.
 - **Unlock conditions:** Number Line Multiplication — Level 0 passed.
 - **Screen:** Vertical Equation Screen (`×` operator)
 - **Variables:** `multiplication_equation_grid`, `win_streak[9][Vertical]`
-- **Random variables:**
-  - `op1, op2 ∈ 0..4`
+- **Random variables:** the standard range for this family and
+  Difficulty (see Rules § Standard operand ranges)
 - **Answer surface:** Numeric Grid (0..16)
 - **Problem selection:** standard math-grid selection
 - **Pass criteria:**
@@ -1030,8 +1065,8 @@ Vertical and Number Line subtraction screens stay at Level 0.
 - **Screen:** Number Line Equation Screen (`×` operator) — the scrollable,
   markable line from 0; the learner still taps the product.
 - **Variables:** `multiplication_equation_grid`, `win_streak[9][NumberLine]`
-- **Random variables:**
-  - `op1, op2 ∈ 0..4`
+- **Random variables:** the standard range for this family and
+  Difficulty (see Rules § Standard operand ranges)
 - **Answer surface:** Numeric Grid (0..16)
 - **Problem selection:** standard math-grid selection
 - **Pass criteria:**
@@ -1053,26 +1088,24 @@ counting-multiplication grids.
   passed (Horizontal, Vertical, and Number Line Multiplication 0).
 - **Screen:** the matching Horizontal / Vertical / Number Line Equation
   Screen (`×`). The Number Line screen scrolls (it runs 0 to the answer +
-  10, rounded to the next ten — up to 40, given the product ceiling
+  10, rounded to the next ten — up to 50, given the product ceiling
   below).
 - **Variables:** `multiplication_equation_grid` (the same grid as Level 0,
-  now covering the `0..9` slice), plus each lesson's own `win_streak`.
-- **Random variables:** `op1, op2 ∈ 0..9` (max product 81), **except**
-  Number Line Multiplication Level 1, which additionally drops any pair
-  whose product would reach **30**. The other two presentations type the
-  answer, so a large product costs nothing; the number line has to draw
-  every integer up to the answer, and a line to 90 is an unreadable smear
-  of ticks on a phone. Capping it keeps the line countable, which is the
-  point of that screen.
+  now covering the `0..8` slice), plus each lesson's own `win_streak`.
+- **Random variables:** the standard range for this family and Difficulty
+  (see Rules § Standard operand ranges) — `X, Y ∈ 0..8` with the product
+  capped at **40**. All three presentations share the cap: the number
+  line has to draw every integer up to the answer, and a line to 90 is an
+  unreadable smear of ticks on a phone, so the ceiling that keeps that
+  screen countable is the one the whole tier uses.
 - **Answer surface:** **Number Pad** — the learner types the product and
-  presses **Enter** (products up to 81 are too many for a tap grid).
-- **Problem selection:** standard math-grid selection over `0..9` — over
-  the sub-30 cells only, for Number Line Level 1.
+  presses **Enter** (products up to 40 are too many for a tap grid).
+- **Problem selection:** standard math-grid selection over the cells the
+  ceiling allows.
 - **Pass criteria:**
   `multiplication_equation_grid[op1][op2] >= cell_target(op1, op2)` for
-  every cell the lesson can ask **AND** `win_streak >= 4` (per lesson).
-  For Number Line Level 1 that is the sub-30 cells only — it is not held
-  to cells it never shows.
+  every cell the lesson can ask **AND** `win_streak >= 4` (per lesson) —
+  never over pairs the product ceiling rules out.
 
 Like Level 0, the three presentations share the grid and pass
 independently.
@@ -1086,11 +1119,11 @@ independently.
 - **Unlock conditions:** All Addition Difficulty 1 passed.
 - **Screen:** Counting Equation Screen (subtraction operator)
 - **Variables:** `subtraction_grid`, `win_streak[7][0]`
-- **Random variables:**
-  - `op1 ∈ 4..9`, `op2 ∈ 0..4`
+- **Random variables:** the standard range for this family and
+  Difficulty (see Rules § Standard operand ranges)
 - **Problem selection:** standard math-grid selection
 - **Pass criteria:** `subtraction_grid[op1][op2] >= cell_target(op1, op2)`
-  for every `op1 ∈ 4..9`, `op2 ∈ 0..4` **AND** `win_streak[7][0] >= 4`
+  for every cell the lesson can ask **AND** `win_streak[7][0] >= 4`
 
 ### Horizontal Subtraction — Level 0
 - **Game UID:** 7
@@ -1101,11 +1134,11 @@ independently.
 - **Unlock conditions:** All Addition Difficulty 1 passed.
 - **Screen:** Horizontal Equation Screen (subtraction operator)
 - **Variables:** `subtraction_grid`, `win_streak[7][0]`
-- **Random variables:**
-  - `op1 ∈ 4..9`, `op2 ∈ 0..4`
+- **Random variables:** the standard range for this family and
+  Difficulty (see Rules § Standard operand ranges)
 - **Problem selection:** standard math-grid selection
 - **Pass criteria:** `subtraction_grid[op1][op2] >= cell_target(op1, op2)`
-  for every `op1 ∈ 4..9`, `op2 ∈ 0..4` **AND** `win_streak[7][0] >= 4`
+  for every cell the lesson can ask **AND** `win_streak[7][0] >= 4`
 
 ### Vertical Subtraction — Level 0
 - **Game UID:** 7
@@ -1116,11 +1149,11 @@ independently.
 - **Unlock conditions:** All Addition Difficulty 1 passed.
 - **Screen:** Vertical Equation Screen (subtraction operator)
 - **Variables:** `subtraction_grid`, `win_streak[7][0]`
-- **Random variables:**
-  - `op1 ∈ 4..9`, `op2 ∈ 0..4`
+- **Random variables:** the standard range for this family and
+  Difficulty (see Rules § Standard operand ranges)
 - **Problem selection:** standard math-grid selection
 - **Pass criteria:** `subtraction_grid[op1][op2] >= cell_target(op1, op2)`
-  for every `op1 ∈ 4..9`, `op2 ∈ 0..4` **AND** `win_streak[7][0] >= 4`
+  for every cell the lesson can ask **AND** `win_streak[7][0] >= 4`
 
 ### Number Line Subtraction — Level 0
 - **Game UID:** 7
@@ -1131,11 +1164,11 @@ independently.
 - **Unlock conditions:** All Addition Difficulty 1 passed.
 - **Screen:** Number Line Equation Screen (subtraction operator)
 - **Variables:** `subtraction_grid`, `win_streak[7][0]`
-- **Random variables:**
-  - `op1 ∈ 4..9`, `op2 ∈ 0..4`
+- **Random variables:** the standard range for this family and
+  Difficulty (see Rules § Standard operand ranges)
 - **Problem selection:** standard math-grid selection
 - **Pass criteria:** `subtraction_grid[op1][op2] >= cell_target(op1, op2)`
-  for every `op1 ∈ 4..9`, `op2 ∈ 0..4` **AND** `win_streak[7][0] >= 4`
+  for every cell the lesson can ask **AND** `win_streak[7][0] >= 4`
 
 ### Counting Division — Level 0
 - **Game UID:** 11
@@ -1147,11 +1180,10 @@ independently.
   of the multiplication chain).
 - **Screen:** Animal Division Screen, with `Y` pens
 - **Variables:** `division_grid[0]`, `win_streak[11][0]`
-- **Random variables:**
-  - `divisor ∈ 1..6`
-  - `dividend = divisor × quotient`, with `quotient` chosen so that
-    `dividend ≤ 24`. The dividend is therefore always a whole number of
-    groups and the answer is always an integer.
+- **Random variables:** the standard range for this family and
+  Difficulty (see Rules § Standard operand ranges) — divisor `X ∈ 1..4`,
+  quotient `Y ∈ 1..4`, dividend `Z = X × Y ≤ 16`. The dividend is always
+  a whole number of groups, so the answer is always an integer.
 - **Problem selection:** standard math-grid selection, restricted to the
   cells above (the rest of `division_grid` is never asked), **balanced on
   the divisor** (see Rules § Balanced operands) so dividing by one does
@@ -1167,10 +1199,11 @@ independently.
 - **Category:** Math
 - **Runs per round:** 4
 - **Unlock conditions:** Counting Division 0 passed.
-- **Screen:** Animal Division Screen, with six pens always
+- **Screen:** Animal Division Screen, with eight pens always
 - **Variables:** `division_grid[1]` (its own slice — Level 0 progress
   does not count towards it), `win_streak[11][1]`
-- **Random variables:** same as Level 0
+- **Random variables:** the Difficulty 1 range — divisor `X ∈ 1..8`,
+  quotient `Y ∈ 1..8`, dividend `Z = X × Y ≤ 40`
 - **Problem selection:** standard math-grid selection, restricted to the
   askable cells, balanced on the divisor as at Level 0
 - **Pass criteria:**
@@ -1187,11 +1220,10 @@ independently.
   of the multiplication chain).
 - **Screen:** Animal Division Screen, with `Y` pens
 - **Variables:** `division_grid[0]`, `win_streak[11][0]`
-- **Random variables:**
-  - `divisor ∈ 1..6`
-  - `dividend = divisor × quotient`, with `quotient` chosen so that
-    `dividend ≤ 24`. The dividend is therefore always a whole number of
-    groups and the answer is always an integer.
+- **Random variables:** the standard range for this family and
+  Difficulty (see Rules § Standard operand ranges) — divisor `X ∈ 1..4`,
+  quotient `Y ∈ 1..4`, dividend `Z = X × Y ≤ 16`. The dividend is always
+  a whole number of groups, so the answer is always an integer.
 - **Problem selection:** standard math-grid selection, restricted to the
   cells above (the rest of `division_grid` is never asked), **balanced on
   the divisor** (see Rules § Balanced operands) so dividing by one does
@@ -1206,10 +1238,11 @@ independently.
 - **Category:** Math
 - **Runs per round:** 4
 - **Unlock conditions:** Counting Division 0 passed.
-- **Screen:** Animal Division Screen, with six pens always
+- **Screen:** Animal Division Screen, with eight pens always
 - **Variables:** `division_grid[1]` (its own slice — Level 0 progress
   does not count towards it), `win_streak[11][1]`
-- **Random variables:** same as Level 0
+- **Random variables:** the Difficulty 1 range — divisor `X ∈ 1..8`,
+  quotient `Y ∈ 1..8`, dividend `Z = X × Y ≤ 40`
 - **Problem selection:** standard math-grid selection, restricted to the
   askable cells, balanced on the divisor as at Level 0
 - **Pass criteria:** `division_grid[1][dividend][divisor] >= 2` for every

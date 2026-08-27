@@ -104,9 +104,22 @@ def _blocks_for(sheet: catalog.Sheet, rng: random.Random,
                 problem, index, lowest, lowest + span, height_budget=budget,
             )
         elif sheet.style == "mult-counting":
-            yield blocks.MultCountingBlock(problem, index)
+            yield blocks.MultCountingBlock(problem, index, height_budget=budget)
         elif sheet.style == "mult-operands":
-            yield blocks.MultOperandsBlock(problem, index)
+            yield blocks.MultOperandsBlock(problem, index, height_budget=budget)
+        elif sheet.style == "counting-blanks":
+            yield blocks.CountingBlanksBlock(
+                problem, index,
+                base_size=float(sheet.params.get("animal_size", 20.0)),
+                max_rows=int(sheet.params.get("max_rows", 2)),
+                height_budget=budget,
+            )
+        elif sheet.style == "grouped-blanks":
+            yield blocks.GroupedBlanksBlock(
+                problem, index,
+                operator=str(sheet.params.get("operator", "x")),
+                height_budget=budget,
+            )
         elif sheet.style == "division-counting":
             yield blocks.DivisionCountingBlock(problem, index, height_budget=budget)
         elif sheet.style == "binary":

@@ -84,53 +84,52 @@ up. The sheets come out identical either way.
 
 ## The sheets
 
-| Sheet                       | Levels | Mirrors                            |
-| --------------------------- | ------ | ---------------------------------- |
-| `addition-counting`         | 0, 1   | Counting Addition                  |
-| `addition-horizontal`       | 0, 1   | Horizontal Addition                |
-| `addition-vertical`         | 0, 1   | Vertical Addition                  |
-| `addition-numberline`       | 0, 1   | Number Line Addition               |
-| `subtraction-counting`      | 0, 1   | Counting Subtraction               |
-| `subtraction-horizontal`    | 0      | Horizontal Subtraction             |
-| `subtraction-vertical`      | 0      | Vertical Subtraction               |
-| `subtraction-numberline`    | 0      | Number Line Subtraction            |
-| `multiplication-counting`   | 0, 1   | Counting Multiplication            |
-| `multiplication-horizontal` | 0, 1   | Horizontal Multiplication          |
-| `multiplication-vertical`   | 0, 1   | Vertical Multiplication            |
-| `multiplication-numberline` | 0, 1   | Number Line Multiplication         |
-| `division-counting`         | 0      | Counting Division                  |
-| `binary`                    | 0, 1   | Binary                             |
+| Sheet                            | Levels | Mirrors                       |
+| -------------------------------- | ------ | ----------------------------- |
+| `addition-counting`              | 0, 1   | Counting Addition             |
+| `addition-counting-blanks`       | 0, 1   | Counting Addition             |
+| `addition-horizontal`            | 0, 1   | Horizontal Addition           |
+| `addition-vertical`              | 0, 1   | Vertical Addition             |
+| `addition-numberline`            | 0, 1   | Number Line Addition          |
+| `subtraction-counting`           | 0, 1   | Counting Subtraction          |
+| `subtraction-counting-blanks`    | 0, 1   | Counting Subtraction          |
+| `subtraction-horizontal`         | 0      | Horizontal Subtraction        |
+| `subtraction-vertical`           | 0      | Vertical Subtraction          |
+| `subtraction-numberline`         | 0      | Number Line Subtraction       |
+| `multiplication-counting`        | 0, 1   | Counting Multiplication       |
+| `multiplication-counting-blanks` | 0, 1   | Counting Multiplication       |
+| `multiplication-horizontal`      | 0, 1   | Horizontal Multiplication     |
+| `multiplication-vertical`        | 0, 1   | Vertical Multiplication       |
+| `multiplication-numberline`      | 0, 1   | Number Line Multiplication    |
+| `division-counting`              | 0, 1   | Counting Division             |
+| `division-counting-blanks`       | 0, 1   | Counting Division             |
+| `binary`                         | 0, 1   | Binary                        |
 
-Subtraction has a Level 1 only in its counting presentation, and division
-has only the counting presentation at all — in both cases because that's
-what the app teaches. Division has no Level 1 sheet either: the app's two division
-levels differ only in how many pens the *screen* puts out, and the pens
-aren't part of the printed sheet — so both levels would print the same
-page.
+The `-blanks` sheets are the write-the-whole-sentence variant of each
+counting sheet: instead of being handed `3 + 2 = ▢`, the child reads both
+numbers off the picture and writes `▢ + ▢ = ▢`. Multiplication and
+division share one picture there — so many pens holding so many each —
+because they *are* the same picture: multiplication reads it as `per pen
+× pens = total`, division reads it as `total ÷ pens = per pen`.
 
-Operand ranges come from the "Random variables" line of each lesson in
-`../docs/lessons.md`, which is the source of truth. Two of them
-deliberately disagree with `MathViewModel.kt`, which has drifted: the doc
-puts every Addition Level 1 variant at `0..8` (the Kotlin uses `0..9`)
-and Counting Addition Level 0 at `0..4` (the Kotlin starts at 1 to avoid
-drawing an empty group). The sheets follow the doc.
+Subtraction has no Level 1 in its symbolic presentations, and division
+has no symbolic presentations at all, because that's what the app
+teaches.
 
-**Easy cells** are damped the way the app damps them (docs/lessons.md §
-Easy cells): adding or subtracting zero, multiplying by zero or one, and
-dividing by one sit out half the passes, so any one of them is half as
-likely to appear as an ordinary problem.
+Operand ranges are not written out sheet by sheet. Every Math lesson
+outside Binary draws from one of four standard ranges chosen by family
+and level (`../docs/lessons.md` § Standard operand ranges), and
+`catalog.py` builds its params from that same table, so a sheet cannot
+drift from its lesson by hand-editing a bound:
 
-What that comes to on the page depends on how much of a sheet's cell
-space is easy, which varies a lot. Addition Level 1 lands at ~12%.
-Multiplication Level 0 lands at ~48%, because with operands 0..4 only
-nine of its twenty-five cells have both operands above one — most of that
-lesson's facts genuinely are easy ones. Division needed more than the
-halving: every dividend from 1 to 24 divides by one, so `÷ 1` owned 24 of
-58 cells and still filled a quarter of the page. It is now **balanced on
-the divisor** (docs/lessons.md § Balanced operands) — each divisor gets
-equal billing per pass, which brings `÷ 1` to about 9%. The app applies
-the same rule, weighting rather than slotting; `PracticeGrid.choose`
-takes a `balanceBy` key.
+| Family                    | Level 0                    | Level 1                    |
+| ------------------------- | -------------------------- | -------------------------- |
+| Addition / Subtraction    | `op1, op2 ∈ 0..4`          | `op1, op2 ∈ 0..8`          |
+| Multiplication / Division | `X, Y ∈ 0..4`, `Z ∈ 0..16` | `X, Y ∈ 0..8`, `Z ∈ 0..40` |
+
+Subtraction keeps `op1 >= op2` so no answer is negative; division drops a
+zero divisor and a zero dividend; and `Z` is a ceiling, so pairs like
+`7 × 8` are simply never asked.
 
 A few sheets are worth calling out:
 
@@ -146,10 +145,9 @@ A few sheets are worth calling out:
   look up any column without being told which operator to use.
 - **Horizontal and Vertical Multiplication** open with a reference number
   line, as the Level 1 addition sheets do.
-- **Number Line Multiplication Level 1** drops any pair whose product
-  reaches 30, matching the lesson: the other Level 1 presentations type
-  the answer, so a large product costs nothing, but a number line has to
-  draw every integer up to it.
+- **Multiplication Level 1** caps the product at 40 across all its
+  presentations, so the number line stays countable and the reference
+  line at the top of the symbolic sheets stays readable.
 - **Number lines** all span the same number of steps on a given sheet, so
   they share a scale and can be compared down the page — the app widens
   its line per problem, which on paper just makes the page hard to read

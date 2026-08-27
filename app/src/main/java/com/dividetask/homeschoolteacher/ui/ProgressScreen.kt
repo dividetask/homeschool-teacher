@@ -465,7 +465,7 @@ fun ProgressScreen(
             )
             Text(
                 text = "Same problems as Level 0, but the screen always puts " +
-                    "out six pens instead of one per group, so the sharing no " +
+                    "out eight pens instead of one per group, so the sharing no " +
                     "longer hands over the answer. Keeps its own coverage — " +
                     "Level 0's does not count towards it.",
                 fontSize = 12.sp,

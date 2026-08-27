@@ -186,14 +186,22 @@ def draw_header(c: Canvas, sheet, subtitle: Optional[str] = None) -> float:
     top = PAGE_HEIGHT - MARGIN
     right = PAGE_WIDTH - MARGIN
 
-    c.setFont(TEXT_BOLD, 17)
-    c.setFillColor(black)
-    c.drawString(MARGIN, top - 15, f"{sheet.title} — Level {sheet.level}")
-
     c.setFont(TEXT, 9)
     c.setFillColor(GREY)
-    c.drawRightString(right, top - 6, "Name ______________________")
+    name_line = "Name ______________________"
+    c.drawRightString(right, top - 6, name_line)
     c.drawRightString(right, top - 19, "Date ______________________")
+
+    # Shrink the title rather than let it run into the name block: the
+    # write-the-sentence sheets carry long names.
+    room = (PAGE_WIDTH - 2 * MARGIN) - pdfmetrics.stringWidth(name_line, TEXT, 9) - 14
+    title = f"{sheet.title} — Level {sheet.level}"
+    title_size = 17.0
+    while title_size > 10.0 and pdfmetrics.stringWidth(title, TEXT_BOLD, title_size) > room:
+        title_size -= 0.5
+    c.setFont(TEXT_BOLD, title_size)
+    c.setFillColor(black)
+    c.drawString(MARGIN, top - 15, title)
 
     c.setFont(TEXT, 9.5)
     c.setFillColor(GREY)

@@ -142,12 +142,16 @@ def arithmetic_cells(params) -> List[Tuple[int, int]]:
     """
     lo_l, hi_l = params["left"]
     lo_r, hi_r = params["right"]
-    cells = [(a, b) for a in range(lo_l, hi_l + 1) for b in range(lo_r, hi_r + 1)]
-    ceiling = params.get("answer_max")
-    if ceiling is None:
-        return cells
     operator = params["operator"]
-    return [(a, b) for a, b in cells if _apply(operator, a, b) <= ceiling]
+    cells = [(a, b) for a in range(lo_l, hi_l + 1) for b in range(lo_r, hi_r + 1)]
+    if params.get("ordered"):
+        # Subtraction: both operands come from the same range, but only
+        # the pairs that leave a non-negative answer are asked.
+        cells = [(a, b) for a, b in cells if a >= b]
+    ceiling = params.get("answer_max")
+    if ceiling is not None:
+        cells = [(a, b) for a, b in cells if _apply(operator, a, b) <= ceiling]
+    return cells
 
 
 def _apply(operator: str, a: int, b: int) -> int:
@@ -171,11 +175,13 @@ def _division_cells(params) -> List[Tuple[int, int]]:
     coverage grid the Android lesson keeps has gaps, by design.
     """
     max_dividend = params["dividend_max"]
-    lo, hi = params["divisor"]
+    lo_d, hi_d = params["divisor"]
+    lo_q, hi_q = params["quotient"]
     return [
         (divisor * quotient, divisor)
-        for divisor in range(lo, hi + 1)
-        for quotient in range(1, max_dividend // divisor + 1)
+        for divisor in range(lo_d, hi_d + 1)
+        for quotient in range(lo_q, hi_q + 1)
+        if divisor * quotient <= max_dividend
     ]
 
 
@@ -239,7 +245,23 @@ def generate(sheet: catalog.Sheet, rng: random.Random) -> Iterator:
                     animal=rng.choice(animals.ALL),
                 )
 
-    if sheet.style in ("mult-counting", "mult-operands"):
+    if sheet.style == "grouped-blanks" and sheet.params.get("operator") == "/":
+        # Division, but drawn already shared out: the pens are the picture
+        # the child reads the sentence off, so it uses the division cells.
+        previous = None
+        while True:
+            for dividend, divisor in _division_pass(sheet.params, rng):
+                if (dividend, divisor) == previous:
+                    continue
+                previous = (dividend, divisor)
+                yield Problem(
+                    left=dividend,
+                    right=divisor,
+                    operator="/",
+                    animal=rng.choice(animals.ALL),
+                )
+
+    if sheet.style in ("mult-counting", "mult-operands", "grouped-blanks"):
         cells = _arithmetic_cells(sheet.params)
         easy = lambda cell: is_easy("x", cell[0], cell[1])
         for a, b in _cycle_shuffled(cells, rng, easy):
@@ -247,7 +269,7 @@ def generate(sheet: catalog.Sheet, rng: random.Random) -> Iterator:
         return
 
     operator = sheet.params["operator"]
-    picture = sheet.style == "counting"
+    picture = sheet.style in ("counting", "counting-blanks")
     cells = _arithmetic_cells(sheet.params)
     easy = lambda cell: is_easy(operator, cell[0], cell[1])
     for a, b in _cycle_shuffled(cells, rng, easy):

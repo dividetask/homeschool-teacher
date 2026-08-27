@@ -6,6 +6,12 @@ sheet drills exactly what the on-screen lesson drills. When a range
 changes there, change it here; where the doc and the Kotlin disagree,
 follow the doc.
 
+Ranges are not written out per sheet. Every Math lesson outside Binary
+draws from one of four standard ranges chosen by operation family and
+difficulty (docs/lessons.md § Standard operand ranges), so the sheets
+build their params from that one table too — a sheet states its family
+and level, and cannot drift from its lesson by hand-editing a bound.
+
 Alongside the ranges each sheet carries its own layout knobs — how many
 problems sit side by side, how big the animals start out, whether the
 page opens with a reference aid. They live here rather than in
@@ -25,6 +31,62 @@ MAX_PROBLEMS = 20
 # something to ship — building it fails loudly instead. Run
 # `worksheets.py --check` to verify every sheet across several shuffles.
 MIN_PROBLEMS = 12
+
+
+# --- the standard ranges --------------------------------------------------
+#
+# docs/lessons.md § Standard operand ranges, as data. `operands` is the
+# inclusive range both operands come from; `z_max` caps the big number in
+# the multiplication families — the product a multiplication asks for and
+# the dividend a division starts from.
+STANDARD = {
+    ("addsub", 0): {"operands": (0, 4)},
+    ("addsub", 1): {"operands": (0, 8)},
+    ("muldiv", 0): {"operands": (0, 4), "z_max": 16},
+    ("muldiv", 1): {"operands": (0, 8), "z_max": 40},
+}
+
+
+def add_params(level: int, operator: str, **extra) -> Dict[str, object]:
+    """Addition or subtraction at ``level``.
+
+    Subtraction takes the same range as addition and adds ``ordered``, so
+    only pairs with `op1 >= op2` are asked and no answer is negative.
+    """
+    span = STANDARD[("addsub", level)]["operands"]
+    params: Dict[str, object] = {"left": span, "right": span, "operator": operator}
+    if operator == "-":
+        params["ordered"] = True
+    params.update(extra)
+    return params
+
+
+def mul_params(level: int, **extra) -> Dict[str, object]:
+    """Multiplication at ``level``: operands from the range, product capped."""
+    std = STANDARD[("muldiv", level)]
+    span = std["operands"]
+    params: Dict[str, object] = {
+        "left": span, "right": span, "operator": "x", "answer_max": std["z_max"],
+    }
+    params.update(extra)
+    return params
+
+
+def div_params(level: int, **extra) -> Dict[str, object]:
+    """Division at ``level``.
+
+    Divisor and quotient both come from the family range with zero
+    dropped — dividing by zero is undefined and dividing zero by
+    something is degenerate — and the dividend is their product, capped.
+    """
+    std = STANDARD[("muldiv", level)]
+    low, high = std["operands"]
+    span = (max(1, low), high)
+    params: Dict[str, object] = {
+        "divisor": span, "quotient": span, "dividend_max": std["z_max"],
+    }
+    params.update(extra)
+    return params
 
 
 @dataclass(frozen=True)
@@ -52,109 +114,116 @@ class Sheet:
         return f"{self.key}-level{self.level}"
 
 
-def _pair(left: Tuple[int, int], right: Tuple[int, int]) -> Dict[str, object]:
-    return {"left": left, "right": right}
+COUNT_BOTH = ("Count the animals in each group, then write the whole number "
+              "sentence — both numbers and the answer.")
 
-
-# Operand ranges are inclusive (low, high), taken from the "Random
-# variables" line of each lesson in docs/lessons.md.
-#
-# Two of these deliberately disagree with app/.../math/MathViewModel.kt,
-# which has drifted from the doc: the doc puts every Addition Level 1
-# variant at 0..8 (the Kotlin uses 0..9) and Counting Addition Level 0 at
-# 0..4 (the Kotlin starts at 1 to avoid drawing an empty group). The doc
-# wins; a zero group prints as an empty pen.
 _SHEETS = (
     # --- Addition -------------------------------------------------------
     Sheet("addition-counting", 0, "Counting Addition", "Counting Addition — Level 0",
           "Count the animals in each group, then write how many there are altogether.",
-          "counting", 2,
-          dict(_pair((0, 4), (0, 4)), operator="+", animal_size=20.0, max_rows=2, rows=10)),
+          "counting", 2, add_params(0, "+", animal_size=20.0, max_rows=2, rows=10)),
     Sheet("addition-counting", 1, "Counting Addition", "Counting Addition — Level 1",
           "Count the animals in each group, then write how many there are altogether.",
-          "counting", 2,
-          dict(_pair((0, 8), (0, 8)), operator="+", animal_size=20.0, max_rows=3, rows=10)),
+          "counting", 2, add_params(1, "+", animal_size=20.0, max_rows=3, rows=10)),
+    Sheet("addition-counting-blanks", 0, "Counting Addition — Sentence",
+          "Counting Addition — Level 0", COUNT_BOTH,
+          "counting-blanks", 2, add_params(0, "+", animal_size=20.0, max_rows=2, rows=6)),
+    Sheet("addition-counting-blanks", 1, "Counting Addition — Sentence",
+          "Counting Addition — Level 1", COUNT_BOTH,
+          "counting-blanks", 2, add_params(1, "+", animal_size=20.0, max_rows=3, rows=6)),
     Sheet("addition-horizontal", 0, "Addition", "Horizontal Addition — Level 0",
           "Write the answer in the box.",
-          "horizontal", 2, dict(_pair((0, 4), (0, 4)), operator="+", rows=10)),
+          "horizontal", 2, add_params(0, "+", rows=10)),
     Sheet("addition-horizontal", 1, "Addition", "Horizontal Addition — Level 1",
           "Use the number line at the top to help. Write the answer in the box.",
-          "horizontal", 2, dict(_pair((0, 8), (0, 8)), operator="+", rows=10),
-          header="numberline"),
+          "horizontal", 2, add_params(1, "+", rows=10), header="numberline"),
     Sheet("addition-vertical", 0, "Addition", "Vertical Addition — Level 0",
           "Add the two numbers and write the answer under the line.",
-          "vertical", 4, dict(_pair((0, 4), (0, 4)), operator="+", rows=5)),
+          "vertical", 4, add_params(0, "+", rows=5)),
     Sheet("addition-vertical", 1, "Addition", "Vertical Addition — Level 1",
           "Use the number line at the top to help. Write each answer under the line.",
-          "vertical", 4, dict(_pair((0, 8), (0, 8)), operator="+", rows=5),
-          header="numberline"),
+          "vertical", 4, add_params(1, "+", rows=5), header="numberline"),
     Sheet("addition-numberline", 0, "Number Line Addition", "Number Line Addition — Level 0",
           "Start at the first number and hop forward. Write where you land.",
-          "numberline", 2,
-          dict(_pair((0, 4), (0, 4)), operator="+", line_origin="zero", rows=10)),
+          "numberline", 2, add_params(0, "+", line_origin="zero", rows=10)),
     Sheet("addition-numberline", 1, "Number Line Addition", "Number Line Addition — Level 1",
           "Each line starts at the smaller number. Hop forward and write where you land.",
-          "numberline", 2,
-          dict(_pair((0, 8), (0, 8)), operator="+", line_origin="min-operand", rows=10)),
+          "numberline", 2, add_params(1, "+", line_origin="min-operand", rows=10)),
 
     # --- Subtraction ----------------------------------------------------
     # Only the counting presentation has a Level 1; the symbolic
     # subtraction screens stay at Level 0, as in the app.
     Sheet("subtraction-counting", 0, "Counting Subtraction", "Counting Subtraction — Level 0",
           "Count the first group, take away the second, and write how many are left.",
-          "counting", 2,
-          dict(_pair((4, 9), (0, 4)), operator="-", animal_size=20.0, max_rows=3, rows=10)),
+          "counting", 2, add_params(0, "-", animal_size=20.0, max_rows=2, rows=10)),
     Sheet("subtraction-counting", 1, "Counting Subtraction", "Counting Subtraction — Level 1",
           "Count the first group, take away the second, and write how many are left.",
-          "counting", 2,
-          dict(_pair((8, 16), (0, 8)), operator="-", animal_size=20.0, max_rows=4, rows=10)),
+          "counting", 2, add_params(1, "-", animal_size=20.0, max_rows=3, rows=10)),
+    Sheet("subtraction-counting-blanks", 0, "Counting Subtraction — Sentence",
+          "Counting Subtraction — Level 0", COUNT_BOTH,
+          "counting-blanks", 2, add_params(0, "-", animal_size=20.0, max_rows=2, rows=6)),
+    Sheet("subtraction-counting-blanks", 1, "Counting Subtraction — Sentence",
+          "Counting Subtraction — Level 1", COUNT_BOTH,
+          "counting-blanks", 2, add_params(1, "-", animal_size=20.0, max_rows=3, rows=6)),
     Sheet("subtraction-horizontal", 0, "Subtraction", "Horizontal Subtraction — Level 0",
           "Write the answer in the box.",
-          "horizontal", 2, dict(_pair((4, 9), (0, 4)), operator="-", rows=10)),
+          "horizontal", 2, add_params(0, "-", rows=10)),
     Sheet("subtraction-vertical", 0, "Subtraction", "Vertical Subtraction — Level 0",
           "Subtract and write the answer under the line.",
-          "vertical", 4, dict(_pair((4, 9), (0, 4)), operator="-", rows=5)),
+          "vertical", 4, add_params(0, "-", rows=5)),
     Sheet("subtraction-numberline", 0, "Number Line Subtraction", "Number Line Subtraction — Level 0",
           "Start at the first number and hop backwards. Write where you land.",
-          "numberline", 2,
-          dict(_pair((4, 9), (0, 4)), operator="-", line_origin="zero", rows=10)),
+          "numberline", 2, add_params(0, "-", line_origin="zero", rows=10)),
 
     # --- Multiplication -------------------------------------------------
     Sheet("multiplication-counting", 0, "Counting Multiplication", "Counting Multiplication — Level 0",
           "Count the groups and how many are in each, then write the total.",
-          "mult-counting", 2, dict(_pair((0, 4), (0, 4)), rows=7)),
+          "mult-counting", 2, mul_params(0, rows=7)),
     Sheet("multiplication-counting", 1, "Counting Multiplication", "Counting Multiplication — Level 1",
           "Write the two numbers being multiplied: how many in each group × how many groups.",
-          "mult-operands", 2, dict(_pair((1, 4), (1, 4)), rows=6)),
+          "mult-operands", 2, mul_params(1, rows=6)),
+    Sheet("multiplication-counting-blanks", 0, "Counting Multiplication — Sentence",
+          "Counting Multiplication — Level 0",
+          "Count the groups and how many are in each, then write the whole number sentence.",
+          "grouped-blanks", 2, mul_params(0, rows=6)),
+    Sheet("multiplication-counting-blanks", 1, "Counting Multiplication — Sentence",
+          "Counting Multiplication — Level 1",
+          "Count the groups and how many are in each, then write the whole number sentence.",
+          "grouped-blanks", 2, mul_params(1, rows=6)),
     Sheet("multiplication-horizontal", 0, "Multiplication", "Horizontal Multiplication — Level 0",
           "Write the answer in the box.",
-          "horizontal", 2, dict(_pair((0, 4), (0, 4)), operator="x", rows=10), header="numberline"),
+          "horizontal", 2, mul_params(0, rows=10), header="numberline"),
     Sheet("multiplication-horizontal", 1, "Multiplication", "Horizontal Multiplication — Level 1",
           "Write the answer in the box.",
-          "horizontal", 2, dict(_pair((0, 9), (0, 9)), operator="x", rows=10), header="numberline"),
+          "horizontal", 2, mul_params(1, rows=10), header="numberline"),
     Sheet("multiplication-vertical", 0, "Multiplication", "Vertical Multiplication — Level 0",
           "Multiply and write the answer under the line.",
-          "vertical", 4, dict(_pair((0, 4), (0, 4)), operator="x", rows=5), header="numberline"),
+          "vertical", 4, mul_params(0, rows=5), header="numberline"),
     Sheet("multiplication-vertical", 1, "Multiplication", "Vertical Multiplication — Level 1",
           "Multiply and write the answer under the line.",
-          "vertical", 4, dict(_pair((0, 9), (0, 9)), operator="x", rows=5), header="numberline"),
+          "vertical", 4, mul_params(1, rows=5), header="numberline"),
     Sheet("multiplication-numberline", 0, "Number Line Multiplication", "Number Line Multiplication — Level 0",
           "Count equal hops along the number line to find each answer.",
-          "numberline", 2,
-          dict(_pair((0, 4), (0, 4)), operator="x", line_origin="zero", rows=10)),
+          "numberline", 2, mul_params(0, line_origin="zero", rows=10)),
     Sheet("multiplication-numberline", 1, "Number Line Multiplication", "Number Line Multiplication — Level 1",
           "Count equal hops along the number line to find each answer.",
-          "numberline", 2,
-          dict(_pair((0, 9), (0, 9)), operator="x", line_origin="zero",
-               answer_max=29, rows=10)),
+          "numberline", 2, mul_params(1, line_origin="zero", rows=10)),
 
     # --- Division -------------------------------------------------------
-    # Dividend 1..24, divisor 1..6, and the dividend is always a multiple
-    # of the divisor so every answer is a whole number.
     Sheet("division-counting", 0, "Counting Division", "Counting Division — Level 0",
           "Share the animals into equal groups. Write how many end up in each group.",
-          "division-counting", 2,
-          {"dividend_max": 24, "divisor": (1, 6), "rows": 6}),
+          "division-counting", 2, div_params(0, rows=6)),
+    Sheet("division-counting", 1, "Counting Division", "Counting Division — Level 1",
+          "Share the animals into equal groups. Write how many end up in each group.",
+          "division-counting", 2, div_params(1, rows=6)),
+    Sheet("division-counting-blanks", 0, "Counting Division — Sentence",
+          "Counting Division — Level 0",
+          "The animals are already shared out. Write the whole number sentence.",
+          "grouped-blanks", 2, div_params(0, operator="/", rows=6)),
+    Sheet("division-counting-blanks", 1, "Counting Division — Sentence",
+          "Counting Division — Level 1",
+          "The animals are already shared out. Write the whole number sentence.",
+          "grouped-blanks", 2, div_params(1, operator="/", rows=6)),
 
     # --- Binary ---------------------------------------------------------
     Sheet("binary", 0, "Binary Operations", "Binary — Level 0",
