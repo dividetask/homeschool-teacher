@@ -264,7 +264,7 @@ fun HomeschoolTeacherApp() {
                             onCompleted = selector::onLessonInstanceCompleted,
                             modifier = Modifier.fillMaxWidth(),
                         )
-                        LessonId.CountingMultiplication1 -> MultiplicationOperandsScreen(
+                        LessonId.MultiplicationOperands0 -> MultiplicationOperandsScreen(
                             viewModel = multiplicationOperands,
                             onCompleted = selector::onLessonInstanceCompleted,
                             modifier = Modifier.fillMaxWidth(),

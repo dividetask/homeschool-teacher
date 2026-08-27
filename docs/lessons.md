@@ -121,8 +121,9 @@ counting/product lesson) and `multiplication_operands_grid`. Default zero.
 
 ### `multiplication_operands_grid[op1][op2]`
 Integer 2D array, `op1` and `op2` indexed `1..4`. Cell tracks correct
-identifications of the two operands in Counting Multiplication Level 1
-(separate from `multiplication_grid`, which tracks products in Level 0).
+identifications of the two operands in Multiplication Operands — Level 0
+(separate from `multiplication_grid`, which tracks products in Counting
+Multiplication).
 Default zero.
 
 ### `addition_grid[op1][op2]`
@@ -429,10 +430,12 @@ it inline.
 
 ### Numeric Grid (0..max)
 Grid of single-tap buttons, each labelled with one candidate answer
-from `0` to `max`. Used by every math equation screen. Column count
-scales with `max` so the grid stays comfortable on a phone (5 columns
-through `max = 18`, 7 columns above that). Tapping a button submits
-that value as the answer.
+from `0` to `max`. One shared surface behind every math lesson that taps
+its answer — the equation screens, Counting Multiplication and Counting
+Division alike — so the button size and colours never differ between
+them. Column count scales with `max` so the grid stays comfortable on a
+phone (5 columns through `max = 18`, 7 columns above that). Tapping a
+button submits that value as the answer.
 
 ### A–Z Keypad
 Full alphabet keypad of 26 single-tap buttons arranged in rows of 7
@@ -447,7 +450,7 @@ digit. Used where the answer range is too large for a comfortable tap grid
 (multiplication products up to 81, so answers are at most two digits).
 
 ### Operand Picker
-Row of single-tap buttons `1..4` used by Counting Multiplication Level 1.
+Row of single-tap buttons `1..4` used by Multiplication Operands.
 The displayed equation has two blanks (`▢ × ▢`); the first tap fills the
 left blank, the second fills the right blank and submits. The answer is
 order-independent. A **Clear** button resets the picks before the second
@@ -486,7 +489,10 @@ Two things follow, wherever a lesson uses an operand grid:
   still being covered and once every cell is covered.
 
 Grids that are not arithmetic (the binary AND/OR/XOR grids, the per-word
-reading lists) have no easy cells: every one of their cells needs 2.
+reading lists) have no easy cells: every one of their cells needs 2 and
+every one is drawn at the same weight. The binary lessons otherwise run
+the same selection as the arithmetic ones, over their own
+`(operator, op1, op2)` cells.
 
 ### Random problem selection (math grid)
 
@@ -517,6 +523,15 @@ own streak:
    the pool. Break ties uniformly at random.
 
 Avoid repeating the previous entry when an alternative exists.
+
+### CPU level slip
+
+Tic Tac Toe above Level 0 gives the learner a way through: when a game
+starts, there is a **10% chance** the CPU plays that game at a level
+drawn uniformly from the levels below the lesson's own (so Level 2 may
+play at Level 1 or Level 0, Level 1 at Level 0). The choice is made once
+per game and holds for every move in it. Level 0 has nothing below it
+and always plays its own rule.
 
 ### Chess piece movement
 
@@ -628,14 +643,14 @@ over the next one.
 | 7        | Vertical Subtraction — Level 0      | Math     | All Addition Difficulty 1 passed  |
 | 7        | Number Line Subtraction — Level 0   | Math     | All Addition Difficulty 1 passed  |
 | 9        | Counting Multiplication — Level 0   | Math     | All Subtraction Difficulty 0 passed |
-| 9        | Counting Multiplication — Level 1   | Math     | Counting Multiplication 0 passed  |
+| 9        | Multiplication Operands — Level 0   | Math     | Counting Multiplication 0 passed  |
 | 9        | Number Line Multiplication — Level 0| Math     | Counting Multiplication 0 passed  |
 | 9        | Horizontal Multiplication — Level 0 | Math     | Number Line Multiplication 0 passed |
 | 9        | Vertical Multiplication — Level 0   | Math     | Number Line Multiplication 0 passed |
 | 9        | Horizontal Multiplication — Level 1 | Math     | All symbolic Multiplication Diff 0 passed |
 | 9        | Vertical Multiplication — Level 1   | Math     | All symbolic Multiplication Diff 0 passed |
 | 9        | Number Line Multiplication — Level 1| Math     | All symbolic Multiplication Diff 0 passed |
-| 11       | Counting Division — Level 0         | Math     | All Multiplication Difficulty 1 passed |
+| 11       | Counting Division — Level 0         | Math     | All symbolic Multiplication Diff 1 + Multiplication Operands 0 |
 | 11       | Counting Division — Level 1         | Math     | Counting Division 0 passed        |
 | 3        | Letter Sounds — Level 0             | Reading  | —                                 |
 | 3        | Phonemes — Level 0                  | Reading  | Letter Sounds 0                   |
@@ -671,7 +686,8 @@ over the next one.
 - **Unlock conditions:** Tic Tac Toe — Win or Block passed.
 - **Screen:** Tic Tac Toe Board Screen
 - **CPU rule:** take a winning move if one exists; else uniformly random
-  legal move.
+  legal move. In **10% of games** the CPU instead plays at a randomly
+  chosen lower level for that whole game (see Rules § CPU level slip).
 - **Variables:** `win_streak[0][1]`
 - **Pass criteria:** `win_streak[0][1] >= 8`
 
@@ -685,7 +701,8 @@ over the next one.
 - **Screen:** Tic Tac Toe Board Screen
 - **CPU rule:** take a winning move if one exists; else block the
   opponent's winning move if one exists; else uniformly random legal
-  move.
+  move. In **10% of games** the CPU instead plays at a randomly chosen
+  lower level for that whole game (see Rules § CPU level slip).
 - **Variables:** `win_streak[0][2]`
 - **Pass criteria:** `win_streak[0][2] >= 8`
 
@@ -943,10 +960,16 @@ over the next one.
   `multiplication_grid[op1][op2] >= cell_target(op1, op2)` for every
   `op1, op2 ∈ 0..4`.
 
-### Counting Multiplication — Level 1
+### Multiplication Operands — Level 0
+Filling in the operands is its own exercise rather than a harder level of
+Counting Multiplication: the picture is the same, but the question runs
+backwards — the learner reads the groups and says which two numbers made
+them. Each operation will get an Operands lesson at each level as they
+are written; multiplication is the first.
+
 - **Game UID:** 9
-- **Subject:** Multiplication
-- **Difficulty:** 1
+- **Subject:** Multiplication Operands
+- **Difficulty:** 0
 - **Category:** Math
 - **Runs per round:** 4
 - **Unlock conditions:** Counting Multiplication — Level 0 passed.
@@ -954,7 +977,7 @@ over the next one.
   but the operands are hidden and the answer surface is the Operand
   Picker (below) instead of the numeric grid. The product is never shown.
 - **Variables:** `multiplication_operands_grid` — a separate coverage
-  grid from Level 0, cells indexed `(op1, op2) ∈ 1..4`.
+  grid from Counting Multiplication, cells indexed `(op1, op2) ∈ 1..4`.
 - **Random variables:**
   - `op1, op2 ∈ 1..4` (**never 0**)
   - A random animal emoji per problem
@@ -1115,8 +1138,9 @@ independently.
 - **Difficulty:** 0
 - **Category:** Math
 - **Runs per round:** 4
-- **Unlock conditions:** All Multiplication Difficulty 1 passed (the end
-  of the multiplication chain).
+- **Unlock conditions:** the end of the multiplication chain — all three
+  symbolic Multiplication Level 1 lessons **and** Multiplication
+  Operands — Level 0.
 - **Screen:** Animal Division Screen, with `Y` pens
 - **Variables:** `division_grid[0]`, `win_streak[11][0]`
 - **Random variables:**

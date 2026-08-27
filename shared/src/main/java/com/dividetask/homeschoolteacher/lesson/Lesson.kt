@@ -30,7 +30,9 @@ enum class LessonId {
     VerticalSubtraction0,
     NumberLineSubtraction0,
     CountingMultiplication0,
-    CountingMultiplication1,
+    // Fill-in-the-operands lessons. One per operation and level as they are
+    // written; only multiplication has one so far.
+    MultiplicationOperands0,
     HorizontalMultiplication0,
     VerticalMultiplication0,
     NumberLineMultiplication0,
@@ -96,6 +98,9 @@ object Lessons {
         LessonId.NumberLineMultiplication1,
     )
 
+    /** Everything past the multiplication basics — the gate for Division. */
+    private val MULTIPLICATION_L1 = MULTIPLICATION_EQ_L1 + LessonId.MultiplicationOperands0
+
     val definitions: Map<LessonId, LessonDefinition> = listOf(
         LessonDefinition(LessonId.TicTacToe0, "Tic Tac Toe — Level 0", Category.Game),
         // Single-move puzzle between Level 0 and Level 1: the board is one
@@ -144,9 +149,12 @@ object Lessons {
         // two (Horizontal / Vertical). Counting 1 (identify the operands)
         // opens alongside Number Line 0, off Counting 0.
         LessonDefinition(LessonId.CountingMultiplication0, "Counting Multiplication — Level 0", Category.Math, SUBTRACTION_L0),
-        // Level 1 keeps the same boxed groups but asks which two numbers are
-        // being multiplied (operands, not the product); operands 1..4.
-        LessonDefinition(LessonId.CountingMultiplication1, "Counting Multiplication — Level 1", Category.Math, listOf(LessonId.CountingMultiplication0)),
+        // Filling in the operands is its own exercise, not a harder level of
+        // Counting Multiplication: the same boxed groups are shown, but the
+        // question is which two numbers are being multiplied rather than
+        // what they come to. Operands 1..4. Each operation will get one of
+        // these, at each level, as they are written.
+        LessonDefinition(LessonId.MultiplicationOperands0, "Multiplication Operands — Level 0", Category.Math, listOf(LessonId.CountingMultiplication0)),
         // Number Line Multiplication 0 is offered only after Counting 0.
         LessonDefinition(LessonId.NumberLineMultiplication0, "Number Line Multiplication — Level 0", Category.Math, listOf(LessonId.CountingMultiplication0)),
         // The rest of the Level 0 presentations are offered only after
@@ -164,10 +172,10 @@ object Lessons {
         // Division. Both levels ask the same question — share X animals
         // into Y equal groups and say how many land in each — and differ
         // only in how much the screen scaffolds it: Level 0 puts out
-        // exactly Y pens, Level 1 always puts out six. Level 0 opens once
-        // the whole Multiplication Level 1 tier is passed, which is the
-        // end of the multiplication chain.
-        LessonDefinition(LessonId.CountingDivision0, "Counting Division — Level 0", Category.Math, MULTIPLICATION_EQ_L1),
+        // exactly Y pens, Level 1 always puts out six. Level 0 opens at the
+        // end of the multiplication chain: every symbolic Multiplication
+        // Level 1 lesson plus Multiplication Operands.
+        LessonDefinition(LessonId.CountingDivision0, "Counting Division — Level 0", Category.Math, MULTIPLICATION_L1),
         LessonDefinition(LessonId.CountingDivision1, "Counting Division — Level 1", Category.Math, listOf(LessonId.CountingDivision0)),
         // Letter Sounds is the head of the Reading chain: a recorded word
         // clip plays and the learner taps the letter it starts with.

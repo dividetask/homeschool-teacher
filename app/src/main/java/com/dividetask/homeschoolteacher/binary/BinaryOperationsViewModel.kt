@@ -3,11 +3,11 @@ package com.dividetask.homeschoolteacher.binary
 import androidx.lifecycle.ViewModel
 import com.dividetask.homeschoolteacher.Storage
 import com.dividetask.homeschoolteacher.lesson.LessonId
+import com.dividetask.homeschoolteacher.practice.PracticeGrid
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
-import kotlin.random.Random
 
 enum class BinaryOperator(val symbol: String, val verbalName: String) {
     AND("&", "AND"),
@@ -195,14 +195,10 @@ class BinaryOperationsViewModel : ViewModel() {
         SUPPORTED_LESSONS.forEach { id ->
             if (Storage.loadLessonManualOverride(id)) return@forEach
             val level = levelOf(id)
-            val maxOperand = if (level == 0) 1 else 7
-            val mastered = BinaryOperator.entries.all { op ->
-                (0..maxOperand).all { op1 ->
-                    (0..maxOperand).all { op2 ->
-                        streaks[level][op.ordinal][op1][op2] >= 2
-                    }
-                }
-            }
+            val mastered = PracticeGrid.covered(
+                cells = cellsFor(level),
+                value = { (op, op1, op2) -> streaks[level][op][op1][op2] },
+            )
             val flow = passedFlow.getValue(id)
             if ((mastered || (runStreaks[id] ?: 0) >= RUN_TARGET) && !flow.value) {
                 flow.value = true
@@ -223,37 +219,33 @@ class BinaryOperationsViewModel : ViewModel() {
         else -> 0
     }
 
+    /**
+     * Every cell a level can ask, as `(operatorOrdinal, op1, op2)`. Level 0
+     * is single-bit operands, Level 1 three-bit.
+     */
+    private fun cellsFor(level: Int): List<Triple<Int, Int, Int>> {
+        val maxOperand = if (level == 0) 1 else 7
+        return BinaryOperator.entries.indices.flatMap { op ->
+            (0..maxOperand).flatMap { op1 ->
+                (0..maxOperand).map { op2 -> Triple(op, op1, op2) }
+            }
+        }
+    }
+
     private fun chooseProblem(previous: BinaryProblem?, lesson: LessonId): BinaryProblem {
         val level = levelOf(lesson)
         val bits = if (level == 0) 1 else 3
-        val maxOperand = if (level == 0) 1 else 7
 
-        val allCells: List<Triple<Int, Int, Int>> =
-            BinaryOperator.entries.indices.flatMap { op ->
-                (0..maxOperand).flatMap { op1 ->
-                    (0..maxOperand).map { op2 -> Triple(op, op1, op2) }
-                }
-            }
-
-        val wildcard = Random.nextInt(1, 11)
-        val pool: List<Triple<Int, Int, Int>> = if (wildcard == 1) {
-            allCells
-        } else {
-            val minVal = allCells.minOf { (op, op1, op2) -> streaks[level][op][op1][op2] }
-            allCells.filter { (op, op1, op2) -> streaks[level][op][op1][op2] == minVal }
-        }
-
-        val finalPool = if (previous != null && pool.size > 1) {
-            pool.filter { (op, op1, op2) ->
-                op != previous.operator.ordinal ||
-                    op1 != previous.op1 ||
-                    op2 != previous.op2
-            }.ifEmpty { pool }
-        } else {
-            pool
-        }
-
-        val (opIdx, op1, op2) = finalPool[Random.nextInt(finalPool.size)]
+        // Same selection every other grid-backed lesson uses. Binary has no
+        // easy cells — every truth-table row is worth the same drilling — so
+        // the default target and weight apply.
+        val (opIdx, op1, op2) = PracticeGrid.choose(
+            cells = cellsFor(level),
+            value = { (op, a, b) -> streaks[level][op][a][b] },
+            previous = previous?.let {
+                Triple(it.operator.ordinal, it.op1, it.op2)
+            },
+        )
         return BinaryProblem(
             op1 = op1,
             op2 = op2,

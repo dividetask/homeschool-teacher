@@ -64,7 +64,23 @@ object PracticeGrid {
         cells: List<Pair<Int, Int>>,
         operation: GridOperation,
         value: (Int, Int) -> Int,
-    ): Boolean = cells.all { (a, b) -> value(a, b) >= target(operation, a, b) }
+    ): Boolean = covered(
+        cells = cells,
+        value = { (a, b) -> value(a, b) },
+        target = { (a, b) -> target(operation, a, b) },
+    )
+
+    /**
+     * Whether every cell has reached its target, for a grid whose cells
+     * are not `(op1, op2)` pairs — the binary lessons key theirs by
+     * `(operator, op1, op2)`. Defaults to the ordinary [CELL_TARGET],
+     * since only the arithmetic grids have easy cells.
+     */
+    fun <T> covered(
+        cells: List<T>,
+        value: (T) -> Int,
+        target: (T) -> Int = { CELL_TARGET },
+    ): Boolean = cells.all { cell -> value(cell) >= target(cell) }
 
     /**
      * Pick the next cell to ask.
@@ -85,31 +101,53 @@ object PracticeGrid {
         value: (Int, Int) -> Int,
         previous: Pair<Int, Int>?,
         random: Random = Random,
-    ): Pair<Int, Int> {
+    ): Pair<Int, Int> = choose(
+        cells = cells,
+        value = { (a, b) -> value(a, b) },
+        target = { (a, b) -> target(operation, a, b) },
+        weight = { (a, b) ->
+            if (isEasy(operation, a, b)) EASY_CELL_WEIGHT else 1.0
+        },
+        previous = previous,
+        random = random,
+    )
+
+    /**
+     * The same selection for a grid whose cells are not `(op1, op2)`
+     * pairs — the binary lessons key theirs by `(operator, op1, op2)`.
+     * [target] and [weight] default to the ordinary values, since only
+     * the arithmetic grids have easy cells.
+     */
+    fun <T> choose(
+        cells: List<T>,
+        value: (T) -> Int,
+        previous: T?,
+        random: Random = Random,
+        target: (T) -> Int = { CELL_TARGET },
+        weight: (T) -> Double = { 1.0 },
+    ): T {
         require(cells.isNotEmpty()) { "No cells to choose from" }
-        val behind = cells.filter { (a, b) -> value(a, b) < target(operation, a, b) }
+        val behind = cells.filter { value(it) < target(it) }
         val basePool = if (behind.isEmpty() || random.nextDouble() < WILDCARD_CHANCE) {
             cells
         } else {
-            val deepest = behind.maxOf { (a, b) -> target(operation, a, b) - value(a, b) }
-            behind.filter { (a, b) -> target(operation, a, b) - value(a, b) == deepest }
+            val deepest = behind.maxOf { target(it) - value(it) }
+            behind.filter { target(it) - value(it) == deepest }
         }
         val pool = if (previous != null && basePool.size > 1) {
             basePool.filter { it != previous }.ifEmpty { basePool }
         } else {
             basePool
         }
-        return weightedPick(pool, operation, random)
+        return weightedPick(pool, weight, random)
     }
 
-    private fun weightedPick(
-        pool: List<Pair<Int, Int>>,
-        operation: GridOperation,
+    private fun <T> weightedPick(
+        pool: List<T>,
+        weight: (T) -> Double,
         random: Random,
-    ): Pair<Int, Int> {
-        val weights = pool.map { (a, b) ->
-            if (isEasy(operation, a, b)) EASY_CELL_WEIGHT else 1.0
-        }
+    ): T {
+        val weights = pool.map(weight)
         var r = random.nextDouble(weights.sum())
         for (i in pool.indices) {
             if (r < weights[i]) return pool[i]

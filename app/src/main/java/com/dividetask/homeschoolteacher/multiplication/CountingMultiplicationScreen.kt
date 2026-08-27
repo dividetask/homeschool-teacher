@@ -34,6 +34,7 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.dividetask.homeschoolteacher.Tts
 import com.dividetask.homeschoolteacher.ui.FeedbackHold
+import com.dividetask.homeschoolteacher.ui.NumericGrid
 import kotlinx.coroutines.delay
 
 @OptIn(ExperimentalLayoutApi::class)
@@ -118,12 +119,13 @@ fun CountingMultiplicationScreen(
             },
         )
 
-        ChoiceGrid(
+        NumericGrid(
+            maxAnswer = MAX_PRODUCT,
             selected = state.selected,
-            feedback = state.feedback,
             correct = problem.answer,
-            onChoose = viewModel::onAnswer,
+            answered = state.feedback != MultiplicationFeedback.None,
             inputEnabled = inputReady,
+            onChoose = viewModel::onAnswer,
         )
 
         TextButton(onClick = viewModel::giveUp) {
@@ -193,61 +195,6 @@ internal fun AnimalGroups(
             ) {
                 repeat(op2) {
                     Text(text = emoji, fontSize = 28.sp)
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun ChoiceGrid(
-    selected: Int?,
-    feedback: MultiplicationFeedback,
-    correct: Int,
-    onChoose: (Int) -> Unit,
-    inputEnabled: Boolean,
-) {
-    val maxAnswer = 16  // 4 × 4 = 16
-    val cols = 6        // 17 cells → 3 rows of 6 + 1 spacer in the last row
-    val cells = (0..maxAnswer).toList()
-    Column(
-        verticalArrangement = Arrangement.spacedBy(8.dp),
-        modifier = Modifier.widthIn(max = 480.dp).fillMaxWidth(),
-    ) {
-        cells.chunked(cols).forEach { row ->
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                modifier = Modifier.fillMaxWidth(),
-            ) {
-                row.forEach { choice ->
-                    val container = when {
-                        feedback == MultiplicationFeedback.None -> MaterialTheme.colorScheme.primary
-                        choice == correct -> Color(0xFF22C55E)
-                        choice == selected -> Color(0xFFEF4444)
-                        else -> MaterialTheme.colorScheme.primary.copy(alpha = 0.4f)
-                    }
-                    Button(
-                        onClick = { onChoose(choice) },
-                        enabled = inputEnabled && feedback == MultiplicationFeedback.None,
-                        shape = RoundedCornerShape(14.dp),
-                        contentPadding = PaddingValues(2.dp),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = container,
-                            disabledContainerColor = container,
-                            contentColor = Color.White,
-                            disabledContentColor = Color.White,
-                        ),
-                        modifier = Modifier.weight(1f).heightIn(min = 48.dp),
-                    ) {
-                        Text(
-                            text = choice.toString(),
-                            fontSize = 18.sp,
-                            fontWeight = FontWeight.Bold,
-                        )
-                    }
-                }
-                repeat(cols - row.size) {
-                    Spacer(modifier = Modifier.weight(1f))
                 }
             }
         }

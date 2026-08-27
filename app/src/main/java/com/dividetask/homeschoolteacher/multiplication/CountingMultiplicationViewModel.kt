@@ -32,6 +32,9 @@ data class MultiplicationState(
 )
 
 private const val MAX_OPERAND = 4
+
+/** Largest product the lesson can ask — the answer grid runs 0..this. */
+internal const val MAX_PRODUCT = MAX_OPERAND * MAX_OPERAND
 private const val GRID_SIZE = 10  // pad room for future levels
 
 /** A run of this many correct in a row passes the lesson outright. */

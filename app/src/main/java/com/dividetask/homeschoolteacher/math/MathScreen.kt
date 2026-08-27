@@ -43,6 +43,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.dividetask.homeschoolteacher.Tts
 import com.dividetask.homeschoolteacher.lesson.LessonId
 import com.dividetask.homeschoolteacher.ui.FeedbackHold
+import com.dividetask.homeschoolteacher.ui.NumericGrid
 import kotlin.random.Random
 import kotlinx.coroutines.delay
 
@@ -189,13 +190,13 @@ fun MathScreen(
                 onEnter = { if (typed.isNotEmpty()) viewModel.onAnswer(typed.toInt()) },
             )
         } else {
-            ChoiceGrid(
-                selected = state.selected,
-                feedback = state.feedback,
-                correct = problem.answer,
-                onChoose = viewModel::onAnswer,
-                inputEnabled = inputReady,
+            NumericGrid(
                 maxAnswer = maxAnswer,
+                selected = state.selected,
+                correct = problem.answer,
+                answered = state.feedback != MathFeedback.None,
+                inputEnabled = inputReady,
+                onChoose = viewModel::onAnswer,
             )
         }
 
@@ -607,67 +608,6 @@ private fun KeypadButton(
     }
 }
 
-@Composable
-private fun ChoiceGrid(
-    selected: Int?,
-    feedback: MathFeedback,
-    correct: Int,
-    onChoose: (Int) -> Unit,
-    inputEnabled: Boolean,
-    maxAnswer: Int,
-) {
-    val cols = when {
-        maxAnswer <= 9 -> 5
-        maxAnswer <= 18 -> 5
-        else -> 7
-    }
-    val cells = (0..maxAnswer).toList()
-    Column(
-        verticalArrangement = Arrangement.spacedBy(8.dp),
-        modifier = Modifier.widthIn(max = 480.dp).fillMaxWidth(),
-    ) {
-        cells.chunked(cols).forEach { row ->
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                modifier = Modifier.fillMaxWidth(),
-            ) {
-                row.forEach { choice ->
-                    val container = when {
-                        feedback == MathFeedback.None -> MaterialTheme.colorScheme.primary
-                        choice == correct -> Color(0xFF22C55E)
-                        choice == selected -> Color(0xFFEF4444)
-                        else -> MaterialTheme.colorScheme.primary.copy(alpha = 0.4f)
-                    }
-                    Button(
-                        onClick = { onChoose(choice) },
-                        enabled = inputEnabled && feedback == MathFeedback.None,
-                        shape = RoundedCornerShape(14.dp),
-                        contentPadding = PaddingValues(2.dp),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = container,
-                            disabledContainerColor = container,
-                            contentColor = Color.White,
-                            disabledContentColor = Color.White,
-                        ),
-                        modifier = Modifier
-                            .weight(1f)
-                            .heightIn(min = 52.dp),
-                    ) {
-                        Text(
-                            text = choice.toString(),
-                            fontSize = if (maxAnswer <= 9) 24.sp else 18.sp,
-                            fontWeight = FontWeight.Bold,
-                        )
-                    }
-                }
-                repeat(cols - row.size) {
-                    Spacer(modifier = Modifier.weight(1f))
-                }
-            }
-        }
-    }
-}
-
 // Numpad and NumpadButton helpers were removed when math switched to
-// single-tap answers across every lesson. ChoiceGrid now handles all
-// answer surfaces, expanding to cover whatever range each lesson needs.
+// single-tap answers across every lesson. The shared ui/NumericGrid now
+// handles the tap surface, expanding to whatever range a lesson needs.

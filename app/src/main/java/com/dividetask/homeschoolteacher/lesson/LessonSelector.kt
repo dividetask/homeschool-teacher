@@ -85,7 +85,7 @@ class LessonSelector(
         LessonId.VerticalSubtraction0,
         LessonId.NumberLineSubtraction0,
         LessonId.CountingMultiplication0,
-        LessonId.CountingMultiplication1,
+        LessonId.MultiplicationOperands0,
         LessonId.HorizontalMultiplication0,
         LessonId.VerticalMultiplication0,
         LessonId.NumberLineMultiplication0,
@@ -121,7 +121,7 @@ class LessonSelector(
         LessonId.NumberLineMultiplication1 -> math.passed(id)
         LessonId.BinaryOps0, LessonId.BinaryOps1 -> binary.passed(id)
         LessonId.CountingMultiplication0 -> multiplication.passed
-        LessonId.CountingMultiplication1 -> multiplicationOperands.passed
+        LessonId.MultiplicationOperands0 -> multiplicationOperands.passed
         LessonId.CountingDivision0, LessonId.CountingDivision1 -> division.passed(id)
         LessonId.LetterSounds0 -> letterSounds.passed
         LessonId.Phonemes0 -> phonemes.passed
@@ -246,7 +246,7 @@ class LessonSelector(
             LessonId.NumberLineMultiplication1 -> math.startLesson(id)
             LessonId.BinaryOps0, LessonId.BinaryOps1 -> binary.startLesson(id)
             LessonId.CountingMultiplication0 -> multiplication.startLesson()
-            LessonId.CountingMultiplication1 -> multiplicationOperands.startLesson()
+            LessonId.MultiplicationOperands0 -> multiplicationOperands.startLesson()
             LessonId.CountingDivision0,
             LessonId.CountingDivision1 -> division.startLesson(id)
             LessonId.LetterSounds0 -> letterSounds.startLesson()
@@ -289,7 +289,7 @@ class LessonSelector(
             LessonId.NumberLineMultiplication1 -> math.setPassed(id, value)
             LessonId.BinaryOps0, LessonId.BinaryOps1 -> binary.setPassed(id, value)
             LessonId.CountingMultiplication0 -> multiplication.setPassed(value)
-            LessonId.CountingMultiplication1 -> multiplicationOperands.setPassed(value)
+            LessonId.MultiplicationOperands0 -> multiplicationOperands.setPassed(value)
             LessonId.CountingDivision0,
             LessonId.CountingDivision1 -> division.setPassed(id, value)
             LessonId.LetterSounds0 -> letterSounds.setPassed(value)

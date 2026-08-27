@@ -439,5 +439,32 @@ object Storage {
             editor.putBoolean("migration.v5", true)
             editor.apply()
         }
+
+        if (!p.contains("migration.v6")) {
+            // "Counting Multiplication — Level 1" became a lesson of its own,
+            // "Multiplication Operands — Level 0", because filling in the
+            // operands is a different exercise rather than a harder level of
+            // counting. Carry its per-lesson state over to the new id so a
+            // learner who passed it keeps the pass (and whatever it unlocks).
+            // Its coverage grid (`multoperands.streak.*`) is not keyed by
+            // lesson id, so it needs no migration.
+            val editor = p.edit()
+            val oldId = "CountingMultiplication1"
+            val newId = "MultiplicationOperands0"
+            listOf("passed", "manualOverride", "manualUnlock").forEach { suffix ->
+                val oldKey = "lesson.$oldId.$suffix"
+                if (p.contains(oldKey)) {
+                    editor.putBoolean("lesson.$newId.$suffix", p.getBoolean(oldKey, false))
+                    editor.remove(oldKey)
+                }
+            }
+            val oldRun = "win_streak.run.$oldId"
+            if (p.contains(oldRun)) {
+                editor.putInt("win_streak.run.$newId", p.getInt(oldRun, 0))
+                editor.remove(oldRun)
+            }
+            editor.putBoolean("migration.v6", true)
+            editor.apply()
+        }
     }
 }

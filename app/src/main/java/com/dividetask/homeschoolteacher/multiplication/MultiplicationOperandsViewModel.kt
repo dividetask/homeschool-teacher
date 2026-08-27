@@ -60,12 +60,12 @@ class MultiplicationOperandsViewModel : ViewModel() {
     val streaks: StateFlow<List<List<Int>>> = _streaks.asStateFlow()
 
     private val _passed = MutableStateFlow(
-        Storage.loadLessonPassed(LessonId.CountingMultiplication1),
+        Storage.loadLessonPassed(LessonId.MultiplicationOperands0),
     )
     val passed: StateFlow<Boolean> = _passed.asStateFlow()
 
     // Consecutive-correct run; reaching RUN_TARGET passes the lesson.
-    private var runStreak: Int = Storage.loadWinStreak("run.CountingMultiplication1")
+    private var runStreak: Int = Storage.loadWinStreak("run.MultiplicationOperands0")
 
     private val _state: MutableStateFlow<OperandsState>
     val state: StateFlow<OperandsState>
@@ -92,8 +92,8 @@ class MultiplicationOperandsViewModel : ViewModel() {
 
     fun setPassed(value: Boolean) {
         _passed.value = value
-        Storage.saveLessonPassed(LessonId.CountingMultiplication1, value)
-        Storage.saveLessonManualOverride(LessonId.CountingMultiplication1, value)
+        Storage.saveLessonPassed(LessonId.MultiplicationOperands0, value)
+        Storage.saveLessonManualOverride(LessonId.MultiplicationOperands0, value)
     }
 
     /**
@@ -115,7 +115,7 @@ class MultiplicationOperandsViewModel : ViewModel() {
         Storage.saveMultiplicationOperandsStreak(problem.op1, problem.op2, newCell)
         _streaks.value = snapshotGrid()
         runStreak = if (correct) runStreak + 1 else 0
-        Storage.saveWinStreak("run.CountingMultiplication1", runStreak)
+        Storage.saveWinStreak("run.MultiplicationOperands0", runStreak)
         evaluatePassedFlag()
         _state.update {
             it.copy(
@@ -147,7 +147,7 @@ class MultiplicationOperandsViewModel : ViewModel() {
         Storage.saveMultiplicationOperandsStreak(problem.op1, problem.op2, 0)
         _streaks.value = snapshotGrid()
         runStreak = 0
-        Storage.saveWinStreak("run.CountingMultiplication1", 0)
+        Storage.saveWinStreak("run.MultiplicationOperands0", 0)
         _state.update {
             it.copy(
                 feedback = OperandsFeedback.Revealed,
@@ -172,13 +172,13 @@ class MultiplicationOperandsViewModel : ViewModel() {
     }
 
     private fun evaluatePassedFlag() {
-        if (Storage.loadLessonManualOverride(LessonId.CountingMultiplication1)) return
+        if (Storage.loadLessonManualOverride(LessonId.MultiplicationOperands0)) return
         val mastered = PracticeGrid.covered(ALL_CELLS, GridOperation.Multiply) { a, b ->
             grid[a][b]
         }
         if ((mastered || runStreak >= RUN_TARGET) && !_passed.value) {
             _passed.value = true
-            Storage.saveLessonPassed(LessonId.CountingMultiplication1, true)
+            Storage.saveLessonPassed(LessonId.MultiplicationOperands0, true)
         }
     }
 

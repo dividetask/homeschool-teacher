@@ -376,7 +376,7 @@ fun ProgressScreen(
             MultiplicationStreakGrid(multiplicationStreaks)
         }
 
-        Section(LessonId.CountingMultiplication1) {
+        Section(LessonId.MultiplicationOperands0) {
             InfoRow("Correct (lifetime)", operandsState.correctCount.toString())
             InfoRow("Wrong (lifetime)", operandsState.wrongCount.toString())
             Text(
