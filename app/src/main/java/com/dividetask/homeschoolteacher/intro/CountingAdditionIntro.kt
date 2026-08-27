@@ -1,8 +1,12 @@
 package com.dividetask.homeschoolteacher.intro
 
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkHorizontally
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -26,7 +30,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
@@ -64,14 +67,14 @@ private enum class Phase { Problem, Merge, Counting, Result }
 /**
  * Worked example for the counting addition lessons.
  *
- * Shows `X + Y` as two groups of animals the way the lesson draws them
- * and says the problem aloud; slides the groups together into one row;
- * counts the row off one animal at a time, writing each number above the
- * animal as it is counted; then lands on the answer and says the whole
- * sentence — "3 plus 2 equals 5 zebras".
+ * Shows `X + Y` as two groups of animals — exactly the picture the
+ * lesson puts up — and says the problem aloud; slides the groups
+ * together into one row, clearing the operator away; counts the row off
+ * one animal at a time, writing each number above the animal as it is
+ * counted; then says the whole sentence, "3 plus 2 equals 5 zebras".
  *
- * Everything the narration says is also shown, so the demonstration
- * stands on its own with the sound off.
+ * The numbers over the animals are the only writing on screen: the
+ * explanation is spoken, and with the sound off the pictures carry it.
  */
 @Composable
 internal fun CountingAdditionIntro(
@@ -127,12 +130,6 @@ internal fun CountingAdditionIntro(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(28.dp, Alignment.CenterVertically),
     ) {
-        Equation(
-            left = left,
-            right = right,
-            answer = if (phase == Phase.Result) total else null,
-        )
-
         BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
             // Every animal gets an equal slice of the width, shrinking as
             // the total grows so even 8 + 8 stays on one line.
@@ -158,6 +155,23 @@ internal fun CountingAdditionIntro(
                 Spacer(modifier = Modifier.width(gap))
                 repeat(right) { i ->
                     CountedAnimal(animal.emoji, left + i + 1, counted, slot, emoji, numeral)
+                }
+                // The question mark belongs to the problem, not to the
+                // working, so it clears away with the plus sign.
+                AnimatedVisibility(
+                    visible = !merged,
+                    enter = fadeIn(),
+                    exit = fadeOut() + shrinkHorizontally(),
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Spacer(modifier = Modifier.width(gap))
+                        Text(
+                            text = "= ?",
+                            fontSize = emoji,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.primary,
+                        )
+                    }
                 }
             }
         }
@@ -201,30 +215,6 @@ private fun CountedAnimal(
             text = emoji,
             fontSize = emojiSize,
             modifier = Modifier.alpha(if (counted == 0 || reached) 1f else 0.45f),
-        )
-    }
-}
-
-/** `X + Y = ?` until the count lands, then `X + Y = N`. */
-@Composable
-private fun Equation(left: Int, right: Int, answer: Int?) {
-    Row(
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        val onBg = MaterialTheme.colorScheme.onBackground
-        Text("$left", fontSize = 40.sp, fontWeight = FontWeight.Bold,
-            fontFamily = FontFamily.Monospace, color = onBg)
-        Text("+", fontSize = 40.sp, fontWeight = FontWeight.Bold, color = onBg)
-        Text("$right", fontSize = 40.sp, fontWeight = FontWeight.Bold,
-            fontFamily = FontFamily.Monospace, color = onBg)
-        Text("=", fontSize = 40.sp, fontWeight = FontWeight.Bold, color = onBg)
-        Text(
-            text = answer?.toString() ?: "?",
-            fontSize = 40.sp,
-            fontWeight = FontWeight.Bold,
-            fontFamily = FontFamily.Monospace,
-            color = if (answer == null) onBg else Color(0xFF22C55E),
         )
     }
 }

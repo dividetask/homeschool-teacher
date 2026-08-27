@@ -295,15 +295,17 @@ emoji replays the audio.
 The worked example that opens the counting addition lessons (see Rules §
 Lesson intros). Four steps, on a screen of its own:
 
-1. `X + Y = ?` above the two groups of animals, drawn as the lesson
-   draws them. The problem is spoken: "3 plus 2".
-2. The groups slide together and the `+` between them fades, leaving one
-   row of animals.
-3. The row is counted off one animal at a time, left to right, with each
-   number appearing above its animal as it is said.
-4. The equation lands on its answer — `3 + 2 = 5` — and the whole
-   sentence is spoken: "3 plus 2 equals 5 zebras", with the animal's own
-   name.
+1. The two groups of animals with the `+` and `= ?` between them —
+   exactly the picture the lesson puts up. The problem is spoken: "3
+   plus 2".
+2. The groups slide together and the operator and question mark clear
+   away, leaving one row of animals.
+3. The row is counted off one animal at a time, left to right, each
+   number appearing above its animal as it is said. Those numbers are
+   the only writing the intro puts on screen.
+4. The whole sentence is spoken — "3 plus 2 equals 5 zebras", with the
+   animal's own name — over the counted row, whose last number is the
+   answer.
 
 The animals shrink to fit as the total grows, so the biggest problem the
 Level 1 range allows still counts along a single row, and the count runs
@@ -517,8 +519,11 @@ to a lesson.
 - **Interaction.** None. No answer surface, no buttons, no skip; it ends
   on its own and the lesson appears.
 - **Sound.** One pass of narration at normal speed (not the three speeds
-  the reading lessons use). Everything spoken is also shown, so the
-  animation stands on its own with the sound off.
+  the reading lessons use). The narration is where the words live —
+  **nothing is written on screen**. An intro shows the same picture its
+  lesson shows and marks it up as it works (the numbers written over the
+  animals as they are counted, say), but it never spells out the
+  equation or the sentence. With the sound off, the pictures carry it.
 
 A lesson with no intro written yet simply starts as it always has.
 
