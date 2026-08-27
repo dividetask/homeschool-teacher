@@ -1095,6 +1095,20 @@ a Construction lesson at each level as they are written; multiplication
 is the first. The printed sheets already cover all four operations — see
 `worksheets/README.md`.
 
+A Construction question may only be asked where **the picture pins down
+both numbers**. That is a stronger requirement than the answer-first
+lessons have, and for multiplication it rules out a **zero first
+operand**: `0 × 5` draws no groups at all, so nothing on the page says
+the second operand was 5 — every `0 × Y` is the same picture. A zero
+*second* operand is fine, and worth asking: `5 × 0` draws five pens each
+holding "none", so both numbers are there to be counted, and it is the
+case that teaches five groups of nothing is nothing.
+
+This lesson additionally never asks a zero operand at all, because its
+Operand Picker only offers `1..4`. Widening the picker to include zero
+would let it ask the `X × 0` half; the printed sheet, which has no
+picker, already does.
+
 - **Game UID:** 9
 - **Subject:** Multiplication Construction
 - **Difficulty:** 0
