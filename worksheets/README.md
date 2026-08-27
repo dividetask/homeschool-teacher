@@ -93,7 +93,7 @@ up. The sheets come out identical either way.
 | `subtraction-vertical`           | 0      | Vertical Subtraction          |
 | `subtraction-numberline`         | 0      | Number Line Subtraction       |
 | `multiplication-counting`        | 0      | Counting Multiplication       |
-| `multiplication-construction`    | 0      | Counting Multiplication       |
+| `multiplication-construction`    | 0      | Multiplication Construction   |
 | `multiplication-horizontal`      | 0, 1   | Horizontal Multiplication     |
 | `multiplication-vertical`        | 0, 1   | Vertical Multiplication       |
 | `multiplication-numberline`      | 0, 1   | Number Line Multiplication    |
@@ -108,10 +108,12 @@ division share one picture there — so many pens holding so many each —
 because they *are* the same picture: multiplication reads it as `pens ×
 per pen = total`, division reads it as `total ÷ pens = per pen`.
 
-`multiplication-construction` also covers what the Multiplication
-Operands lesson drills — reading the two numbers off the pens — and asks
-for the product besides, so there is no separate operands sheet; it would
-print the same page. It drops zero from the range the way division drops
+**Construction** is the app's name for this shape of lesson too: given
+the picture, write the numbers, rather than given the numbers, write the
+answer. Multiplication has one already — `multiplication-construction`
+mirrors it, and asks for the product besides, which the lesson does not.
+The other three operations have construction *sheets* here before they
+have lessons in the app. It drops zero from the range the way division drops
 a zero divisor: `0 × 3` draws no groups at all, and there is no equation
 to read off nothing.
 

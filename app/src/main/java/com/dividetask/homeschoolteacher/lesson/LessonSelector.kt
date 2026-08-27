@@ -9,7 +9,7 @@ import com.dividetask.homeschoolteacher.binary.BinaryOperationsViewModel
 import com.dividetask.homeschoolteacher.chess.ChessViewModel
 import com.dividetask.homeschoolteacher.division.CountingDivisionViewModel
 import com.dividetask.homeschoolteacher.multiplication.CountingMultiplicationViewModel
-import com.dividetask.homeschoolteacher.multiplication.MultiplicationOperandsViewModel
+import com.dividetask.homeschoolteacher.multiplication.MultiplicationConstructionViewModel
 import com.dividetask.homeschoolteacher.math.MathViewModel
 import com.dividetask.homeschoolteacher.reading.LetterSoundsViewModel
 import com.dividetask.homeschoolteacher.reading.PhonemesViewModel
@@ -40,7 +40,7 @@ class LessonSelector(
     private val math: MathViewModel,
     private val binary: BinaryOperationsViewModel,
     private val multiplication: CountingMultiplicationViewModel,
-    private val multiplicationOperands: MultiplicationOperandsViewModel,
+    private val multiplicationConstruction: MultiplicationConstructionViewModel,
     private val division: CountingDivisionViewModel,
     private val letterSounds: LetterSoundsViewModel,
     private val phonemes: PhonemesViewModel,
@@ -86,7 +86,7 @@ class LessonSelector(
         LessonId.NumberLineSubtraction0,
         LessonId.CountingSubtraction1,
         LessonId.CountingMultiplication0,
-        LessonId.MultiplicationOperands0,
+        LessonId.MultiplicationConstruction0,
         LessonId.HorizontalMultiplication0,
         LessonId.VerticalMultiplication0,
         LessonId.NumberLineMultiplication0,
@@ -123,7 +123,7 @@ class LessonSelector(
         LessonId.NumberLineMultiplication1 -> math.passed(id)
         LessonId.BinaryOps0, LessonId.BinaryOps1 -> binary.passed(id)
         LessonId.CountingMultiplication0 -> multiplication.passed
-        LessonId.MultiplicationOperands0 -> multiplicationOperands.passed
+        LessonId.MultiplicationConstruction0 -> multiplicationConstruction.passed
         LessonId.CountingDivision0, LessonId.CountingDivision1 -> division.passed(id)
         LessonId.LetterSounds0 -> letterSounds.passed
         LessonId.Phonemes0 -> phonemes.passed
@@ -249,7 +249,7 @@ class LessonSelector(
             LessonId.NumberLineMultiplication1 -> math.startLesson(id)
             LessonId.BinaryOps0, LessonId.BinaryOps1 -> binary.startLesson(id)
             LessonId.CountingMultiplication0 -> multiplication.startLesson()
-            LessonId.MultiplicationOperands0 -> multiplicationOperands.startLesson()
+            LessonId.MultiplicationConstruction0 -> multiplicationConstruction.startLesson()
             LessonId.CountingDivision0,
             LessonId.CountingDivision1 -> division.startLesson(id)
             LessonId.LetterSounds0 -> letterSounds.startLesson()
@@ -293,7 +293,7 @@ class LessonSelector(
             LessonId.NumberLineMultiplication1 -> math.setPassed(id, value)
             LessonId.BinaryOps0, LessonId.BinaryOps1 -> binary.setPassed(id, value)
             LessonId.CountingMultiplication0 -> multiplication.setPassed(value)
-            LessonId.MultiplicationOperands0 -> multiplicationOperands.setPassed(value)
+            LessonId.MultiplicationConstruction0 -> multiplicationConstruction.setPassed(value)
             LessonId.CountingDivision0,
             LessonId.CountingDivision1 -> division.setPassed(id, value)
             LessonId.LetterSounds0 -> letterSounds.setPassed(value)
@@ -314,7 +314,7 @@ class LessonSelectorFactory(
     private val math: MathViewModel,
     private val binary: BinaryOperationsViewModel,
     private val multiplication: CountingMultiplicationViewModel,
-    private val multiplicationOperands: MultiplicationOperandsViewModel,
+    private val multiplicationConstruction: MultiplicationConstructionViewModel,
     private val division: CountingDivisionViewModel,
     private val letterSounds: LetterSoundsViewModel,
     private val phonemes: PhonemesViewModel,
@@ -325,6 +325,6 @@ class LessonSelectorFactory(
 ) : ViewModelProvider.Factory {
     @Suppress("UNCHECKED_CAST")
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
-        return LessonSelector(ttt, tttPuzzle, chess, math, binary, multiplication, multiplicationOperands, division, letterSounds, phonemes, reading, sightWords, rhymingWords, positionWords) as T
+        return LessonSelector(ttt, tttPuzzle, chess, math, binary, multiplication, multiplicationConstruction, division, letterSounds, phonemes, reading, sightWords, rhymingWords, positionWords) as T
     }
 }

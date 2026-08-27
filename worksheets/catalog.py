@@ -181,17 +181,17 @@ _SHEETS = (
     Sheet("multiplication-counting", 0, "Counting Multiplication", "Counting Multiplication — Level 0",
           "Count the groups and how many are in each, then write the total.",
           "mult-counting", 2, mul_params(0, rows=6)),
-    # The construction multiplication sheet. It also covers what the
-    # Multiplication Operands lesson drills — reading the two numbers off
-    # the pens — and asks for the product besides, so there is no separate
-    # operands sheet: it would print the same page.
+    # The construction multiplication sheet, mirroring the lesson of the
+    # same name: read the two numbers off the pens. It asks for the
+    # product besides, which the lesson does not, so one sheet covers both
+    # that lesson and the answer half of Counting Multiplication.
     #
     # Zero is dropped from the range here, the way division drops a zero
     # divisor: `0 × 3` draws no animals, and a picture of nothing has no
     # equation to read off it. The answer-first sheet keeps zero, since
     # there the equation is given.
-    Sheet("multiplication-construction", 0, "Counting Multiplication — Construction",
-          "Counting Multiplication — Level 0",
+    Sheet("multiplication-construction", 0, "Multiplication Construction",
+          "Multiplication Construction — Level 0",
           "Count how many groups and how many are in each, then build the "
           "whole equation.",
           "grouped-blanks", 2, mul_params(0, left=(1, 4), right=(1, 4), rows=6)),

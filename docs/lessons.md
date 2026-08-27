@@ -121,7 +121,7 @@ counting/product lesson) and `multiplication_operands_grid`. Default zero.
 
 ### `multiplication_operands_grid[op1][op2]`
 Integer 2D array, `op1` and `op2` indexed `1..4`. Cell tracks correct
-identifications of the two operands in Multiplication Operands — Level 0
+identifications of the two operands in Multiplication Construction — Level 0
 (separate from `multiplication_grid`, which tracks products in Counting
 Multiplication).
 Default zero.
@@ -467,7 +467,7 @@ digit. Used where the answer range is too large for a comfortable tap grid
 (multiplication products up to 81, so answers are at most two digits).
 
 ### Operand Picker
-Row of single-tap buttons `1..4` used by Multiplication Operands.
+Row of single-tap buttons `1..4` used by Multiplication Construction.
 The displayed equation has two blanks (`▢ × ▢`); the first tap fills the
 left blank, the second fills the right blank and submits. The answer is
 order-independent. A **Clear** button resets the picks before the second
@@ -743,14 +743,14 @@ over the next one.
 | 7        | Number Line Subtraction — Level 0   | Math     | All Addition Difficulty 1 passed  |
 | 7        | Counting Subtraction — Level 1      | Math     | All Subtraction Difficulty 0 passed |
 | 9        | Counting Multiplication — Level 0   | Math     | All Subtraction Difficulty 0 passed |
-| 9        | Multiplication Operands — Level 0   | Math     | Counting Multiplication 0 passed  |
+| 9        | Multiplication Construction — Level 0   | Math     | Counting Multiplication 0 passed  |
 | 9        | Number Line Multiplication — Level 0| Math     | Counting Multiplication 0 passed  |
 | 9        | Horizontal Multiplication — Level 0 | Math     | Number Line Multiplication 0 passed |
 | 9        | Vertical Multiplication — Level 0   | Math     | Number Line Multiplication 0 passed |
 | 9        | Horizontal Multiplication — Level 1 | Math     | All symbolic Multiplication Diff 0 passed |
 | 9        | Vertical Multiplication — Level 1   | Math     | All symbolic Multiplication Diff 0 passed |
 | 9        | Number Line Multiplication — Level 1| Math     | All symbolic Multiplication Diff 0 passed |
-| 11       | Counting Division — Level 0         | Math     | All symbolic Multiplication Diff 1 + Multiplication Operands 0 |
+| 11       | Counting Division — Level 0         | Math     | All symbolic Multiplication Diff 1 + Multiplication Construction 0 |
 | 11       | Counting Division — Level 1         | Math     | Counting Division 0 passed        |
 | 3        | Letter Sounds — Level 0             | Reading  | —                                 |
 | 3        | Phonemes — Level 0                  | Reading  | Letter Sounds 0                   |
@@ -1082,15 +1082,21 @@ subtraction screens stay at Level 0.
 - **Pass criteria:**
   `multiplication_grid[op1][op2] >= cell_target(op1, op2)` for every cell the lesson can ask.
 
-### Multiplication Operands — Level 0
-Filling in the operands is its own exercise rather than a harder level of
+### Multiplication Construction — Level 0
+Building the equation is its own exercise rather than a harder level of
 Counting Multiplication: the picture is the same, but the question runs
 backwards — the learner reads the groups and says which two numbers made
-them. Each operation will get an Operands lesson at each level as they
-are written; multiplication is the first.
+them.
+
+**Construction** is the name for this shape of lesson wherever it
+appears: the learner is given the picture and writes the numbers, rather
+than being given the numbers and writing the answer. Each operation gets
+a Construction lesson at each level as they are written; multiplication
+is the first. The printed sheets already cover all four operations — see
+`worksheets/README.md`.
 
 - **Game UID:** 9
-- **Subject:** Multiplication Operands
+- **Subject:** Multiplication Construction
 - **Difficulty:** 0
 - **Category:** Math
 - **Runs per round:** 4

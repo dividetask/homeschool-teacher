@@ -44,8 +44,8 @@ import com.dividetask.homeschoolteacher.binary.BinaryOperationsViewModel
 import com.dividetask.homeschoolteacher.chess.ChessScreen
 import com.dividetask.homeschoolteacher.multiplication.CountingMultiplicationScreen
 import com.dividetask.homeschoolteacher.multiplication.CountingMultiplicationViewModel
-import com.dividetask.homeschoolteacher.multiplication.MultiplicationOperandsScreen
-import com.dividetask.homeschoolteacher.multiplication.MultiplicationOperandsViewModel
+import com.dividetask.homeschoolteacher.multiplication.MultiplicationConstructionScreen
+import com.dividetask.homeschoolteacher.multiplication.MultiplicationConstructionViewModel
 import com.dividetask.homeschoolteacher.chess.ChessViewModel
 import com.dividetask.homeschoolteacher.division.CountingDivisionScreen
 import com.dividetask.homeschoolteacher.division.CountingDivisionViewModel
@@ -84,7 +84,7 @@ fun HomeschoolTeacherApp() {
     val math: MathViewModel = viewModel()
     val binary: BinaryOperationsViewModel = viewModel()
     val multiplication: CountingMultiplicationViewModel = viewModel()
-    val multiplicationOperands: MultiplicationOperandsViewModel = viewModel()
+    val multiplicationConstruction: MultiplicationConstructionViewModel = viewModel()
     val division: CountingDivisionViewModel = viewModel()
     val letterSounds: LetterSoundsViewModel = viewModel()
     val phonemes: PhonemesViewModel = viewModel()
@@ -93,7 +93,7 @@ fun HomeschoolTeacherApp() {
     val rhymingWords: RhymingWordsViewModel = viewModel()
     val positionWords: PositionWordsViewModel = viewModel()
     val selector: LessonSelector = viewModel(
-        factory = LessonSelectorFactory(game, tttPuzzle, chess, math, binary, multiplication, multiplicationOperands, division, letterSounds, phonemes, reading, sightWords, rhymingWords, positionWords),
+        factory = LessonSelectorFactory(game, tttPuzzle, chess, math, binary, multiplication, multiplicationConstruction, division, letterSounds, phonemes, reading, sightWords, rhymingWords, positionWords),
     )
 
     val mode by selector.mode.collectAsStateWithLifecycle()
@@ -194,7 +194,7 @@ fun HomeschoolTeacherApp() {
                         math = math,
                         binary = binary,
                         multiplication = multiplication,
-                        multiplicationOperands = multiplicationOperands,
+                        multiplicationConstruction = multiplicationConstruction,
                         division = division,
                         letterSounds = letterSounds,
                         phonemes = phonemes,
@@ -265,8 +265,8 @@ fun HomeschoolTeacherApp() {
                             onCompleted = selector::onLessonInstanceCompleted,
                             modifier = Modifier.fillMaxWidth(),
                         )
-                        LessonId.MultiplicationOperands0 -> MultiplicationOperandsScreen(
-                            viewModel = multiplicationOperands,
+                        LessonId.MultiplicationConstruction0 -> MultiplicationConstructionScreen(
+                            viewModel = multiplicationConstruction,
                             onCompleted = selector::onLessonInstanceCompleted,
                             modifier = Modifier.fillMaxWidth(),
                         )

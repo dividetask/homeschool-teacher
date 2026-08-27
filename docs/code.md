@@ -72,9 +72,9 @@ homeschoolteacher/
 │   ├── BinaryOperationsViewModel.kt
 │   └── BinaryOperationsScreen.kt
 ├── multiplication/          Lessons: CountingMultiplication0,
-│   │                        MultiplicationOperands0
+│   │                        MultiplicationConstruction0
 │   ├── CountingMultiplicationViewModel.kt / CountingMultiplicationScreen.kt
-│   └── MultiplicationOperandsViewModel.kt / MultiplicationOperandsScreen.kt
+│   └── MultiplicationConstructionViewModel.kt / MultiplicationConstructionScreen.kt
 │                            (read the groups, pick the two operands)
 └── reading/                 Lessons: LetterSounds0, Phonemes0,
     ├── LetterSounds.kt      Reading0, SightWords0/1, RhymingWords0
@@ -128,7 +128,7 @@ enum class LessonId {
     CountingDivision0, CountingDivision1,
     CountingSubtraction0, HorizontalSubtraction0,
     VerticalSubtraction0, NumberLineSubtraction0, CountingSubtraction1,
-    CountingMultiplication0, MultiplicationOperands0,
+    CountingMultiplication0, MultiplicationConstruction0,
     LetterSounds0, Phonemes0, Reading0, SightWords0, SightWords1, RhymingWords0,
 }
 
@@ -220,7 +220,7 @@ math.startLesson(id)           // MathPictures, Math0, HorizontalAddition0,
                                // VerticalSubtraction0, NumberLineSubtraction0
 binary.startLesson(id)         // BinaryOps0 / BinaryOps1
 multiplication.startLesson()   // CountingMultiplication0
-multiplicationOperands.startLesson() // MultiplicationOperands0
+multiplicationConstruction.startLesson() // MultiplicationConstruction0
 division.startLesson(id)       // CountingDivision0 / CountingDivision1
 letterSounds.startLesson()     // LetterSounds0
 phonemes.startLesson()         // Phonemes0
