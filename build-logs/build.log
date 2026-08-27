@@ -6,10 +6,11 @@ If the parent project does not need the plugin, add 'apply false' to the plugin 
 See: https://docs.gradle.org/current/userguide/plugins.html#sec:subprojects_plugins_dsl
 The Kotlin plugin was loaded in the following projects: ':app', ':shared'
 > Task :app:preBuild UP-TO-DATE
-> Task :app:preDebugBuild UP-TO-DATE
 > Task :shared:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :app:preDebugBuild UP-TO-DATE
 > Task :app:mergeDebugNativeDebugMetadata NO-SOURCE
 > Task :app:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :shared:processResources NO-SOURCE
 > Task :app:checkDebugAarMetadata UP-TO-DATE
 > Task :app:generateDebugResValues UP-TO-DATE
 > Task :app:mapDebugSourceSetPaths UP-TO-DATE
@@ -36,7 +37,6 @@ The Kotlin plugin was loaded in the following projects: ':app', ':shared'
 > Task :app:validateSigningDebug UP-TO-DATE
 > Task :app:writeDebugAppMetadata UP-TO-DATE
 > Task :app:writeDebugSigningConfigVersions UP-TO-DATE
-> Task :shared:processResources NO-SOURCE
 > Task :shared:compileKotlin
 > Task :shared:compileJava NO-SOURCE
 > Task :shared:classes UP-TO-DATE
@@ -44,7 +44,10 @@ The Kotlin plugin was loaded in the following projects: ':app', ':shared'
 > Task :app:mergeDebugNativeLibs UP-TO-DATE
 > Task :app:stripDebugDebugSymbols UP-TO-DATE
 > Task :app:mergeLibDexDebug
+
 > Task :app:compileDebugKotlin
+w: file:///home/brett/Projects/homeschool-teacher/app/src/main/java/com/dividetask/homeschoolteacher/chess/ChessScreen.kt:249:46 Condition is always 'true'.
+
 > Task :app:compileDebugJavaWithJavac NO-SOURCE
 > Task :app:dexBuilderDebug
 > Task :app:mergeDebugGlobalSynthetics UP-TO-DATE
