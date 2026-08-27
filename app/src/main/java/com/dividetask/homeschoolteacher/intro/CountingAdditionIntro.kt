@@ -88,21 +88,18 @@ internal fun CountingAdditionIntro(
     DisposableEffect(Unit) { onDispose { Tts.stopAll() } }
 
     LaunchedEffect(Unit) {
-        Tts.say("$left plus $right")
-        delay(PROBLEM_MS)
+        narrate("$left plus $right", PROBLEM_MS)
         phase = Phase.Merge
         delay(MERGE_MS + MERGE_SETTLE_MS)
         phase = Phase.Counting
         val step = countStepMs(total)
         for (n in 1..total) {
             counted = n
-            Tts.say(n.toString())
-            delay(step)
+            narrate(n.toString(), step)
         }
         delay(COUNT_TAIL_MS)
         phase = Phase.Result
-        Tts.say("$left plus $right equals $total ${animal.name.lowercase()}s")
-        delay(RESULT_MS)
+        narrate("$left plus $right equals $total ${animal.name.lowercase()}s", RESULT_MS)
         onFinished()
     }
 

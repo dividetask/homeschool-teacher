@@ -342,6 +342,18 @@ pen: "4 zebras in every pen. 12 divided by 3 equals 4."
 The example is drawn from the level's own problems, and never has one
 pen or one animal per pen: a share-out has to share.
 
+### Number Line Addition Intro
+
+The worked example that opens the number line addition lessons. A dot
+lands on the **first operand** — you start from what you already have
+rather than counting up from zero — and then hops one place at a time,
+an arc drawn over each hop and left on screen so the whole journey
+stays visible, counting aloud as it lands. Where it stops is the answer,
+and the numbers it passed through stay marked.
+
+The line runs from 0 to one past the answer, so the last hop is never at
+the very edge.
+
 ### Letter Sound Clip Screen
 A large tappable speaker button in the centre of the screen. On each new
 problem it plays a pre-recorded clip of a word (`<x>3.mp3`); tapping the
@@ -559,10 +571,16 @@ to a lesson.
   something to work, and nothing merges into a group of zero or takes
   more than a moment to count when there is one of something. The
   questions still ask those cells.
-- **Interaction.** None. No answer surface, no buttons, no skip; it ends
-  on its own and the lesson appears.
+- **Interaction.** None while it plays: no answer surface, no skip; it
+  ends on its own and the lesson appears. A lesson that has an intro
+  carries a **Learn** button in the top bar, which plays it again — the
+  question waiting underneath is left alone, so a learner who wants to
+  see the method again comes back to the problem they were on.
 - **Sound.** One pass of narration at normal speed (not the three speeds
-  the reading lessons use). The narration is where the words live —
+  the reading lessons use). Each step waits for its own words to finish
+  before the next begins, so counting aloud is never cut off mid-number
+  — a step's stated timing is a floor, not a budget. Where there is no
+  speech engine the animation runs at those same timings. The narration is where the words live —
   **nothing is written on screen**. An intro shows the same picture its
   lesson shows and marks it up as it works (the numbers written over the
   animals as they are counted, say), but it never spells out the

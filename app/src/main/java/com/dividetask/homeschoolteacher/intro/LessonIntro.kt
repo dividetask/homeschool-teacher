@@ -25,6 +25,8 @@ object LessonIntros {
     fun exists(id: LessonId): Boolean = when (id) {
         LessonId.MathPictures,
         LessonId.CountingAddition1,
+        LessonId.NumberLineAddition0,
+        LessonId.MathNumberLine,
         LessonId.CountingMultiplication0,
         LessonId.MultiplicationConstruction0,
         LessonId.CountingDivision0,
@@ -41,6 +43,12 @@ object LessonIntros {
         when (id) {
             LessonId.MathPictures,
             LessonId.CountingAddition1 -> CountingAdditionIntro(
+                range = lessonRange(id),
+                onFinished = onFinished,
+                modifier = modifier,
+            )
+            LessonId.NumberLineAddition0,
+            LessonId.MathNumberLine -> NumberLineAdditionIntro(
                 range = lessonRange(id),
                 onFinished = onFinished,
                 modifier = modifier,

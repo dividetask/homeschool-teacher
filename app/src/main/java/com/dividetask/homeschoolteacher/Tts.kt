@@ -38,6 +38,9 @@ object Tts {
     // to settle so the first word is heard in full.
     private const val POST_STOP_SETTLE_MS: Long = 250L
 
+    /** Longest [sayAwait] waits for an utterance to report itself done. */
+    private const val SAY_TIMEOUT_MS: Long = 6_000L
+
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
 
     @Volatile
@@ -160,13 +163,39 @@ object Tts {
     }
 
     /**
-     * Say [text] once at normal speed, without the slow repeats [speak]
-     * does. Used by the lesson intros, which narrate a worked example: a
-     * sentence read three times at three speeds would run longer than the
-     * animation it belongs to.
+     * Say [text] once at normal speed and **suspend until it has been
+     * said**, so the caller can pace itself off the speech instead of
+     * guessing how long a word takes. Used by the lesson intros: they
+     * count out loud, and a fixed delay per number cut the end off every
+     * one of them — "seven" needs longer than "two", and stopping the
+     * engine to start the next number clipped whatever was still playing.
      *
-     * Like every other call here it interrupts whatever is being said, so
-     * a step landing early never talks over the step before it.
+     * Returns immediately when there is no engine, so a device with no
+     * speech still steps through an animation at its visual pace.
+     *
+     * Never waits longer than [SAY_TIMEOUT_MS] — an engine that goes
+     * quiet must not strand an animation part-way through.
+     */
+    suspend fun sayAwait(text: String) {
+        val e = engine ?: return
+        if (!ready) return
+        currentSequence?.cancel()
+        val id = "homeschool-tts-say-${System.nanoTime()}"
+        val completion = CompletableDeferred<Unit>()
+        pendingUtterances[id] = completion
+        e.setSpeechRate(1.0f)
+        if (e.speak(text, TextToSpeech.QUEUE_FLUSH, null, id) != TextToSpeech.SUCCESS) {
+            pendingUtterances.remove(id)
+            return
+        }
+        kotlinx.coroutines.withTimeoutOrNull(SAY_TIMEOUT_MS) { completion.await() }
+        pendingUtterances.remove(id)
+    }
+
+    /**
+     * Say [text] once at normal speed, without the slow repeats [speak]
+     * does, and without waiting for it. Prefer [sayAwait] where the caller
+     * can wait — this one cuts off whatever is still playing.
      */
     fun say(text: String) {
         if (!ready) return

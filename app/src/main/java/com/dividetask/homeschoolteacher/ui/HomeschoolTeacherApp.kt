@@ -24,6 +24,7 @@ import androidx.compose.material3.ModalNavigationDrawer
 import androidx.compose.material3.NavigationDrawerItem
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.Composable
@@ -37,6 +38,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.dividetask.homeschoolteacher.binary.BinaryOperationsScreen
@@ -185,6 +187,19 @@ fun HomeschoolTeacherApp() {
                             holdMillis = 500L,
                             onTriggered = { scope.launch { drawerState.open() } },
                         )
+                    },
+                    actions = {
+                        // Replays the lesson's worked example. Only on the
+                        // lessons that have one, and not while one is
+                        // already playing.
+                        if (mode != SelectionMode.Progress &&
+                            playing == null &&
+                            LessonIntros.exists(current)
+                        ) {
+                            TextButton(onClick = selector::replayIntro) {
+                                Text("Learn", fontSize = 16.sp)
+                            }
+                        }
                     },
                 )
             },

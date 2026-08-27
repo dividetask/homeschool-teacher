@@ -21,6 +21,7 @@ import androidx.compose.ui.unit.dp
 import com.dividetask.homeschoolteacher.Tts
 import com.dividetask.homeschoolteacher.reading.Animals
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import kotlin.random.Random
 
 /** Held on the picture while the sentence explaining it is spoken. */
@@ -63,32 +64,32 @@ internal fun CountingMultiplicationIntro(
 
     LaunchedEffect(Unit) {
         val plural = "${animal.name.lowercase()}s"
-        Tts.say("$groups times $each means $groups groups of $each")
-        delay(MEANS_MS)
+        narrate("$groups times $each means $groups groups of $each", MEANS_MS)
 
         // "There are Y zebras in each group" — one group stands out, so
         // it is clear which number is which.
         litGroup = 0
-        Tts.say("There are $each $plural in each group")
-        delay(MEANS_MS)
+        narrate("There are $each $plural in each group", MEANS_MS)
 
-        // "...and X groups" — walk along them.
-        Tts.say("and $groups groups")
-        for (g in 0 until groups) {
-            litGroup = g
-            delay(GROUP_SWEEP_MS)
+        // "...and X groups" — the outline walks along them while it is
+        // said, so both finish before the counting starts.
+        val sweep = launch {
+            for (g in 0 until groups) {
+                litGroup = g
+                delay(GROUP_SWEEP_MS)
+            }
         }
+        Tts.sayAwait("and $groups groups")
+        sweep.join()
         litGroup = null
 
         val step = countStepMs(total)
         for (n in 1..total) {
             counted = n
-            Tts.say(n.toString())
-            delay(step)
+            narrate(n.toString(), step)
         }
         delay(COUNT_TAIL_MS)
-        Tts.say("$groups times $each equals $total")
-        delay(RESULT_MS)
+        narrate("$groups times $each equals $total", RESULT_MS)
         onFinished()
     }
 

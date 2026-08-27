@@ -67,6 +67,7 @@ homeschoolteacher/
 │   ├── LessonIntro.kt       Which lessons have one; shared operand roll.
 │   ├── IntroPieces.kt       Counted animal, group box, sizing.
 │   ├── CountingAdditionIntro.kt
+│   ├── NumberLineAdditionIntro.kt
 │   ├── CountingMultiplicationIntro.kt
 │   ├── MultiplicationConstructionIntro.kt
 │   └── CountingDivisionIntro.kt

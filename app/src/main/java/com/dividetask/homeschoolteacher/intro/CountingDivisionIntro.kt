@@ -74,8 +74,7 @@ internal fun CountingDivisionIntro(
 
     LaunchedEffect(Unit) {
         val plural = "${animal.name.lowercase()}s"
-        Tts.say("$dividend $plural, shared into $divisor pens")
-        delay(OPENING_MS)
+        narrate("$dividend $plural, shared into $divisor pens", OPENING_MS)
 
         val step = dealStepMs(dividend)
         for (n in 1..dividend) {
@@ -87,15 +86,12 @@ internal fun CountingDivisionIntro(
         delay(DEAL_SETTLE_MS)
 
         litPen = 0
-        Tts.say("Now count one pen")
-        delay(COUNT_LEAD_MS)
+        narrate("Now count one pen", COUNT_LEAD_MS)
         for (n in 1..quotient) {
             counted = n
-            Tts.say(n.toString())
-            delay(COUNT_STEP_MS)
+            narrate(n.toString(), COUNT_STEP_MS)
         }
-        Tts.say("$quotient $plural in every pen. $dividend divided by $divisor equals $quotient")
-        delay(RESULT_MS)
+        narrate("$quotient $plural in every pen. $dividend divided by $divisor equals $quotient", RESULT_MS)
         onFinished()
     }
 

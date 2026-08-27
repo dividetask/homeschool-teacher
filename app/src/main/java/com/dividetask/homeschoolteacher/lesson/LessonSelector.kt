@@ -183,6 +183,17 @@ class LessonSelector(
         _intro.value = if (LessonIntros.exists(id)) id else null
     }
 
+    /**
+     * Play the current lesson's worked example again, from the **Learn**
+     * button. The lesson's problem is left as it is, waiting behind it,
+     * so a learner who asks to see the method again comes back to the
+     * question they were on.
+     */
+    fun replayIntro() {
+        val id = _currentLesson.value
+        if (LessonIntros.exists(id)) _intro.value = id
+    }
+
     init {
         // Default mode is Random. Roll the first lesson immediately.
         rollRandomLesson(excludeCategory = null)

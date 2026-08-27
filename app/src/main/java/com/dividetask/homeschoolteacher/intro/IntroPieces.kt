@@ -22,6 +22,24 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
+import com.dividetask.homeschoolteacher.Tts
+import kotlinx.coroutines.delay
+
+/**
+ * Say [text] and hold the step for at least [minMs] in total.
+ *
+ * The wait is for the speech to finish, not a guess at how long it
+ * takes, so nothing is ever cut off mid-word; [minMs] then pads a short
+ * word out to the animation's pace. A device with no speech engine
+ * returns from the first part immediately and steps at the visual pace
+ * alone.
+ */
+internal suspend fun narrate(text: String, minMs: Long) {
+    val started = System.currentTimeMillis()
+    Tts.sayAwait(text)
+    val spent = System.currentTimeMillis() - started
+    if (spent < minMs) delay(minMs - spent)
+}
 
 /**
  * Width to give each animal so [count] of them fit across [available],

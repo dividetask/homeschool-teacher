@@ -66,39 +66,31 @@ internal fun MultiplicationConstructionIntro(
 
     LaunchedEffect(Unit) {
         val plural = "${animal.name.lowercase()}s"
-        Tts.say("Which two numbers made this?")
-        delay(OPENING_MS)
+        narrate("Which two numbers made this?", OPENING_MS)
 
         // How many groups — count the boxes themselves.
-        Tts.say("Count the groups")
-        delay(GROUP_STEP_MS)
+        narrate("Count the groups", GROUP_STEP_MS)
         for (g in 1..groups) {
             countedGroups = g
             litGroup = g - 1
-            Tts.say(g.toString())
-            delay(GROUP_STEP_MS)
+            narrate(g.toString(), GROUP_STEP_MS)
         }
         litGroup = null
         firstBlank = groups
-        Tts.say("$groups groups")
-        delay(BLANK_FILL_MS)
+        narrate("$groups groups", BLANK_FILL_MS)
 
         // How many in a group — count inside one of them.
         litGroup = 0
-        Tts.say("Count one group")
-        delay(GROUP_STEP_MS)
+        narrate("Count one group", GROUP_STEP_MS)
         for (n in 1..each) {
             countedAnimals = n
-            Tts.say(n.toString())
-            delay(ANIMAL_STEP_MS)
+            narrate(n.toString(), ANIMAL_STEP_MS)
         }
         litGroup = null
         secondBlank = each
-        Tts.say("$each $plural in each group")
-        delay(BLANK_FILL_MS)
+        narrate("$each $plural in each group", BLANK_FILL_MS)
 
-        Tts.say("$groups times $each")
-        delay(RESULT_MS)
+        narrate("$groups times $each", RESULT_MS)
         onFinished()
     }
 
