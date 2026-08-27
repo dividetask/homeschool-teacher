@@ -42,16 +42,12 @@ when you generate a sheet.
 `--list` needs no dependencies at all — ReportLab is only imported when a
 PDF is actually being drawn.
 
-Every sheet carries **12 to 20 problems**. Past twenty a worksheet stops
-being one sitting's work; under twelve it isn't worth printing. Sheets
-declare a `columns` × `rows` shape in `catalog.py` and the blocks grow
-into the resulting height budget, so a capped page still fills rather
-than sitting in the top half in small type, and a sheet that comes in
-under the floor fails the build instead of shipping thin.
-
-Four sheets sit below twenty because their problems are physically
-bigger: Counting Division and Counting Multiplication 1 hold twelve,
-Counting Multiplication 0 fourteen, Binary 1 fifteen.
+Every sheet carries exactly **12 problems** — one sitting's work. Sheets
+declare a `columns` × `rows` shape in `catalog.py` multiplying to twelve,
+and the blocks grow into the resulting height budget, so the page fills
+rather than sitting in the top half in small type. A sheet that comes out
+short means a block outgrew its shape, and fails the build rather than
+shipping thin.
 
 ```
 ./worksheets.py --check
@@ -87,30 +83,52 @@ up. The sheets come out identical either way.
 | Sheet                            | Levels | Mirrors                       |
 | -------------------------------- | ------ | ----------------------------- |
 | `addition-counting`              | 0, 1   | Counting Addition             |
-| `addition-counting-blanks`       | 0, 1   | Counting Addition             |
+| `addition-construction`          | 0, 1   | Counting Addition             |
 | `addition-horizontal`            | 0, 1   | Horizontal Addition           |
 | `addition-vertical`              | 0, 1   | Vertical Addition             |
 | `addition-numberline`            | 0, 1   | Number Line Addition          |
 | `subtraction-counting`           | 0, 1   | Counting Subtraction          |
-| `subtraction-counting-blanks`    | 0, 1   | Counting Subtraction          |
+| `subtraction-construction`       | 0, 1   | Counting Subtraction          |
 | `subtraction-horizontal`         | 0      | Horizontal Subtraction        |
 | `subtraction-vertical`           | 0      | Vertical Subtraction          |
 | `subtraction-numberline`         | 0      | Number Line Subtraction       |
-| `multiplication-counting`        | 0, 1   | Counting Multiplication       |
-| `multiplication-counting-blanks` | 0, 1   | Counting Multiplication       |
+| `multiplication-counting`        | 0      | Counting Multiplication       |
+| `multiplication-construction`    | 0      | Multiplication Construction   |
 | `multiplication-horizontal`      | 0, 1   | Horizontal Multiplication     |
 | `multiplication-vertical`        | 0, 1   | Vertical Multiplication       |
 | `multiplication-numberline`      | 0, 1   | Number Line Multiplication    |
 | `division-counting`              | 0, 1   | Counting Division             |
-| `division-counting-blanks`       | 0, 1   | Counting Division             |
+| `division-construction`          | 0, 1   | Counting Division             |
 | `binary`                         | 0, 1   | Binary                        |
 
-The `-blanks` sheets are the write-the-whole-sentence variant of each
-counting sheet: instead of being handed `3 + 2 = ▢`, the child reads both
-numbers off the picture and writes `▢ + ▢ = ▢`. Multiplication and
+The `-construction` sheets are the build-the-whole-equation variant of
+each counting sheet: instead of being handed `3 + 2 = ▢`, the child reads
+both numbers off the picture and writes `▢ + ▢ = ▢`. Multiplication and
 division share one picture there — so many pens holding so many each —
-because they *are* the same picture: multiplication reads it as `per pen
-× pens = total`, division reads it as `total ÷ pens = per pen`.
+because they *are* the same picture: multiplication reads it as `pens ×
+per pen = total`, division reads it as `total ÷ pens = per pen`.
+
+**Construction** is the app's name for this shape of lesson too: given
+the picture, write the numbers, rather than given the numbers, write the
+answer. Multiplication has one already — `multiplication-construction`
+mirrors it, and asks for the product besides, which the lesson does not.
+The other three operations have construction *sheets* here before they
+have lessons in the app. It never asks a zero *first* operand, because `0 × 5` draws no
+groups and so nothing on the page says the second operand was 5. A zero
+second operand it does ask: `5 × 0` draws five empty pens, both numbers
+there to count.
+
+**Multiplication is always `op1` groups of `op2`**, matching the app and
+`../docs/lessons.md` § Counting Multiplication Screen — `4 × 3` draws
+four pens of three, not three of four. Division follows from the same
+reading: the divisor is how many pens.
+
+**A zero operand is drawn by which operand it is**, so the two cases can
+be told apart: `0 × 5` is no groups at all and reads "(no groups)", while
+`5 × 0` is five groups that happen to be empty and draws five pens each
+holding "none". Both multiplication sheets share one renderer, so both
+show it the same way — but only the answer-first sheet *asks* `0 × 5`,
+since the construction sheet needs the picture to pin down both numbers.
 
 Subtraction has no Level 1 in its symbolic presentations, and division
 has no symbolic presentations at all, because that's what the app
@@ -127,9 +145,13 @@ drift from its lesson by hand-editing a bound:
 | Addition / Subtraction    | `op1, op2 ∈ 0..4`          | `op1, op2 ∈ 0..8`          |
 | Multiplication / Division | `X, Y ∈ 0..4`, `Z ∈ 0..16` | `X, Y ∈ 0..8`, `Z ∈ 0..40` |
 
-Subtraction keeps `op1 >= op2` so no answer is negative; division drops a
-zero divisor and a zero dividend; and `Z` is a ceiling, so pairs like
-`7 × 8` are simply never asked.
+Read each pair of families as one triple from either side: the forward
+operation takes `X` and `Y` from the range and lets `Z` fall out, the
+backward one takes `X` and the *answer* from the range and derives the
+`Z` it starts from. So subtraction's first operand runs to twice the
+ceiling and its answer can never be negative, and division's dividend is
+always a whole number of groups. `Z` is a ceiling, so pairs like `7 × 8`
+are simply never asked.
 
 A few sheets are worth calling out:
 

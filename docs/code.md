@@ -68,7 +68,7 @@ homeschoolteacher/
 │   ├── IntroPieces.kt       Counted animal, group box, sizing.
 │   ├── CountingAdditionIntro.kt
 │   ├── CountingMultiplicationIntro.kt
-│   ├── MultiplicationOperandsIntro.kt
+│   ├── MultiplicationConstructionIntro.kt
 │   └── CountingDivisionIntro.kt
 │                            Not lessons: no state, no scoring. The
 │                            selector shows one at the start of a round
@@ -82,9 +82,9 @@ homeschoolteacher/
 │   ├── BinaryOperationsViewModel.kt
 │   └── BinaryOperationsScreen.kt
 ├── multiplication/          Lessons: CountingMultiplication0,
-│   │                        MultiplicationOperands0
+│   │                        MultiplicationConstruction0
 │   ├── CountingMultiplicationViewModel.kt / CountingMultiplicationScreen.kt
-│   └── MultiplicationOperandsViewModel.kt / MultiplicationOperandsScreen.kt
+│   └── MultiplicationConstructionViewModel.kt / MultiplicationConstructionScreen.kt
 │                            (read the groups, pick the two operands)
 └── reading/                 Lessons: LetterSounds0, Phonemes0,
     ├── LetterSounds.kt      Reading0, SightWords0/1, RhymingWords0
@@ -138,7 +138,7 @@ enum class LessonId {
     CountingDivision0, CountingDivision1,
     CountingSubtraction0, HorizontalSubtraction0,
     VerticalSubtraction0, NumberLineSubtraction0, CountingSubtraction1,
-    CountingMultiplication0, MultiplicationOperands0,
+    CountingMultiplication0, MultiplicationConstruction0,
     LetterSounds0, Phonemes0, Reading0, SightWords0, SightWords1, RhymingWords0,
 }
 
@@ -230,7 +230,7 @@ math.startLesson(id)           // MathPictures, Math0, HorizontalAddition0,
                                // VerticalSubtraction0, NumberLineSubtraction0
 binary.startLesson(id)         // BinaryOps0 / BinaryOps1
 multiplication.startLesson()   // CountingMultiplication0
-multiplicationOperands.startLesson() // MultiplicationOperands0
+multiplicationConstruction.startLesson() // MultiplicationConstruction0
 division.startLesson(id)       // CountingDivision0 / CountingDivision1
 letterSounds.startLesson()     // LetterSounds0
 phonemes.startLesson()         // Phonemes0
@@ -395,29 +395,6 @@ used (a non-loss streak) is now shared by all categories:
 
 A learner can also be passed by hand from the Progress screen (see the
 "Passed" switch below), which pins the flag via `manualOverride`.
-
-## Known divergences from `docs/lessons.md`
-
-`docs/lessons.md` is the spec and the worksheet generator follows it; the
-Android code has not caught up on these. None is a bug in the sense of
-crashing — the app works, it just teaches slightly different numbers than
-the spec now says.
-
-| Spec (`docs/lessons.md`)                                   | `MathViewModel.kt` / division VM today |
-| ---------------------------------------------------------- | -------------------------------------- |
-| Counting Addition L0 `op1, op2 ∈ 0..4`                      | `1..4` (avoids drawing an empty group) |
-| Addition L1 (all four) `0..8`                               | `0..9`                                 |
-| Subtraction L0 `op1, op2 ∈ 0..4`, `op1 >= op2`              | `op1 ∈ 4..9`, `op2 ∈ 0..4`             |
-| Subtraction L1 `op1, op2 ∈ 0..8`, `op1 >= op2`              | `op1 ∈ 8..16`, `op2 ∈ 0..8`            |
-| Multiplication L1 `X, Y ∈ 0..8`, product `<= 40` everywhere | `0..9`, capped at 30 on the number line only |
-| Counting Multiplication L1 operands `0..8`                  | `1..4`, and its operand picker only offers `1..4` |
-| Division L0 divisor/quotient `1..4`, dividend `<= 16`       | divisor `1..6`, dividend `<= 24`       |
-| Division L1 divisor/quotient `1..8`, dividend `<= 40`       | same as L0                             |
-| Division L1 screen shows eight pens                         | six                                    |
-
-Counting Multiplication L1 is the one that needs more than a range edit:
-its answer surface is an Operand Picker of `1..4`, so widening the range
-means widening the picker too.
 
 ## Config (`AppConfig.kt` + `config.yaml`)
 

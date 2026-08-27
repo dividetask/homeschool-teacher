@@ -33,7 +33,7 @@ enum class LessonId {
     CountingMultiplication0,
     // Fill-in-the-operands lessons. One per operation and level as they are
     // written; only multiplication has one so far.
-    MultiplicationOperands0,
+    MultiplicationConstruction0,
     HorizontalMultiplication0,
     VerticalMultiplication0,
     NumberLineMultiplication0,
@@ -100,7 +100,7 @@ object Lessons {
     )
 
     /** Everything past the multiplication basics — the gate for Division. */
-    private val MULTIPLICATION_L1 = MULTIPLICATION_EQ_L1 + LessonId.MultiplicationOperands0
+    private val MULTIPLICATION_L1 = MULTIPLICATION_EQ_L1 + LessonId.MultiplicationConstruction0
 
     val definitions: Map<LessonId, LessonDefinition> = listOf(
         LessonDefinition(LessonId.TicTacToe0, "Tic Tac Toe — Level 0", Category.Game),
@@ -161,7 +161,7 @@ object Lessons {
         // question is which two numbers are being multiplied rather than
         // what they come to. Operands 1..4. Each operation will get one of
         // these, at each level, as they are written.
-        LessonDefinition(LessonId.MultiplicationOperands0, "Multiplication Operands — Level 0", Category.Math, listOf(LessonId.CountingMultiplication0)),
+        LessonDefinition(LessonId.MultiplicationConstruction0, "Multiplication Construction — Level 0", Category.Math, listOf(LessonId.CountingMultiplication0)),
         // Number Line Multiplication 0 is offered only after Counting 0.
         LessonDefinition(LessonId.NumberLineMultiplication0, "Number Line Multiplication — Level 0", Category.Math, listOf(LessonId.CountingMultiplication0)),
         // The rest of the Level 0 presentations are offered only after
@@ -181,7 +181,7 @@ object Lessons {
         // only in how much the screen scaffolds it: Level 0 puts out
         // exactly Y pens, Level 1 always puts out six. Level 0 opens at the
         // end of the multiplication chain: every symbolic Multiplication
-        // Level 1 lesson plus Multiplication Operands.
+        // Level 1 lesson plus Multiplication Construction.
         LessonDefinition(LessonId.CountingDivision0, "Counting Division — Level 0", Category.Math, MULTIPLICATION_L1),
         LessonDefinition(LessonId.CountingDivision1, "Counting Division — Level 1", Category.Math, listOf(LessonId.CountingDivision0)),
         // Letter Sounds is the head of the Reading chain: a recorded word

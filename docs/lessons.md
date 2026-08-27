@@ -121,7 +121,7 @@ counting/product lesson) and `multiplication_operands_grid`. Default zero.
 
 ### `multiplication_operands_grid[op1][op2]`
 Integer 2D array, `op1` and `op2` indexed `1..4`. Cell tracks correct
-identifications of the two operands in Multiplication Operands — Level 0
+identifications of the two operands in Multiplication Construction — Level 0
 (separate from `multiplication_grid`, which tracks products in Counting
 Multiplication).
 Default zero.
@@ -321,9 +321,9 @@ of a group is named, then each in turn while the groups are counted.
 Every animal is then counted straight through, its number appearing over
 it, and it closes on "3 times 4 equals 12".
 
-### Multiplication Operands Intro
+### Multiplication Construction Intro
 
-Multiplication Operands asks the question backwards — the picture is
+Multiplication Construction asks the question backwards — the picture is
 given and the two numbers are missing — so its intro reads the picture.
 The boxed groups appear above the lesson's `_ × _`, the groups are
 counted first, each numbered as it is counted, and that count drops into
@@ -405,8 +405,20 @@ a line. Example for `op1 = 2`, `op2 = 4`:
 
 For products that don't fit on one line (e.g. `4 × 4 = 16`), the
 boxed groups wrap onto two or three lines while staying visually
-grouped. When either operand is 0 the area shows "(no 🐱)" instead of
-empty space.
+grouped.
+
+**A zero operand is drawn according to which one it is**, since `0 × 5`
+and `5 × 0` are different pictures and must not look alike:
+
+- `op1 = 0` — *no groups at all*. There is nothing to box, so the area
+  shows **"(no groups)"**.
+- `op2 = 0` — *`op1` groups, each empty*. The boxes are drawn as usual,
+  `op1` of them, each holding **"(none)"** where its animals would be.
+- `0 × 0` — no groups, so it reads as `op1 = 0` does.
+
+Showing a single "(no 🐱)" for both cases, as the screen did before this
+was written down, loses the distinction the lesson is teaching: the point
+of `5 × 0` is that five groups of nothing is still nothing.
 
 **Answer surface:** Numeric Grid (0..max).
 
@@ -507,7 +519,7 @@ digit. Used where the answer range is too large for a comfortable tap grid
 (multiplication products up to 81, so answers are at most two digits).
 
 ### Operand Picker
-Row of single-tap buttons `1..4` used by Multiplication Operands.
+Row of single-tap buttons `1..4` used by Multiplication Construction.
 The displayed equation has two blanks (`▢ × ▢`); the first tap fills the
 left blank, the second fills the right blank and submits. The answer is
 order-independent. A **Clear** button resets the picks before the second
@@ -614,13 +626,27 @@ Some cells are right on sight and are not worth drilling like the rest:
 | Multiplication | either operand is `0` or `1`                           |
 | Division       | `divisor <= 1` (or `dividend == 0`, never asked)       |
 
-Two things follow, wherever a lesson uses an operand grid:
+Three things follow, wherever a lesson uses an operand grid:
 
 - **`cell_target(op1, op2)`** — the count a cell needs before it counts
   as covered — is **1** for an easy cell and **2** for every other cell.
 - Easy cells are drawn at **half the weight** of an ordinary cell, so
   they come up about half as often. This holds both while the lesson is
   still being covered and once every cell is covered.
+- The easy cells **together** never take more than **one problem in six**.
+  Halving each cell is not enough where most of a lesson's cells are
+  easy: Multiplication Difficulty 0 has sixteen easy cells against nine
+  ordinary ones, so half weight still leaves nearly half of every round
+  on `× 0` and `× 1`. The cap binds only in that case — every other
+  lesson already sits under it and is left exactly as it was.
+
+| Lesson                          | Easy share, half weight only | With the cap |
+| ------------------------------- | ---------------------------- | ------------ |
+| Multiplication Difficulty 0     | 47%                          | **17%**      |
+| Addition / Subtraction Diff 0   | 22%                          | **17%**      |
+| Division Difficulty 0           | 14%                          | 14%          |
+| Addition / Subtraction Diff 1   | 12%                          | 12%          |
+| Division Difficulty 1           | 7%                           | 7%           |
 
 Grids that are not arithmetic (the binary AND/OR/XOR grids, the per-word
 reading lists) have no easy cells: every one of their cells needs 2 and
@@ -801,14 +827,14 @@ over the next one.
 | 7        | Number Line Subtraction — Level 0   | Math     | All Addition Difficulty 1 passed  |
 | 7        | Counting Subtraction — Level 1      | Math     | All Subtraction Difficulty 0 passed |
 | 9        | Counting Multiplication — Level 0   | Math     | All Subtraction Difficulty 0 passed |
-| 9        | Multiplication Operands — Level 0   | Math     | Counting Multiplication 0 passed  |
+| 9        | Multiplication Construction — Level 0   | Math     | Counting Multiplication 0 passed  |
 | 9        | Number Line Multiplication — Level 0| Math     | Counting Multiplication 0 passed  |
 | 9        | Horizontal Multiplication — Level 0 | Math     | Number Line Multiplication 0 passed |
 | 9        | Vertical Multiplication — Level 0   | Math     | Number Line Multiplication 0 passed |
 | 9        | Horizontal Multiplication — Level 1 | Math     | All symbolic Multiplication Diff 0 passed |
 | 9        | Vertical Multiplication — Level 1   | Math     | All symbolic Multiplication Diff 0 passed |
 | 9        | Number Line Multiplication — Level 1| Math     | All symbolic Multiplication Diff 0 passed |
-| 11       | Counting Division — Level 0         | Math     | All symbolic Multiplication Diff 1 + Multiplication Operands 0 |
+| 11       | Counting Division — Level 0         | Math     | All symbolic Multiplication Diff 1 + Multiplication Construction 0 |
 | 11       | Counting Division — Level 1         | Math     | Counting Division 0 passed        |
 | 3        | Letter Sounds — Level 0             | Reading  | —                                 |
 | 3        | Phonemes — Level 0                  | Reading  | Letter Sounds 0                   |
@@ -1140,15 +1166,35 @@ subtraction screens stay at Level 0.
 - **Pass criteria:**
   `multiplication_grid[op1][op2] >= cell_target(op1, op2)` for every cell the lesson can ask.
 
-### Multiplication Operands — Level 0
-Filling in the operands is its own exercise rather than a harder level of
+### Multiplication Construction — Level 0
+Building the equation is its own exercise rather than a harder level of
 Counting Multiplication: the picture is the same, but the question runs
 backwards — the learner reads the groups and says which two numbers made
-them. Each operation will get an Operands lesson at each level as they
-are written; multiplication is the first.
+them.
+
+**Construction** is the name for this shape of lesson wherever it
+appears: the learner is given the picture and writes the numbers, rather
+than being given the numbers and writing the answer. Each operation gets
+a Construction lesson at each level as they are written; multiplication
+is the first. The printed sheets already cover all four operations — see
+`worksheets/README.md`.
+
+A Construction question may only be asked where **the picture pins down
+both numbers**. That is a stronger requirement than the answer-first
+lessons have, and for multiplication it rules out a **zero first
+operand**: `0 × 5` draws no groups at all, so nothing on the page says
+the second operand was 5 — every `0 × Y` is the same picture. A zero
+*second* operand is fine, and worth asking: `5 × 0` draws five pens each
+holding "none", so both numbers are there to be counted, and it is the
+case that teaches five groups of nothing is nothing.
+
+This lesson additionally never asks a zero operand at all, because its
+Operand Picker only offers `1..4`. Widening the picker to include zero
+would let it ask the `X × 0` half; the printed sheet, which has no
+picker, already does.
 
 - **Game UID:** 9
-- **Subject:** Multiplication Operands
+- **Subject:** Multiplication Construction
 - **Difficulty:** 0
 - **Category:** Math
 - **Runs per round:** 4

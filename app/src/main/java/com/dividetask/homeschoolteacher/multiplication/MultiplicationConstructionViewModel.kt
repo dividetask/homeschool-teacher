@@ -13,17 +13,17 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlin.random.Random
 
-data class OperandsProblem(
+data class ConstructionProblem(
     val op1: Int,
     val op2: Int,
     val animal: Animal,
 )
 
-enum class OperandsFeedback { None, Correct, Wrong, Revealed }
+enum class ConstructionFeedback { None, Correct, Wrong, Revealed }
 
-data class OperandsState(
-    val problem: OperandsProblem,
-    val feedback: OperandsFeedback = OperandsFeedback.None,
+data class ConstructionState(
+    val problem: ConstructionProblem,
+    val feedback: ConstructionFeedback = ConstructionFeedback.None,
     /** First number the learner tapped, or null before the first tap. */
     val firstPick: Int? = null,
     /** Second number tapped — set at the moment the answer is evaluated. */
@@ -52,7 +52,7 @@ private val ALL_CELLS: List<Pair<Int, Int>> =
  * 1..4 (no zero). Passing covers every (op1, op2) ∈ 1..4 at streak ≥ 2,
  * tracked in its own grid (separate from the Level 0 product grid).
  */
-class MultiplicationOperandsViewModel : ViewModel() {
+class MultiplicationConstructionViewModel : ViewModel() {
 
     private val grid: Array<IntArray> = Array(GRID_SIZE) { IntArray(GRID_SIZE) }
 
@@ -60,15 +60,15 @@ class MultiplicationOperandsViewModel : ViewModel() {
     val streaks: StateFlow<List<List<Int>>> = _streaks.asStateFlow()
 
     private val _passed = MutableStateFlow(
-        Storage.loadLessonPassed(LessonId.MultiplicationOperands0),
+        Storage.loadLessonPassed(LessonId.MultiplicationConstruction0),
     )
     val passed: StateFlow<Boolean> = _passed.asStateFlow()
 
     // Consecutive-correct run; reaching RUN_TARGET passes the lesson.
-    private var runStreak: Int = Storage.loadWinStreak("run.MultiplicationOperands0")
+    private var runStreak: Int = Storage.loadWinStreak("run.MultiplicationConstruction0")
 
-    private val _state: MutableStateFlow<OperandsState>
-    val state: StateFlow<OperandsState>
+    private val _state: MutableStateFlow<ConstructionState>
+    val state: StateFlow<ConstructionState>
 
     init {
         for (a in 0 until GRID_SIZE) for (b in 0 until GRID_SIZE) {
@@ -77,7 +77,7 @@ class MultiplicationOperandsViewModel : ViewModel() {
         evaluatePassedFlag()
         val (correct, wrong) = Storage.loadMultiplicationOperandsCounts()
         _state = MutableStateFlow(
-            OperandsState(
+            ConstructionState(
                 problem = chooseProblem(previous = null),
                 correctCount = correct,
                 wrongCount = wrong,
@@ -92,8 +92,8 @@ class MultiplicationOperandsViewModel : ViewModel() {
 
     fun setPassed(value: Boolean) {
         _passed.value = value
-        Storage.saveLessonPassed(LessonId.MultiplicationOperands0, value)
-        Storage.saveLessonManualOverride(LessonId.MultiplicationOperands0, value)
+        Storage.saveLessonPassed(LessonId.MultiplicationConstruction0, value)
+        Storage.saveLessonManualOverride(LessonId.MultiplicationConstruction0, value)
     }
 
     /**
@@ -102,7 +102,7 @@ class MultiplicationOperandsViewModel : ViewModel() {
      */
     fun onPick(n: Int) {
         val current = _state.value
-        if (current.feedback != OperandsFeedback.None) return
+        if (current.feedback != ConstructionFeedback.None) return
         val first = current.firstPick
         if (first == null) {
             _state.update { it.copy(firstPick = n) }
@@ -115,12 +115,12 @@ class MultiplicationOperandsViewModel : ViewModel() {
         Storage.saveMultiplicationOperandsStreak(problem.op1, problem.op2, newCell)
         _streaks.value = snapshotGrid()
         runStreak = if (correct) runStreak + 1 else 0
-        Storage.saveWinStreak("run.MultiplicationOperands0", runStreak)
+        Storage.saveWinStreak("run.MultiplicationConstruction0", runStreak)
         evaluatePassedFlag()
         _state.update {
             it.copy(
                 secondPick = n,
-                feedback = if (correct) OperandsFeedback.Correct else OperandsFeedback.Wrong,
+                feedback = if (correct) ConstructionFeedback.Correct else ConstructionFeedback.Wrong,
                 correctCount = it.correctCount + if (correct) 1 else 0,
                 wrongCount = it.wrongCount + if (correct) 0 else 1,
             )
@@ -134,23 +134,23 @@ class MultiplicationOperandsViewModel : ViewModel() {
     /** Undo the first pick before the answer is submitted (mis-tap escape). */
     fun clearPicks() {
         val current = _state.value
-        if (current.feedback != OperandsFeedback.None) return
+        if (current.feedback != ConstructionFeedback.None) return
         _state.update { it.copy(firstPick = null, secondPick = null) }
     }
 
     fun giveUp() {
         val current = _state.value
-        if (current.feedback == OperandsFeedback.Correct ||
-            current.feedback == OperandsFeedback.Revealed) return
+        if (current.feedback == ConstructionFeedback.Correct ||
+            current.feedback == ConstructionFeedback.Revealed) return
         val problem = current.problem
         grid[problem.op1][problem.op2] = 0
         Storage.saveMultiplicationOperandsStreak(problem.op1, problem.op2, 0)
         _streaks.value = snapshotGrid()
         runStreak = 0
-        Storage.saveWinStreak("run.MultiplicationOperands0", 0)
+        Storage.saveWinStreak("run.MultiplicationConstruction0", 0)
         _state.update {
             it.copy(
-                feedback = OperandsFeedback.Revealed,
+                feedback = ConstructionFeedback.Revealed,
                 wrongCount = it.wrongCount + 1,
             )
         }
@@ -164,7 +164,7 @@ class MultiplicationOperandsViewModel : ViewModel() {
         _state.update {
             it.copy(
                 problem = chooseProblem(previous = it.problem),
-                feedback = OperandsFeedback.None,
+                feedback = ConstructionFeedback.None,
                 firstPick = null,
                 secondPick = null,
             )
@@ -172,19 +172,19 @@ class MultiplicationOperandsViewModel : ViewModel() {
     }
 
     private fun evaluatePassedFlag() {
-        if (Storage.loadLessonManualOverride(LessonId.MultiplicationOperands0)) return
+        if (Storage.loadLessonManualOverride(LessonId.MultiplicationConstruction0)) return
         val mastered = PracticeGrid.covered(ALL_CELLS, GridOperation.Multiply) { a, b ->
             grid[a][b]
         }
         if ((mastered || runStreak >= RUN_TARGET) && !_passed.value) {
             _passed.value = true
-            Storage.saveLessonPassed(LessonId.MultiplicationOperands0, true)
+            Storage.saveLessonPassed(LessonId.MultiplicationConstruction0, true)
         }
     }
 
     private fun snapshotGrid(): List<List<Int>> = grid.map { it.toList() }
 
-    private fun chooseProblem(previous: OperandsProblem?): OperandsProblem {
+    private fun chooseProblem(previous: ConstructionProblem?): ConstructionProblem {
         val (op1, op2) = PracticeGrid.choose(
             cells = ALL_CELLS,
             operation = GridOperation.Multiply,
@@ -192,6 +192,6 @@ class MultiplicationOperandsViewModel : ViewModel() {
             previous = previous?.let { it.op1 to it.op2 },
         )
         val animal = Animals.all[Random.nextInt(Animals.all.size)]
-        return OperandsProblem(op1 = op1, op2 = op2, animal = animal)
+        return ConstructionProblem(op1 = op1, op2 = op2, animal = animal)
     }
 }

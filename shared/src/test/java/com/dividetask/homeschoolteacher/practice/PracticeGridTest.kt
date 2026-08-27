@@ -188,7 +188,58 @@ class PracticeGridTest {
             )
             if (divisor == 1) byOne++
         }
-        // 24 easy cells at half weight against 34 ordinary ones.
-        assertTrue("÷1 share was ${byOne.toDouble() / draws}", byOne.toDouble() / draws > 0.2)
+        // 24 easy cells against 34 ordinary ones: half weight alone would
+        // leave ÷1 at 26% of the draw, so the share cap catches it and
+        // holds it to EASY_SHARE_CAP — still far above the 9% balancing
+        // gets to, which is the point of balancing on top of the cap.
+        val share = byOne.toDouble() / draws
+        assertTrue("÷1 share was $share", abs(share - PracticeGrid.EASY_SHARE_CAP) < 0.02)
+    }
+
+    @Test
+    fun `the share cap holds easy cells down where they outnumber the rest`() {
+        // Multiplication Difficulty 0: operands 0..4, so 16 of the 25
+        // cells are easy and only 9 are not. Half weight leaves 47% of
+        // the round on × 0 and × 1; the cap is what fixes that.
+        val random = Random(seed = 11)
+        val draws = 12_000
+        var easy = 0
+        repeat(draws) {
+            val (a, b) = PracticeGrid.choose(
+                cells = cells,
+                operation = GridOperation.Multiply,
+                value = { _, _ -> PracticeGrid.CELL_TARGET },
+                previous = null,
+                random = random,
+            )
+            if (PracticeGrid.isEasy(GridOperation.Multiply, a, b)) easy++
+        }
+        val share = easy.toDouble() / draws
+        assertTrue("easy share was $share", abs(share - PracticeGrid.EASY_SHARE_CAP) < 0.02)
+    }
+
+    @Test
+    fun `a lesson already under the cap is left alone`() {
+        // Addition Difficulty 1: operands 0..8, so 17 of the 81 cells are
+        // easy. Half weight puts them at 8.5 against 64, comfortably
+        // under the cap, and nothing is scaled.
+        val wide: List<Pair<Int, Int>> = (0..8).flatMap { a -> (0..8).map { b -> a to b } }
+        val random = Random(seed = 13)
+        val draws = 12_000
+        var easy = 0
+        repeat(draws) {
+            val (a, b) = PracticeGrid.choose(
+                cells = wide,
+                operation = GridOperation.Add,
+                value = { _, _ -> PracticeGrid.CELL_TARGET },
+                previous = null,
+                random = random,
+            )
+            if (PracticeGrid.isEasy(GridOperation.Add, a, b)) easy++
+        }
+        // 17 easy at half weight against 64 ordinary: 8.5 / 72.5.
+        val share = easy.toDouble() / draws
+        assertTrue("easy share was $share", abs(share - 8.5 / 72.5) < 0.02)
+        assertTrue("expected to sit under the cap", share < PracticeGrid.EASY_SHARE_CAP)
     }
 }

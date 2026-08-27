@@ -22,15 +22,14 @@ logic.
 from dataclasses import dataclass, field
 from typing import Dict, Optional, Tuple
 
-# No sheet carries more than this many problems, however much room the
-# page has. Past twenty a worksheet stops being one sitting's work.
-MAX_PROBLEMS = 20
-
-# Nor fewer than this. A sheet coming in under the floor means its blocks
-# outgrew the shape declared for it, which is a layout bug rather than
-# something to ship — building it fails loudly instead. Run
-# `worksheets.py --check` to verify every sheet across several shuffles.
-MIN_PROBLEMS = 12
+# Every sheet carries exactly this many problems. One number rather than
+# a range: a sheet that comes out short means its blocks outgrew the
+# shape declared for it, which is a layout bug rather than something to
+# ship, so building it fails loudly instead. Run `worksheets.py --check`
+# to verify every sheet across several shuffles.
+PROBLEMS_PER_SHEET = 12
+MAX_PROBLEMS = PROBLEMS_PER_SHEET
+MIN_PROBLEMS = PROBLEMS_PER_SHEET
 
 
 # --- the standard ranges --------------------------------------------------
@@ -117,100 +116,106 @@ class Sheet:
         return f"{self.key}-level{self.level}"
 
 
-COUNT_BOTH = ("Count the animals in each group, then write the whole number "
-              "sentence — both numbers and the answer.")
+COUNT_BOTH = ("Count the animals in each group, then build the whole equation — "
+              "both numbers and the answer.")
 
 _SHEETS = (
     # --- Addition -------------------------------------------------------
     Sheet("addition-counting", 0, "Counting Addition", "Counting Addition — Level 0",
           "Count the animals in each group, then write how many there are altogether.",
-          "counting", 2, add_params(0, "+", animal_size=20.0, max_rows=2, rows=10)),
+          "counting", 2, add_params(0, "+", animal_size=20.0, max_rows=2, rows=6)),
     Sheet("addition-counting", 1, "Counting Addition", "Counting Addition — Level 1",
           "Count the animals in each group, then write how many there are altogether.",
-          "counting", 2, add_params(1, "+", animal_size=20.0, max_rows=3, rows=10)),
-    Sheet("addition-counting-blanks", 0, "Counting Addition — Sentence",
+          "counting", 2, add_params(1, "+", animal_size=20.0, max_rows=3, rows=6)),
+    Sheet("addition-construction", 0, "Counting Addition — Construction",
           "Counting Addition — Level 0", COUNT_BOTH,
           "counting-blanks", 2, add_params(0, "+", animal_size=20.0, max_rows=2, rows=6)),
-    Sheet("addition-counting-blanks", 1, "Counting Addition — Sentence",
+    Sheet("addition-construction", 1, "Counting Addition — Construction",
           "Counting Addition — Level 1", COUNT_BOTH,
           "counting-blanks", 2, add_params(1, "+", animal_size=20.0, max_rows=3, rows=6)),
     Sheet("addition-horizontal", 0, "Addition", "Horizontal Addition — Level 0",
           "Write the answer in the box.",
-          "horizontal", 2, add_params(0, "+", rows=10)),
+          "horizontal", 2, add_params(0, "+", rows=6)),
     Sheet("addition-horizontal", 1, "Addition", "Horizontal Addition — Level 1",
           "Use the number line at the top to help. Write the answer in the box.",
-          "horizontal", 2, add_params(1, "+", rows=10), header="numberline"),
+          "horizontal", 2, add_params(1, "+", rows=6), header="numberline"),
     Sheet("addition-vertical", 0, "Addition", "Vertical Addition — Level 0",
           "Add the two numbers and write the answer under the line.",
-          "vertical", 4, add_params(0, "+", rows=5)),
+          "vertical", 4, add_params(0, "+", rows=3)),
     Sheet("addition-vertical", 1, "Addition", "Vertical Addition — Level 1",
           "Use the number line at the top to help. Write each answer under the line.",
-          "vertical", 4, add_params(1, "+", rows=5), header="numberline"),
+          "vertical", 4, add_params(1, "+", rows=3), header="numberline"),
     Sheet("addition-numberline", 0, "Number Line Addition", "Number Line Addition — Level 0",
           "Start at the first number and hop forward. Write where you land.",
-          "numberline", 2, add_params(0, "+", line_origin="zero", rows=10)),
+          "numberline", 2, add_params(0, "+", line_origin="zero", rows=6)),
     Sheet("addition-numberline", 1, "Number Line Addition", "Number Line Addition — Level 1",
           "Each line starts at the smaller number. Hop forward and write where you land.",
-          "numberline", 2, add_params(1, "+", line_origin="min-operand", rows=10)),
+          "numberline", 2, add_params(1, "+", line_origin="min-operand", rows=6)),
 
     # --- Subtraction ----------------------------------------------------
     # Only the counting presentation has a Level 1; the symbolic
     # subtraction screens stay at Level 0, as in the app.
     Sheet("subtraction-counting", 0, "Counting Subtraction", "Counting Subtraction — Level 0",
           "Count the first group, take away the second, and write how many are left.",
-          "counting", 2, add_params(0, "-", animal_size=20.0, max_rows=2, rows=10)),
+          "counting", 2, add_params(0, "-", animal_size=20.0, max_rows=2, rows=6)),
     Sheet("subtraction-counting", 1, "Counting Subtraction", "Counting Subtraction — Level 1",
           "Count the first group, take away the second, and write how many are left.",
-          "counting", 2, add_params(1, "-", animal_size=20.0, max_rows=3, rows=10)),
-    Sheet("subtraction-counting-blanks", 0, "Counting Subtraction — Sentence",
+          "counting", 2, add_params(1, "-", animal_size=20.0, max_rows=3, rows=6)),
+    Sheet("subtraction-construction", 0, "Counting Subtraction — Construction",
           "Counting Subtraction — Level 0", COUNT_BOTH,
           "counting-blanks", 2, add_params(0, "-", animal_size=20.0, max_rows=2, rows=6)),
-    Sheet("subtraction-counting-blanks", 1, "Counting Subtraction — Sentence",
+    Sheet("subtraction-construction", 1, "Counting Subtraction — Construction",
           "Counting Subtraction — Level 1", COUNT_BOTH,
           "counting-blanks", 2, add_params(1, "-", animal_size=20.0, max_rows=3, rows=6)),
     Sheet("subtraction-horizontal", 0, "Subtraction", "Horizontal Subtraction — Level 0",
           "Write the answer in the box.",
-          "horizontal", 2, add_params(0, "-", rows=10)),
+          "horizontal", 2, add_params(0, "-", rows=6)),
     Sheet("subtraction-vertical", 0, "Subtraction", "Vertical Subtraction — Level 0",
           "Subtract and write the answer under the line.",
-          "vertical", 4, add_params(0, "-", rows=5)),
+          "vertical", 4, add_params(0, "-", rows=3)),
     Sheet("subtraction-numberline", 0, "Number Line Subtraction", "Number Line Subtraction — Level 0",
           "Start at the first number and hop backwards. Write where you land.",
-          "numberline", 2, add_params(0, "-", line_origin="zero", rows=10)),
+          "numberline", 2, add_params(0, "-", line_origin="zero", rows=6)),
 
     # --- Multiplication -------------------------------------------------
     Sheet("multiplication-counting", 0, "Counting Multiplication", "Counting Multiplication — Level 0",
           "Count the groups and how many are in each, then write the total.",
-          "mult-counting", 2, mul_params(0, rows=7)),
-    Sheet("multiplication-counting", 1, "Counting Multiplication", "Counting Multiplication — Level 1",
-          "Write the two numbers being multiplied: how many in each group × how many groups.",
-          "mult-operands", 2, mul_params(1, rows=6)),
-    Sheet("multiplication-counting-blanks", 0, "Counting Multiplication — Sentence",
-          "Counting Multiplication — Level 0",
-          "Count the groups and how many are in each, then write the whole number sentence.",
-          "grouped-blanks", 2, mul_params(0, rows=6)),
-    Sheet("multiplication-counting-blanks", 1, "Counting Multiplication — Sentence",
-          "Counting Multiplication — Level 1",
-          "Count the groups and how many are in each, then write the whole number sentence.",
-          "grouped-blanks", 2, mul_params(1, rows=6)),
+          "mult-counting", 2, mul_params(0, rows=6)),
+    # The construction multiplication sheet, mirroring the lesson of the
+    # same name: read the two numbers off the pens. It asks for the
+    # product besides, which the lesson does not, so one sheet covers both
+    # that lesson and the answer half of Counting Multiplication.
+    #
+    # A construction question can only be asked where the picture pins
+    # down both numbers. That rules out a zero *first* operand: `0 × 5`
+    # draws no groups, so nothing on the page says the second operand was
+    # 5 — every `0 × Y` is the same picture. A zero second operand is
+    # fine: `5 × 0` draws five pens each holding "none", and both numbers
+    # are right there to count. The answer-first sheet keeps both cases,
+    # since there the equation is given and only the total is asked.
+    Sheet("multiplication-construction", 0, "Multiplication Construction",
+          "Multiplication Construction — Level 0",
+          "Count how many groups and how many are in each, then build the "
+          "whole equation.",
+          "grouped-blanks", 2, mul_params(0, left=(1, 4), right=(0, 4), rows=6)),
     Sheet("multiplication-horizontal", 0, "Multiplication", "Horizontal Multiplication — Level 0",
           "Write the answer in the box.",
-          "horizontal", 2, mul_params(0, rows=10), header="numberline"),
+          "horizontal", 2, mul_params(0, rows=6), header="numberline"),
     Sheet("multiplication-horizontal", 1, "Multiplication", "Horizontal Multiplication — Level 1",
           "Write the answer in the box.",
-          "horizontal", 2, mul_params(1, rows=10), header="numberline"),
+          "horizontal", 2, mul_params(1, rows=6), header="numberline"),
     Sheet("multiplication-vertical", 0, "Multiplication", "Vertical Multiplication — Level 0",
           "Multiply and write the answer under the line.",
-          "vertical", 4, mul_params(0, rows=5), header="numberline"),
+          "vertical", 4, mul_params(0, rows=3), header="numberline"),
     Sheet("multiplication-vertical", 1, "Multiplication", "Vertical Multiplication — Level 1",
           "Multiply and write the answer under the line.",
-          "vertical", 4, mul_params(1, rows=5), header="numberline"),
+          "vertical", 4, mul_params(1, rows=3), header="numberline"),
     Sheet("multiplication-numberline", 0, "Number Line Multiplication", "Number Line Multiplication — Level 0",
           "Count equal hops along the number line to find each answer.",
-          "numberline", 2, mul_params(0, line_origin="zero", rows=10)),
+          "numberline", 2, mul_params(0, line_origin="zero", rows=6)),
     Sheet("multiplication-numberline", 1, "Number Line Multiplication", "Number Line Multiplication — Level 1",
           "Count equal hops along the number line to find each answer.",
-          "numberline", 2, mul_params(1, line_origin="zero", rows=10)),
+          "numberline", 2, mul_params(1, line_origin="zero", rows=6)),
 
     # --- Division -------------------------------------------------------
     Sheet("division-counting", 0, "Counting Division", "Counting Division — Level 0",
@@ -219,22 +224,22 @@ _SHEETS = (
     Sheet("division-counting", 1, "Counting Division", "Counting Division — Level 1",
           "Share the animals into equal groups. Write how many end up in each group.",
           "division-counting", 2, div_params(1, rows=6)),
-    Sheet("division-counting-blanks", 0, "Counting Division — Sentence",
+    Sheet("division-construction", 0, "Counting Division — Construction",
           "Counting Division — Level 0",
-          "The animals are already shared out. Write the whole number sentence.",
+          "The animals are already shared out. Build the whole equation.",
           "grouped-blanks", 2, div_params(0, operator="/", rows=6)),
-    Sheet("division-counting-blanks", 1, "Counting Division — Sentence",
+    Sheet("division-construction", 1, "Counting Division — Construction",
           "Counting Division — Level 1",
-          "The animals are already shared out. Write the whole number sentence.",
+          "The animals are already shared out. Build the whole equation.",
           "grouped-blanks", 2, div_params(1, operator="/", rows=6)),
 
     # --- Binary ---------------------------------------------------------
     Sheet("binary", 0, "Binary Operations", "Binary — Level 0",
           "Use the cheat sheet at the top. Write each answer bit in the box.",
-          "binary", 4, {"bits": 1, "rows": 5}, header="binary-cheatsheet"),
+          "binary", 4, {"bits": 1, "rows": 3}, header="binary-cheatsheet"),
     Sheet("binary", 1, "Binary Operations", "Binary — Level 1",
           "Use the cheat sheet at the top. Work one column at a time, right to left.",
-          "binary", 3, {"bits": 3, "rows": 5}, header="binary-cheatsheet"),
+          "binary", 3, {"bits": 3, "rows": 4}, header="binary-cheatsheet"),
 )
 
 BY_SLUG: Dict[str, Sheet] = {s.slug: s for s in _SHEETS}

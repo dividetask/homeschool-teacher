@@ -37,8 +37,8 @@ import com.dividetask.homeschoolteacher.ui.FeedbackHold
  * being multiplied (order doesn't matter).
  */
 @Composable
-fun MultiplicationOperandsScreen(
-    viewModel: MultiplicationOperandsViewModel,
+fun MultiplicationConstructionScreen(
+    viewModel: MultiplicationConstructionViewModel,
     onCompleted: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -54,10 +54,10 @@ fun MultiplicationOperandsScreen(
 
     LaunchedEffect(state.feedback, state.problem) {
         val hold = when (state.feedback) {
-            OperandsFeedback.None -> return@LaunchedEffect
-            OperandsFeedback.Correct -> FeedbackHold.CORRECT_MS
-            OperandsFeedback.Wrong -> FeedbackHold.WRONG_MS
-            OperandsFeedback.Revealed -> FeedbackHold.REVEALED_MS
+            ConstructionFeedback.None -> return@LaunchedEffect
+            ConstructionFeedback.Correct -> FeedbackHold.CORRECT_MS
+            ConstructionFeedback.Wrong -> FeedbackHold.WRONG_MS
+            ConstructionFeedback.Revealed -> FeedbackHold.REVEALED_MS
         }
         delay(hold)
         onCompleted()
@@ -86,8 +86,8 @@ fun MultiplicationOperandsScreen(
 
         // The equation with the two operand blanks filled in as the learner
         // taps. On a wrong/revealed outcome the true operands are shown.
-        val reveal = state.feedback == OperandsFeedback.Wrong ||
-            state.feedback == OperandsFeedback.Revealed
+        val reveal = state.feedback == ConstructionFeedback.Wrong ||
+            state.feedback == ConstructionFeedback.Revealed
         val left = if (reveal) problem.op1.toString() else state.firstPick?.toString() ?: "_"
         val right = if (reveal) problem.op2.toString() else state.secondPick?.toString() ?: "_"
         Text(
@@ -99,17 +99,17 @@ fun MultiplicationOperandsScreen(
 
         Text(
             text = when (state.feedback) {
-                OperandsFeedback.Correct -> "Correct!"
-                OperandsFeedback.Wrong -> "Not quite — it was ${problem.op1} × ${problem.op2}"
-                OperandsFeedback.Revealed -> "It was ${problem.op1} × ${problem.op2}"
-                OperandsFeedback.None -> "Which two numbers are being multiplied?"
+                ConstructionFeedback.Correct -> "Correct!"
+                ConstructionFeedback.Wrong -> "Not quite — it was ${problem.op1} × ${problem.op2}"
+                ConstructionFeedback.Revealed -> "It was ${problem.op1} × ${problem.op2}"
+                ConstructionFeedback.None -> "Which two numbers are being multiplied?"
             },
             fontSize = 16.sp,
             color = when (state.feedback) {
-                OperandsFeedback.Correct -> Color(0xFF22C55E)
-                OperandsFeedback.Wrong -> Color(0xFFEF4444)
-                OperandsFeedback.Revealed -> Color(0xFFFACC15)
-                OperandsFeedback.None -> MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f)
+                ConstructionFeedback.Correct -> Color(0xFF22C55E)
+                ConstructionFeedback.Wrong -> Color(0xFFEF4444)
+                ConstructionFeedback.Revealed -> Color(0xFFFACC15)
+                ConstructionFeedback.None -> MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f)
             },
         )
 
@@ -122,7 +122,7 @@ fun MultiplicationOperandsScreen(
         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             TextButton(
                 onClick = viewModel::clearPicks,
-                enabled = state.firstPick != null && state.feedback == OperandsFeedback.None,
+                enabled = state.firstPick != null && state.feedback == ConstructionFeedback.None,
             ) {
                 Text("Clear", fontSize = 14.sp)
             }
@@ -152,7 +152,7 @@ private fun ScoreItem(label: String, value: Int, color: Color) {
 
 @Composable
 private fun NumberPad(
-    feedback: OperandsFeedback,
+    feedback: ConstructionFeedback,
     onPick: (Int) -> Unit,
     inputEnabled: Boolean,
 ) {
@@ -167,7 +167,7 @@ private fun NumberPad(
         (1..4).forEach { n ->
             Button(
                 onClick = { onPick(n) },
-                enabled = inputEnabled && feedback == OperandsFeedback.None,
+                enabled = inputEnabled && feedback == ConstructionFeedback.None,
                 shape = RoundedCornerShape(14.dp),
                 contentPadding = PaddingValues(2.dp),
                 colors = ButtonDefaults.buttonColors(

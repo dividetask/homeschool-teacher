@@ -37,7 +37,7 @@ private const val BLANK_FILL_MS = 2_000L
 private const val RESULT_MS = 3_000L
 
 /**
- * Worked example for Multiplication Operands, which asks the question
+ * Worked example for Multiplication Construction, which asks the question
  * backwards: the picture is given and the two numbers are missing.
  *
  * So the demonstration reads the picture. The boxed groups appear with
@@ -47,7 +47,7 @@ private const val RESULT_MS = 3_000L
  * drops into the second. It closes on "3 times 4".
  */
 @Composable
-internal fun MultiplicationOperandsIntro(
+internal fun MultiplicationConstructionIntro(
     range: IntRange,
     onFinished: () -> Unit,
     modifier: Modifier = Modifier,

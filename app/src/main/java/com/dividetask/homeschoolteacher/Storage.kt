@@ -295,10 +295,14 @@ object Storage {
             .apply()
     }
 
-    // --- Counting Multiplication — operands (Level 1) ---
+    // --- Multiplication Construction ---
+    // The stored keys still say `multoperands` — they predate the lesson
+    // being renamed from Multiplication Operands, and are not derived
+    // from the lesson id, so moving them would only cost a learner their
+    // coverage for nothing.
     // Coverage grid for "which two numbers are being multiplied"; cells
     // track correct identifications of (op1, op2). Separate from the
-    // Level 0 product grid above.
+    // Counting Multiplication product grid above.
     fun loadMultiplicationOperandsStreak(op1: Int, op2: Int): Int =
         prefs().getInt("multoperands.streak.$op1.$op2", 0)
 
@@ -467,6 +471,36 @@ object Storage {
                 editor.remove(oldRun)
             }
             editor.putBoolean("migration.v6", true)
+            editor.apply()
+        }
+
+        if (!p.contains("migration.v7")) {
+            // "Multiplication Operands — Level 0" is now "Multiplication
+            // Construction — Level 0": every lesson that asks the learner
+            // to build the equation rather than just answer it is called
+            // Construction. Same carry-over as v6 — and it runs after it,
+            // so a learner coming all the way from CountingMultiplication1
+            // is carried through both. The coverage grid
+            // (`multoperands.streak.*`) is not keyed by lesson id and stays
+            // where it is.
+            val editor = p.edit()
+            val oldId = "MultiplicationOperands0"
+            val newId = "MultiplicationConstruction0"
+            listOf("passed", "manualOverride", "manualUnlock").forEach { suffix ->
+                val oldKey = "lesson.$oldId.$suffix"
+                if (p.contains(oldKey)) {
+                    editor.putBoolean("lesson.$newId.$suffix", p.getBoolean(oldKey, false))
+                    editor.remove(oldKey)
+                }
+            }
+            listOf("win_streak.$oldId", "win_streak.run.$oldId").forEach { oldKey ->
+                if (p.contains(oldKey)) {
+                    val newKey = oldKey.replace(oldId, newId)
+                    editor.putInt(newKey, p.getInt(oldKey, 0))
+                    editor.remove(oldKey)
+                }
+            }
+            editor.putBoolean("migration.v7", true)
             editor.apply()
         }
     }

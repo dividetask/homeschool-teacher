@@ -37,7 +37,7 @@ import com.dividetask.homeschoolteacher.division.CountingDivisionViewModel
 import com.dividetask.homeschoolteacher.division.MAX_DIVISOR
 import com.dividetask.homeschoolteacher.division.divisionCells
 import com.dividetask.homeschoolteacher.multiplication.CountingMultiplicationViewModel
-import com.dividetask.homeschoolteacher.multiplication.MultiplicationOperandsViewModel
+import com.dividetask.homeschoolteacher.multiplication.MultiplicationConstructionViewModel
 import com.dividetask.homeschoolteacher.practice.GridOperation
 import com.dividetask.homeschoolteacher.practice.PracticeGrid
 import com.dividetask.homeschoolteacher.lesson.LessonDefinition
@@ -67,7 +67,7 @@ fun ProgressScreen(
     math: MathViewModel,
     binary: BinaryOperationsViewModel,
     multiplication: CountingMultiplicationViewModel,
-    multiplicationOperands: MultiplicationOperandsViewModel,
+    multiplicationConstruction: MultiplicationConstructionViewModel,
     division: CountingDivisionViewModel,
     letterSounds: LetterSoundsViewModel,
     phonemes: PhonemesViewModel,
@@ -114,8 +114,8 @@ fun ProgressScreen(
     val multiplicationStreaks by multiplication.streaks.collectAsStateWithLifecycle()
     val multiplicationState by multiplication.state.collectAsStateWithLifecycle()
 
-    val operandsStreaks by multiplicationOperands.streaks.collectAsStateWithLifecycle()
-    val operandsState by multiplicationOperands.state.collectAsStateWithLifecycle()
+    val operandsStreaks by multiplicationConstruction.streaks.collectAsStateWithLifecycle()
+    val operandsState by multiplicationConstruction.state.collectAsStateWithLifecycle()
 
     val divisionStreaks by division.streaks.collectAsStateWithLifecycle()
     val divisionState by division.state.collectAsStateWithLifecycle()
@@ -389,7 +389,7 @@ fun ProgressScreen(
             MultiplicationStreakGrid(multiplicationStreaks)
         }
 
-        Section(LessonId.MultiplicationOperands0) {
+        Section(LessonId.MultiplicationConstruction0) {
             InfoRow("Correct (lifetime)", operandsState.correctCount.toString())
             InfoRow("Wrong (lifetime)", operandsState.wrongCount.toString())
             Text(

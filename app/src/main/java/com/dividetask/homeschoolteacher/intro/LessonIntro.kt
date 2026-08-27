@@ -26,7 +26,7 @@ object LessonIntros {
         LessonId.MathPictures,
         LessonId.CountingAddition1,
         LessonId.CountingMultiplication0,
-        LessonId.MultiplicationOperands0,
+        LessonId.MultiplicationConstruction0,
         LessonId.CountingDivision0,
         LessonId.CountingDivision1 -> true
         else -> false
@@ -50,7 +50,7 @@ object LessonIntros {
                 onFinished = onFinished,
                 modifier = modifier,
             )
-            LessonId.MultiplicationOperands0 -> MultiplicationOperandsIntro(
+            LessonId.MultiplicationConstruction0 -> MultiplicationConstructionIntro(
                 range = lessonRange(id),
                 onFinished = onFinished,
                 modifier = modifier,

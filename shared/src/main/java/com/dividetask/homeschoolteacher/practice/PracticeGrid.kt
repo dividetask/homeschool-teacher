@@ -25,7 +25,13 @@ enum class GridOperation { Add, Subtract, Multiply, Divide }
  *   where an ordinary cell needs [CELL_TARGET]; and
  * - whenever a pool is drawn from, they carry [EASY_CELL_WEIGHT] — half
  *   the weight of an ordinary cell — so they come up half as often both
- *   while the lesson is still being covered and afterwards.
+ *   while the lesson is still being covered and afterwards; and
+ * - the easy cells *together* never take more than [EASY_SHARE_CAP] of a
+ *   pool. Halving each cell is not enough on its own where most of a
+ *   lesson's cells are easy: Multiplication Difficulty 0 has sixteen easy
+ *   cells against nine ordinary ones, so half weight still leaves nearly
+ *   half the round on `× 0` and `× 1`. The cap binds only in that case —
+ *   every other lesson is already under it, and is left alone.
  *
  * ## Balanced operands
  *
@@ -52,6 +58,9 @@ object PracticeGrid {
 
     /** Pick weight of an easy cell, against 1.0 for an ordinary one. */
     const val EASY_CELL_WEIGHT = 0.5
+
+    /** Most of a pool the easy cells may take between them. */
+    const val EASY_SHARE_CAP = 1.0 / 6.0
 
     /** Chance of ignoring coverage and picking from the whole grid. */
     private const val WILDCARD_CHANCE = 0.10
@@ -130,6 +139,7 @@ object PracticeGrid {
             if (isEasy(operation, a, b)) EASY_CELL_WEIGHT else 1.0
         },
         balanceBy = balanceBy?.let { key -> { (a, b): Pair<Int, Int> -> key(a, b) } },
+        easy = { (a, b) -> isEasy(operation, a, b) },
     )
 
     /**
@@ -146,6 +156,7 @@ object PracticeGrid {
         target: (T) -> Int = { CELL_TARGET },
         weight: (T) -> Double = { 1.0 },
         balanceBy: ((T) -> Int)? = null,
+        easy: (T) -> Boolean = { false },
     ): T {
         require(cells.isNotEmpty()) { "No cells to choose from" }
         val behind = cells.filter { value(it) < target(it) }
@@ -160,13 +171,14 @@ object PracticeGrid {
         } else {
             basePool
         }
-        return weightedPick(pool, weight, balanceBy, random)
+        return weightedPick(pool, weight, balanceBy, easy, random)
     }
 
     private fun <T> weightedPick(
         pool: List<T>,
         weight: (T) -> Double,
         balanceBy: ((T) -> Int)?,
+        easy: (T) -> Boolean,
         random: Random,
     ): T {
         // Cells sharing a balance key split one key's worth of weight
@@ -180,7 +192,21 @@ object PracticeGrid {
         val weights = pool.map { cell ->
             val w = weight(cell)
             if (balanceBy == null) w else w / (share[balanceBy(cell)] ?: 1)
+        }.toMutableList()
+
+        // Hold the easy cells to their share of the pool. Scaling them as
+        // a class rather than lowering each one's weight keeps whatever
+        // balance is already set up among them.
+        val easyTotal = pool.indices.filter { easy(pool[it]) }.sumOf { weights[it] }
+        val ordinaryTotal = weights.sum() - easyTotal
+        if (easyTotal > 0.0 && ordinaryTotal > 0.0) {
+            val allowed = ordinaryTotal * EASY_SHARE_CAP / (1.0 - EASY_SHARE_CAP)
+            if (easyTotal > allowed) {
+                val scale = allowed / easyTotal
+                pool.indices.filter { easy(pool[it]) }.forEach { weights[it] *= scale }
+            }
         }
+
         var r = random.nextDouble(weights.sum())
         for (i in pool.indices) {
             if (r < weights[i]) return pool[i]
