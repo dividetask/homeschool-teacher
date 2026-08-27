@@ -113,14 +113,20 @@ the picture, write the numbers, rather than given the numbers, write the
 answer. Multiplication has one already — `multiplication-construction`
 mirrors it, and asks for the product besides, which the lesson does not.
 The other three operations have construction *sheets* here before they
-have lessons in the app. It drops zero from the range the way division drops
-a zero divisor: `0 × 3` draws no groups at all, and there is no equation
-to read off nothing.
+have lessons in the app. Zero appears in both operands there, as it does on the
+answer-first sheet: the two cases are different pictures and say which
+operand they are — see below.
 
 **Multiplication is always `op1` groups of `op2`**, matching the app and
 `../docs/lessons.md` § Counting Multiplication Screen — `4 × 3` draws
 four pens of three, not three of four. Division follows from the same
 reading: the divisor is how many pens.
+
+**A zero operand is drawn by which operand it is**, so the two cases can
+be told apart: `0 × 5` is no groups at all and reads "(no groups)", while
+`5 × 0` is five groups that happen to be empty and draws five pens each
+holding "none". Both counting sheets share one renderer, so both show it
+the same way.
 
 Subtraction has no Level 1 in its symbolic presentations, and division
 has no symbolic presentations at all, because that's what the app

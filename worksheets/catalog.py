@@ -186,15 +186,19 @@ _SHEETS = (
     # product besides, which the lesson does not, so one sheet covers both
     # that lesson and the answer half of Counting Multiplication.
     #
-    # Zero is dropped from the range here, the way division drops a zero
-    # divisor: `0 × 3` draws no animals, and a picture of nothing has no
-    # equation to read off it. The answer-first sheet keeps zero, since
-    # there the equation is given.
+    # Zero appears in both operands. The two cases are different pictures
+    # and say which operand they are: "(no groups)" is a zero first
+    # operand, and N pens each holding "none" is a zero second operand
+    # (docs/lessons.md § Counting Multiplication Screen). With a zero
+    # first operand the picture does not pin the second one down — every
+    # `0 × Y` looks the same and every one of them is 0 — so any second
+    # operand a learner writes there is consistent with what they were
+    # shown.
     Sheet("multiplication-construction", 0, "Multiplication Construction",
           "Multiplication Construction — Level 0",
           "Count how many groups and how many are in each, then build the "
           "whole equation.",
-          "grouped-blanks", 2, mul_params(0, left=(1, 4), right=(1, 4), rows=6)),
+          "grouped-blanks", 2, mul_params(0, rows=6)),
     Sheet("multiplication-horizontal", 0, "Multiplication", "Horizontal Multiplication — Level 0",
           "Write the answer in the box.",
           "horizontal", 2, mul_params(0, rows=6), header="numberline"),
