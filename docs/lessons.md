@@ -127,14 +127,15 @@ Multiplication).
 Default zero.
 
 ### `addition_grid[op1][op2]`
-Integer 2D array, `op1` and `op2` indexed `0..15` (length 16 each; the
-lessons only reach 8, the rest is room to grow). Cell
+Integer 2D array, `op1` and `op2` indexed `0..19` (length 20 each). The
+row index is a first operand, which subtraction takes to 16; no operand
+itself passes 8. Cell
 tracks correct answers for the matching addition problem when shown via
 the Vertical, Horizontal, or Number Line equation screens. Shared
 across those three screens.
 
 ### `subtraction_grid[op1][op2]`
-Integer 2D array, `op1` and `op2` indexed `0..15`. Cell tracks correct
+Integer 2D array, `op1` and `op2` indexed `0..19`. Cell tracks correct
 answers for the matching subtraction problem when shown via the
 Vertical, Horizontal, or Number Line equation screens. Shared across
 those three screens.
@@ -488,14 +489,25 @@ Level 1 sheet of either never runs past 40.
 | Addition / Subtraction     | `op1, op2 ∈ 0..4`       | `op1, op2 ∈ 0..8`       |
 | Multiplication / Division  | `X, Y ∈ 0..4`, `Z ∈ 0..16` | `X, Y ∈ 0..8`, `Z ∈ 0..40` |
 
-Read the multiplication families as one triple seen from either side:
-`X × Y = Z` for multiplication, `Z ÷ X = Y` for division.
+Read each pair of families as one triple seen from either side:
+`X + Y = Z` for addition and `Z - X = Y` for subtraction, `X × Y = Z`
+for multiplication and `Z ÷ X = Y` for division. In both cases the
+forward operation takes `X` and `Y` from the range and lets `Z` fall
+out; the backward one takes `X` and the **answer** `Y` from the range
+and derives the `Z` it starts from.
 
 Three constraints fall out of the ranges rather than being stated per
 lesson:
 
-- **Subtraction keeps `op1 >= op2`**, so an answer is never negative.
-  Both operands still come from the family range.
+- **Subtraction is built from the answer, not from two operands.** The
+  number being taken away and the answer both come from the family
+  range, and the number they are taken from is their sum — so it runs to
+  **twice** the family ceiling (8 at Difficulty 0, 16 at Difficulty 1)
+  while the answer stays inside the range and can never go negative.
+  This is the same construction division uses, and it makes each level
+  the exact inverse of the addition level beside it: Addition Level 1
+  adds two numbers up to 8 and lands in 0..16, Subtraction Level 1 takes
+  a number up to 8 off something in 0..16.
 - **Division excludes a zero divisor and a zero dividend.** `X` and `Y`
   each run `1..4` / `1..8`; `Z` is their product. Dividing zero by
   something is degenerate, and dividing by zero is undefined.
@@ -1020,10 +1032,11 @@ over the next one.
 - **Pass criteria:** `subtraction_grid[op1][op2] >= cell_target(op1, op2)`
   for every cell the lesson can ask **AND** `win_streak[7][1] >= 4`
 
-Both operands come from the same `0..8` range as Addition Level 1, with
-`op1 >= op2` so the answer is never negative. Only the counting
-presentation exists at this level — the Horizontal, Vertical and Number
-Line subtraction screens stay at Level 0.
+The number taken away and the answer both come from the same `0..8`
+range as Addition Level 1, so the number they come off runs to 16 — the
+exact inverse of that lesson's sums. Only the counting presentation
+exists at this level; the Horizontal, Vertical and Number Line
+subtraction screens stay at Level 0.
 
 ### Counting Multiplication — Level 0
 - **Game UID:** 9

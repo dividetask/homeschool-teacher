@@ -111,53 +111,28 @@ private fun gridOperation(op: MathOperator): GridOperation = when (op) {
 }
 
 /**
- * Range used for the LEFT operand — the standard range for the lesson's
- * family and difficulty (docs/lessons.md § Standard operand ranges). The
- * right operand shares it; what narrows a lesson from the full cross
- * product is [lessonCells], not a different range per side. The picture
- * lessons include 0 like the rest — a zero group draws as blank space.
+ * The standard operand range for a lesson's family and difficulty
+ * (docs/lessons.md § Standard operand ranges). What a lesson can ask is
+ * built from this by [lessonCells], which differs per operation — the
+ * range does not.
  */
-private fun lessonLeftRange(id: LessonId): IntRange = when (id) {
+private fun lessonRange(id: LessonId): IntRange = when (id) {
     LessonId.MathPictures,
     LessonId.Math0,
     LessonId.HorizontalAddition0,
-    LessonId.NumberLineAddition0 -> 0..4
-    LessonId.CountingAddition1,
-    LessonId.Math1,
-    LessonId.HorizontalAddition1,
-    LessonId.MathNumberLine -> 0..8
+    LessonId.NumberLineAddition0,
     LessonId.CountingSubtraction0,
     LessonId.HorizontalSubtraction0,
     LessonId.VerticalSubtraction0,
-    LessonId.NumberLineSubtraction0 -> 0..4
-    LessonId.CountingSubtraction1 -> 0..8
+    LessonId.NumberLineSubtraction0,
     LessonId.HorizontalMultiplication0,
     LessonId.VerticalMultiplication0,
     LessonId.NumberLineMultiplication0 -> 0..4
-    LessonId.HorizontalMultiplication1,
-    LessonId.VerticalMultiplication1,
-    LessonId.NumberLineMultiplication1 -> 0..8
-    else -> 0..4
-}
-
-/** Range used for the RIGHT operand. */
-private fun lessonRightRange(id: LessonId): IntRange = when (id) {
-    LessonId.MathPictures,
-    LessonId.Math0,
-    LessonId.HorizontalAddition0,
-    LessonId.NumberLineAddition0 -> 0..4
     LessonId.CountingAddition1,
     LessonId.Math1,
     LessonId.HorizontalAddition1,
-    LessonId.MathNumberLine -> 0..8
-    LessonId.CountingSubtraction0,
-    LessonId.HorizontalSubtraction0,
-    LessonId.VerticalSubtraction0,
-    LessonId.NumberLineSubtraction0 -> 0..4
-    LessonId.CountingSubtraction1 -> 0..8
-    LessonId.HorizontalMultiplication0,
-    LessonId.VerticalMultiplication0,
-    LessonId.NumberLineMultiplication0 -> 0..4
+    LessonId.MathNumberLine,
+    LessonId.CountingSubtraction1,
     LessonId.HorizontalMultiplication1,
     LessonId.VerticalMultiplication1,
     LessonId.NumberLineMultiplication1 -> 0..8
@@ -165,22 +140,33 @@ private fun lessonRightRange(id: LessonId): IntRange = when (id) {
 }
 
 /**
- * Every (op1, op2) a lesson may ask: the operand ranges crossed, then
- * narrowed by whatever its family rules out — subtraction never asks a
- * pair that would go negative, and Multiplication Level 1 drops any pair
- * whose product passes [MAX_PRODUCT_L1]. Both the pass check and the
- * problem picker ask here, so a lesson is graded on exactly the cells it
- * can be shown.
+ * Every (op1, op2) a lesson may ask.
+ *
+ * Each operation builds its cells from the two values the learner is
+ * meant to be working in, and derives the third:
+ *
+ * - **Addition** takes both operands from the range; the sum falls out
+ *   and runs to twice the ceiling.
+ * - **Subtraction** is addition read backwards, the way division is
+ *   multiplication read backwards: the *second operand and the answer*
+ *   come from the range and the first operand is their sum. So the
+ *   number being subtracted from runs to twice the ceiling — 8 at
+ *   Difficulty 0, 16 at Difficulty 1 — while the answer stays inside the
+ *   range and can never go negative.
+ * - **Multiplication** takes both operands from the range and drops any
+ *   pair whose product passes [MAX_PRODUCT_L1].
+ *
+ * Both the pass check and the problem picker ask here, so a lesson is
+ * graded on exactly the cells it can be shown.
  */
 private fun lessonCells(id: LessonId): List<Pair<Int, Int>> {
-    val cells = lessonLeftRange(id).flatMap { a -> lessonRightRange(id).map { b -> a to b } }
-    return when {
-        lessonOperator(id) == MathOperator.Minus -> cells.filter { (a, b) -> a >= b }
-        id == LessonId.HorizontalMultiplication1 ||
-            id == LessonId.VerticalMultiplication1 ||
-            id == LessonId.NumberLineMultiplication1 ->
-            cells.filter { (a, b) -> a * b <= MAX_PRODUCT_L1 }
-        else -> cells
+    val range = lessonRange(id)
+    return when (lessonOperator(id)) {
+        MathOperator.Plus -> range.flatMap { a -> range.map { b -> a to b } }
+        MathOperator.Minus ->
+            range.flatMap { op2 -> range.map { answer -> (op2 + answer) to op2 } }
+        MathOperator.Times -> range.flatMap { a -> range.map { b -> a to b } }
+            .filter { (a, b) -> a * b <= MAX_PRODUCT_L1 }
     }
 }
 

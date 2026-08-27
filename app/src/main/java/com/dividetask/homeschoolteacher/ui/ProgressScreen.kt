@@ -293,7 +293,7 @@ fun ProgressScreen(
                 fontSize = 12.sp,
                 color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f),
             )
-            MathStreakGrid(mathStreaks, GridOperation.Add)
+            MathStreakGrid(mathStreaks, GridOperation.Add, rows = 8, cols = 8)
         }
 
         Section(LessonId.HorizontalAddition0) {
@@ -350,7 +350,7 @@ fun ProgressScreen(
                 fontSize = 12.sp,
                 color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f),
             )
-            MathStreakGrid(subtractionStreaks, GridOperation.Subtract)
+            MathStreakGrid(subtractionStreaks, GridOperation.Subtract, rows = 16, cols = 8)
         }
 
         Section(LessonId.HorizontalSubtraction0) {
@@ -674,11 +674,19 @@ private const val EASY_CELL_NOTE =
     " Easy cells — the ones a learner gets right on sight — go green " +
         "after one correct answer instead of two, and come up half as often."
 
+/**
+ * Coverage for one arithmetic grid. [rows] and [cols] bound it to the
+ * cells the lessons can actually reach — the stored array is wider than
+ * any lesson needs, and drawing all of it would be a wall of zeros.
+ */
 @Composable
-private fun MathStreakGrid(streaks: List<List<Int>>, operation: GridOperation) {
+private fun MathStreakGrid(
+    streaks: List<List<Int>>,
+    operation: GridOperation,
+    rows: Int,
+    cols: Int,
+) {
     if (streaks.isEmpty()) return
-    val rows = streaks.size
-    val cols = streaks[0].size
     Column(
         modifier = Modifier.fillMaxWidth(),
         verticalArrangement = Arrangement.spacedBy(2.dp),
@@ -688,19 +696,19 @@ private fun MathStreakGrid(streaks: List<List<Int>>, operation: GridOperation) {
             horizontalArrangement = Arrangement.spacedBy(2.dp),
         ) {
             Box(modifier = Modifier.heightIn(min = 22.dp).padding(end = 2.dp))
-            (0 until cols).forEach { c ->
+            (0..cols).forEach { c ->
                 HeaderCell(c.toString(), modifier = Modifier.weight(1f))
             }
         }
-        (0 until rows).forEach { r ->
+        (0..rows).forEach { r ->
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(2.dp),
             ) {
                 HeaderCell(r.toString())
-                (0 until cols).forEach { c ->
+                (0..cols).forEach { c ->
                     StreakCell(
-                        streaks[r][c],
+                        streaks.getOrNull(r)?.getOrNull(c) ?: 0,
                         modifier = Modifier.weight(1f),
                         target = PracticeGrid.target(operation, r, c),
                     )

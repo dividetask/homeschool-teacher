@@ -50,13 +50,16 @@ STANDARD = {
 def add_params(level: int, operator: str, **extra) -> Dict[str, object]:
     """Addition or subtraction at ``level``.
 
-    Subtraction takes the same range as addition and adds ``ordered``, so
-    only pairs with `op1 >= op2` are asked and no answer is negative.
+    Subtraction is built the way division is: the number taken away and
+    the answer both come from the family range, and the number they come
+    off is their sum, so it runs to twice the ceiling and no answer is
+    ever negative (docs/lessons.md - Standard operand ranges).
     """
     span = STANDARD[("addsub", level)]["operands"]
     params: Dict[str, object] = {"left": span, "right": span, "operator": operator}
     if operator == "-":
-        params["ordered"] = True
+        params["left"] = (span[0], span[1] * 2)
+        params["derived"] = "subtraction"
     params.update(extra)
     return params
 

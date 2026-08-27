@@ -134,20 +134,27 @@ def _split_flags(count: int, rng: random.Random) -> bool:
 def arithmetic_cells(params) -> List[Tuple[int, int]]:
     """Every (left, right) the sheet may ask.
 
-    Usually the two ranges crossed, but a sheet may cap the answer —
-    Number Line Multiplication Level 1 drops anything reaching 30 so the
-    line stays countable, matching the lesson. Both the generator and the
+    Usually the two ranges crossed, but subtraction derives its first
+    operand from the answer (see below) and a sheet may cap the answer —
+    Multiplication Level 1 drops anything past 40 so the number line
+    stays countable, matching the lesson. Both the generator and the
     number-line sizing ask here, so a sheet is never scaled for a problem
     it cannot show.
     """
     lo_l, hi_l = params["left"]
     lo_r, hi_r = params["right"]
     operator = params["operator"]
+    if params.get("derived") == "subtraction":
+        # Subtraction is built from the answer and the number taken away,
+        # both from the family range; the number they come off is their
+        # sum. Same construction as division, so an answer is always in
+        # range and never negative.
+        return [
+            (right + answer, right)
+            for right in range(lo_r, hi_r + 1)
+            for answer in range(lo_r, hi_r + 1)
+        ]
     cells = [(a, b) for a in range(lo_l, hi_l + 1) for b in range(lo_r, hi_r + 1)]
-    if params.get("ordered"):
-        # Subtraction: both operands come from the same range, but only
-        # the pairs that leave a non-negative answer are asked.
-        cells = [(a, b) for a, b in cells if a >= b]
     ceiling = params.get("answer_max")
     if ceiling is not None:
         cells = [(a, b) for a, b in cells if _apply(operator, a, b) <= ceiling]
