@@ -132,6 +132,7 @@ fun ProgressScreen(
         LessonId.MathNumberLine,
         LessonId.CountingSubtraction0, LessonId.HorizontalSubtraction0,
         LessonId.VerticalSubtraction0, LessonId.NumberLineSubtraction0,
+        LessonId.CountingSubtraction1,
         LessonId.HorizontalMultiplication0, LessonId.VerticalMultiplication0,
         LessonId.NumberLineMultiplication0,
         LessonId.HorizontalMultiplication1, LessonId.VerticalMultiplication1,
@@ -364,6 +365,18 @@ fun ProgressScreen(
             InfoRow("Correct streak", "${mathLessonStreaks[LessonId.NumberLineSubtraction0]} / 4")
         }
 
+        Section(LessonId.CountingSubtraction1) {
+            InfoRow("Correct streak", "${mathLessonStreaks[LessonId.CountingSubtraction1]} / 4")
+            Text(
+                text = "Level 1: op1 ∈ 8..16, op2 ∈ 0..8 — the inverse of " +
+                    "Addition Level 1, whose sums land in that same range. " +
+                    "Shares the subtraction grid above (its 8..16 slice)." +
+                    EASY_CELL_NOTE,
+                fontSize = 12.sp,
+                color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f),
+            )
+        }
+
         Section(LessonId.CountingMultiplication0) {
             InfoRow("Correct (lifetime)", multiplicationState.correctCount.toString())
             InfoRow("Wrong (lifetime)", multiplicationState.wrongCount.toString())
@@ -452,7 +465,7 @@ fun ProgressScreen(
             )
             Text(
                 text = "Same problems as Level 0, but the screen always puts " +
-                    "out six pens instead of one per group, so the sharing no " +
+                    "out eight pens instead of one per group, so the sharing no " +
                     "longer hands over the answer. Keeps its own coverage — " +
                     "Level 0's does not count towards it.",
                 fontSize = 12.sp,

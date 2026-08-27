@@ -29,6 +29,7 @@ enum class LessonId {
     HorizontalSubtraction0,
     VerticalSubtraction0,
     NumberLineSubtraction0,
+    CountingSubtraction1,
     CountingMultiplication0,
     // Fill-in-the-operands lessons. One per operation and level as they are
     // written; only multiplication has one so far.
@@ -143,6 +144,12 @@ object Lessons {
         LessonDefinition(LessonId.HorizontalSubtraction0, "Horizontal Subtraction — Level 0", Category.Math, ADDITION_L1),
         LessonDefinition(LessonId.VerticalSubtraction0, "Vertical Subtraction — Level 0", Category.Math, ADDITION_L1),
         LessonDefinition(LessonId.NumberLineSubtraction0, "Number Line Subtraction — Level 0", Category.Math, ADDITION_L1),
+        // Subtraction — Level 1. The inverse of Addition Level 1: that tier
+        // adds operands 0..8 to reach 0..16, this one takes 0..8 back off a
+        // number in 8..16, so it is the same family of facts read the other
+        // way round. Counting only for now — the symbolic presentations stay
+        // at Level 0.
+        LessonDefinition(LessonId.CountingSubtraction1, "Counting Subtraction — Level 1", Category.Math, SUBTRACTION_L0),
         // Counting Multiplication unlocks after the whole Subtraction
         // L0 group is passed. The Level 0 presentations then run in a fixed
         // order: Counting 0 first, then Number Line 0, then the remaining

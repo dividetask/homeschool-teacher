@@ -38,3 +38,6 @@ Run the unit tests for the lesson-selection logic with:
 - `docs/code.md` — how the code is organized and how to add a lesson.
 - `app/src/main/assets/config.yaml` — runtime-tunable word lists and
   session settings.
+- `worksheets/` — a standalone Linux command-line tool that generates
+  printable PDF practice sheets for the math lessons. Nothing to do with
+  the Android build; see `worksheets/README.md`.

@@ -72,10 +72,13 @@ object Storage {
     }
 
     // --- Math (Addition) ---
+    // 20x20 to match the 0..19 indexing docs/lessons.md gives the addition
+    // and subtraction grids. Counting Subtraction Level 1 reaches op1 = 16,
+    // which the old 16-wide array could not hold.
     fun loadMathStreaks(): Array<IntArray> {
         val p = prefs()
-        val out = Array(16) { IntArray(16) }
-        for (a in 0..15) for (b in 0..15) {
+        val out = Array(20) { IntArray(20) }
+        for (a in 0..19) for (b in 0..19) {
             out[a][b] = p.getInt("math.streak.$a.$b", 0)
         }
         return out
@@ -100,8 +103,8 @@ object Storage {
     // --- Math (Subtraction) ---
     fun loadSubtractionStreaks(): Array<IntArray> {
         val p = prefs()
-        val out = Array(16) { IntArray(16) }
-        for (a in 0..15) for (b in 0..15) {
+        val out = Array(20) { IntArray(20) }
+        for (a in 0..19) for (b in 0..19) {
             out[a][b] = p.getInt("subtraction.streak.$a.$b", 0)
         }
         return out
@@ -117,8 +120,8 @@ object Storage {
     // from the counting-multiplication grid (`multiplication.streak`).
     fun loadMultiplicationGridStreaks(): Array<IntArray> {
         val p = prefs()
-        val out = Array(16) { IntArray(16) }
-        for (a in 0..15) for (b in 0..15) {
+        val out = Array(20) { IntArray(20) }
+        for (a in 0..19) for (b in 0..19) {
             out[a][b] = p.getInt("multgrid.streak.$a.$b", 0)
         }
         return out

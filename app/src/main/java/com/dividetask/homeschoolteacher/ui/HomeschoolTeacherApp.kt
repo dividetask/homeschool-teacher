@@ -243,6 +243,7 @@ fun HomeschoolTeacherApp() {
                         LessonId.HorizontalSubtraction0,
                         LessonId.VerticalSubtraction0,
                         LessonId.NumberLineSubtraction0,
+                        LessonId.CountingSubtraction1,
                         LessonId.HorizontalMultiplication0,
                         LessonId.VerticalMultiplication0,
                         LessonId.NumberLineMultiplication0,

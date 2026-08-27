@@ -132,4 +132,63 @@ class PracticeGridTest {
         )
         assertEquals(3 to 4, picked)
     }
+
+    /** The division lessons' cell space: divisor 1..6, dividend a multiple of it up to 24. */
+    private val divisionCells: List<Pair<Int, Int>> =
+        (1..6).flatMap { divisor ->
+            (1..24 / divisor).map { quotient -> divisor * quotient to divisor }
+        }
+
+    @Test
+    fun `dividing by one owns most of the division grid`() {
+        // The premise for balancing: it is not that the weight is wrong,
+        // it is that the cell space is lopsided.
+        assertEquals(58, divisionCells.size)
+        assertEquals(24, divisionCells.count { (_, divisor) -> divisor == 1 })
+        assertEquals(4, divisionCells.count { (_, divisor) -> divisor == 6 })
+    }
+
+    @Test
+    fun `balancing on the divisor stops one crowding out the rest`() {
+        val random = Random(seed = 7)
+        val draws = 12_000
+        val counts = IntArray(7)
+        repeat(draws) {
+            val (_, divisor) = PracticeGrid.choose(
+                cells = divisionCells,
+                operation = GridOperation.Divide,
+                value = { _, _ -> PracticeGrid.CELL_TARGET },   // fully covered: draws from the whole grid
+                previous = null,
+                random = random,
+                balanceBy = { _, divisor -> divisor },
+            )
+            counts[divisor]++
+        }
+        // Divisor 1 is easy, so it lands at half a share; 2..6 are level.
+        val one = counts[1].toDouble() / draws
+        assertTrue("÷1 share was $one", abs(one - 1.0 / 11.0) < 0.02)
+        for (divisor in 2..6) {
+            val share = counts[divisor].toDouble() / draws
+            assertTrue("÷$divisor share was $share", abs(share - 2.0 / 11.0) < 0.02)
+        }
+    }
+
+    @Test
+    fun `without balancing, dividing by one dominates`() {
+        val random = Random(seed = 7)
+        val draws = 12_000
+        var byOne = 0
+        repeat(draws) {
+            val (_, divisor) = PracticeGrid.choose(
+                cells = divisionCells,
+                operation = GridOperation.Divide,
+                value = { _, _ -> PracticeGrid.CELL_TARGET },
+                previous = null,
+                random = random,
+            )
+            if (divisor == 1) byOne++
+        }
+        // 24 easy cells at half weight against 34 ordinary ones.
+        assertTrue("÷1 share was ${byOne.toDouble() / draws}", byOne.toDouble() / draws > 0.2)
+    }
 }

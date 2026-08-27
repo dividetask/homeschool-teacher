@@ -47,6 +47,17 @@ private const val LESSON_STREAK_TARGET = 4
 /** A run of this many correct in a row passes any lesson outright. */
 private const val RUN_TARGET = 8
 
+/**
+ * Ceiling on the product for Number Line Multiplication Level 1.
+ *
+ * The other two Level 1 presentations type the answer, so an 81 costs
+ * nothing; the number line has to *draw* every integer up to the answer,
+ * and a line to 90 is a smear of unreadable ticks on a phone. Capping the
+ * product keeps the line countable, which is the whole point of that
+ * screen.
+ */
+private const val NUMBER_LINE_MAX_PRODUCT = 30
+
 private val SUPPORTED_LESSONS = setOf(
     // Addition L0
     LessonId.MathPictures,
@@ -63,6 +74,8 @@ private val SUPPORTED_LESSONS = setOf(
     LessonId.HorizontalSubtraction0,
     LessonId.VerticalSubtraction0,
     LessonId.NumberLineSubtraction0,
+    // Subtraction L1 (counting only)
+    LessonId.CountingSubtraction1,
     // Multiplication equations (tap the product), operands 0..4
     LessonId.HorizontalMultiplication0,
     LessonId.VerticalMultiplication0,
@@ -77,7 +90,8 @@ private fun lessonOperator(id: LessonId): MathOperator = when (id) {
     LessonId.CountingSubtraction0,
     LessonId.HorizontalSubtraction0,
     LessonId.VerticalSubtraction0,
-    LessonId.NumberLineSubtraction0 -> MathOperator.Minus
+    LessonId.NumberLineSubtraction0,
+    LessonId.CountingSubtraction1 -> MathOperator.Minus
     LessonId.HorizontalMultiplication0,
     LessonId.VerticalMultiplication0,
     LessonId.NumberLineMultiplication0,
@@ -114,6 +128,9 @@ private fun lessonLeftRange(id: LessonId): IntRange = when (id) {
     LessonId.HorizontalSubtraction0,
     LessonId.VerticalSubtraction0,
     LessonId.NumberLineSubtraction0 -> 4..9
+    // Level 1 takes 0..8 off a number in 8..16 — the inverse of the
+    // Addition Level 1 space, whose sums land in exactly that range.
+    LessonId.CountingSubtraction1 -> 8..16
     LessonId.HorizontalMultiplication0,
     LessonId.VerticalMultiplication0,
     LessonId.NumberLineMultiplication0 -> 0..4
@@ -137,6 +154,7 @@ private fun lessonRightRange(id: LessonId): IntRange = when (id) {
     LessonId.HorizontalSubtraction0,
     LessonId.VerticalSubtraction0,
     LessonId.NumberLineSubtraction0 -> 0..4
+    LessonId.CountingSubtraction1 -> 0..8
     LessonId.HorizontalMultiplication0,
     LessonId.VerticalMultiplication0,
     LessonId.NumberLineMultiplication0 -> 0..4
@@ -146,10 +164,29 @@ private fun lessonRightRange(id: LessonId): IntRange = when (id) {
     else -> 0..4
 }
 
+/**
+ * Every (op1, op2) a lesson may ask.
+ *
+ * Usually just the operand ranges crossed, but Number Line Multiplication
+ * Level 1 additionally drops any pair whose product would run the line off
+ * the end (see [NUMBER_LINE_MAX_PRODUCT]). Both the pass check and the
+ * problem picker ask here, so the cells a lesson is graded on are exactly
+ * the cells it can be shown.
+ */
+private fun lessonCells(id: LessonId): List<Pair<Int, Int>> {
+    val cells = lessonLeftRange(id).flatMap { a -> lessonRightRange(id).map { b -> a to b } }
+    return when (id) {
+        LessonId.NumberLineMultiplication1 ->
+            cells.filter { (a, b) -> a * b < NUMBER_LINE_MAX_PRODUCT }
+        else -> cells
+    }
+}
+
 private fun isPictureLesson(id: LessonId): Boolean = when (id) {
     LessonId.MathPictures,
     LessonId.CountingAddition1,
-    LessonId.CountingSubtraction0 -> true
+    LessonId.CountingSubtraction0,
+    LessonId.CountingSubtraction1 -> true
     else -> false
 }
 
@@ -310,11 +347,9 @@ class MathViewModel : ViewModel() {
     private fun evaluatePassedFlags() {
         SUPPORTED_LESSONS.forEach { id ->
             if (manualOverride[id] == true) return@forEach
-            val leftRange = lessonLeftRange(id)
-            val rightRange = lessonRightRange(id)
             val operator = lessonOperator(id)
             val grid = gridFor(operator)
-            val cells = leftRange.flatMap { a -> rightRange.map { b -> a to b } }
+            val cells = lessonCells(id)
             val cellsCovered = PracticeGrid.covered(cells, gridOperation(operator)) { a, b ->
                 grid[a][b]
             }
@@ -354,11 +389,9 @@ class MathViewModel : ViewModel() {
     private fun snapshot(grid: Array<IntArray>): List<List<Int>> = grid.map { it.toList() }
 
     private fun chooseProblem(previous: MathProblem?, lesson: LessonId): MathProblem {
-        val leftRange = lessonLeftRange(lesson)
-        val rightRange = lessonRightRange(lesson)
         val operator = lessonOperator(lesson)
         val grid = gridFor(operator)
-        val allCells = leftRange.flatMap { a -> rightRange.map { b -> a to b } }
+        val allCells = lessonCells(lesson)
 
         val (left, right) = PracticeGrid.choose(
             cells = allCells,

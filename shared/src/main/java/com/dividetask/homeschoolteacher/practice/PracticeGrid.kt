@@ -26,6 +26,21 @@ enum class GridOperation { Add, Subtract, Multiply, Divide }
  * - whenever a pool is drawn from, they carry [EASY_CELL_WEIGHT] — half
  *   the weight of an ordinary cell — so they come up half as often both
  *   while the lesson is still being covered and afterwards.
+ *
+ * ## Balanced operands
+ *
+ * A lesson's cells are not always spread evenly across its operands.
+ * Division is the clear case: the dividend runs 1..24 and only the pairs
+ * that divide exactly are ever asked, so `÷ 1` owns 24 of the 58 cells
+ * while `÷ 5` and `÷ 6` own four each. Drawing uniformly over cells
+ * spends a quarter of every round dividing by one, and halving the easy
+ * cells only takes that to an eighth — the problem is the shape of the
+ * cell space, not the weight of any one cell.
+ *
+ * A lesson can pass [choose] a `balanceBy` key. Every distinct key value
+ * then comes up equally often however many cells it owns, because a
+ * cell's weight is divided by the number of cells in the pool sharing its
+ * key. It multiplies with the easy weight rather than replacing it.
  */
 object PracticeGrid {
 
@@ -94,6 +109,9 @@ object PracticeGrid {
      * @param cells every cell the lesson can ask, as `(a, b)`.
      * @param value current coverage count of a cell.
      * @param previous the cell just asked, avoided when there is a choice.
+     * @param balanceBy optional key whose every value should come up
+     *   equally often regardless of how many cells carry it — see
+     *   "Balanced operands" above. Division passes the divisor.
      */
     fun choose(
         cells: List<Pair<Int, Int>>,
@@ -101,15 +119,17 @@ object PracticeGrid {
         value: (Int, Int) -> Int,
         previous: Pair<Int, Int>?,
         random: Random = Random,
+        balanceBy: ((Int, Int) -> Int)? = null,
     ): Pair<Int, Int> = choose(
         cells = cells,
         value = { (a, b) -> value(a, b) },
+        previous = previous,
+        random = random,
         target = { (a, b) -> target(operation, a, b) },
         weight = { (a, b) ->
             if (isEasy(operation, a, b)) EASY_CELL_WEIGHT else 1.0
         },
-        previous = previous,
-        random = random,
+        balanceBy = balanceBy?.let { key -> { (a, b): Pair<Int, Int> -> key(a, b) } },
     )
 
     /**
@@ -125,6 +145,7 @@ object PracticeGrid {
         random: Random = Random,
         target: (T) -> Int = { CELL_TARGET },
         weight: (T) -> Double = { 1.0 },
+        balanceBy: ((T) -> Int)? = null,
     ): T {
         require(cells.isNotEmpty()) { "No cells to choose from" }
         val behind = cells.filter { value(it) < target(it) }
@@ -139,15 +160,27 @@ object PracticeGrid {
         } else {
             basePool
         }
-        return weightedPick(pool, weight, random)
+        return weightedPick(pool, weight, balanceBy, random)
     }
 
     private fun <T> weightedPick(
         pool: List<T>,
         weight: (T) -> Double,
+        balanceBy: ((T) -> Int)?,
         random: Random,
     ): T {
-        val weights = pool.map(weight)
+        // Cells sharing a balance key split one key's worth of weight
+        // between them, so every key is drawn equally often however many
+        // cells it owns.
+        val share: Map<Int, Int> = if (balanceBy == null) {
+            emptyMap()
+        } else {
+            pool.groupingBy(balanceBy).eachCount()
+        }
+        val weights = pool.map { cell ->
+            val w = weight(cell)
+            if (balanceBy == null) w else w / (share[balanceBy(cell)] ?: 1)
+        }
         var r = random.nextDouble(weights.sum())
         for (i in pool.indices) {
             if (r < weights[i]) return pool[i]

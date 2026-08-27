@@ -86,6 +86,16 @@ homeschoolteacher/
     └── RhymingWords.kt / RhymingWordsViewModel.kt / RhymingWordsScreen.kt
 ```
 
+`shared/.../practice/PracticeGrid.kt` holds the shared grid policy: which
+cell a lesson asks next and how many correct answers a cell needs to
+count as covered. Easy cells (adding or subtracting zero, multiplying by
+zero or one, dividing by one) need one instead of two and are drawn at
+half weight. A lesson may also pass `balanceBy` to make every value of
+one operand come up equally often — division does, on the divisor, since
+every dividend from 1 to 24 divides by one and would otherwise fill a
+quarter of the round. It is pure, so `PracticeGridTest` exercises it
+without Android.
+
 Pure-Kotlin logic lives in `shared/src/main/java/...`: `lesson/Lesson.kt`
 (LessonId + registry), `lesson/LessonRoulette.kt` (random selection),
 `practice/PracticeGrid.kt` (which operand cell a math lesson asks next,
@@ -117,7 +127,7 @@ enum class LessonId {
     BinaryOps0, BinaryOps1,
     CountingDivision0, CountingDivision1,
     CountingSubtraction0, HorizontalSubtraction0,
-    VerticalSubtraction0, NumberLineSubtraction0,
+    VerticalSubtraction0, NumberLineSubtraction0, CountingSubtraction1,
     CountingMultiplication0, MultiplicationOperands0,
     LetterSounds0, Phonemes0, Reading0, SightWords0, SightWords1, RhymingWords0,
 }
@@ -298,14 +308,17 @@ All persisted state lives in one `SharedPreferences` file named
                                         Set/save through
                                         `Storage.loadWinStreak/saveWinStreak`.
 - `ttt.{player|cpu|draw}Score`       — aggregate scoreboard.
-- `math.streak.<x>.<y>`              — 16×16 addition cell *grid* (a
+- `math.streak.<x>.<y>`              — 20×20 addition cell *grid* (a
                                         coverage map, NOT a win streak),
                                         shared by every addition variant
                                         (Counting, Vertical, Horizontal,
                                         Number Line) at both difficulties.
 - `math.{correct|wrong}`             — lifetime counters.
-- `subtraction.streak.<x>.<y>`       — 16×16 subtraction cell grid (shared
+- `subtraction.streak.<x>.<y>`       — 20×20 subtraction cell grid (shared
                                         by every subtraction variant).
+                                        Counting Subtraction 1 reaches
+                                        op1 = 16, so the grids are the
+                                        0..19 the docs specify, not 0..15.
 - `division.streak.<lvl>.<x>.<y>`    — 2×25×7 division coverage grid,
                                         level × dividend × divisor. Only the
                                         cells that divide evenly are ever
@@ -372,6 +385,29 @@ used (a non-loss streak) is now shared by all categories:
 
 A learner can also be passed by hand from the Progress screen (see the
 "Passed" switch below), which pins the flag via `manualOverride`.
+
+## Known divergences from `docs/lessons.md`
+
+`docs/lessons.md` is the spec and the worksheet generator follows it; the
+Android code has not caught up on these. None is a bug in the sense of
+crashing — the app works, it just teaches slightly different numbers than
+the spec now says.
+
+| Spec (`docs/lessons.md`)                                   | `MathViewModel.kt` / division VM today |
+| ---------------------------------------------------------- | -------------------------------------- |
+| Counting Addition L0 `op1, op2 ∈ 0..4`                      | `1..4` (avoids drawing an empty group) |
+| Addition L1 (all four) `0..8`                               | `0..9`                                 |
+| Subtraction L0 `op1, op2 ∈ 0..4`, `op1 >= op2`              | `op1 ∈ 4..9`, `op2 ∈ 0..4`             |
+| Subtraction L1 `op1, op2 ∈ 0..8`, `op1 >= op2`              | `op1 ∈ 8..16`, `op2 ∈ 0..8`            |
+| Multiplication L1 `X, Y ∈ 0..8`, product `<= 40` everywhere | `0..9`, capped at 30 on the number line only |
+| Counting Multiplication L1 operands `0..8`                  | `1..4`, and its operand picker only offers `1..4` |
+| Division L0 divisor/quotient `1..4`, dividend `<= 16`       | divisor `1..6`, dividend `<= 24`       |
+| Division L1 divisor/quotient `1..8`, dividend `<= 40`       | same as L0                             |
+| Division L1 screen shows eight pens                         | six                                    |
+
+Counting Multiplication L1 is the one that needs more than a range edit:
+its answer surface is an Operand Picker of `1..4`, so widening the range
+means widening the picker too.
 
 ## Config (`AppConfig.kt` + `config.yaml`)
 
