@@ -311,6 +311,37 @@ The animals shrink to fit as the total grows, so the biggest problem the
 Level 1 range allows still counts along a single row, and the count runs
 a little quicker above eight so a long one does not drag.
 
+### Counting Multiplication Intro
+
+The worked example that opens Counting Multiplication. `X × Y` is drawn
+as X boxed groups of Y animals, the picture the lesson uses, and what
+that means is said out loud: "3 times 4 means 3 groups of 4. There are 4
+zebras in each group, and 3 groups." One group is outlined while the size
+of a group is named, then each in turn while the groups are counted.
+Every animal is then counted straight through, its number appearing over
+it, and it closes on "3 times 4 equals 12".
+
+### Multiplication Operands Intro
+
+Multiplication Operands asks the question backwards — the picture is
+given and the two numbers are missing — so its intro reads the picture.
+The boxed groups appear above the lesson's `_ × _`, the groups are
+counted first, each numbered as it is counted, and that count drops into
+the first blank; then one group is outlined and its animals counted, and
+that drops into the second. It closes on "3 times 4".
+
+### Counting Division Intro
+
+The dividend stands loose above a row of empty pens. The animals are
+dealt into the pens one at a time, round and round, so the sharing
+happens in view rather than off screen; the pen receiving each animal
+lights as it lands. When the last one is placed, one pen is outlined and
+its animals counted — that count is the answer, and the same in every
+pen: "4 zebras in every pen. 12 divided by 3 equals 4."
+
+The example is drawn from the level's own problems, and never has one
+pen or one animal per pen: a share-out has to share.
+
 ### Letter Sound Clip Screen
 A large tappable speaker button in the centre of the screen. On each new
 problem it plays a pre-recorded clip of a word (`<x>3.mp3`); tapping the

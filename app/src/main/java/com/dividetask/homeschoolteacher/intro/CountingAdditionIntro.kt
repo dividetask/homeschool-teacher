@@ -8,14 +8,12 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkHorizontally
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.material3.MaterialTheme
@@ -31,10 +29,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.Dp
-import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.dividetask.homeschoolteacher.Tts
@@ -175,46 +170,5 @@ internal fun CountingAdditionIntro(
                 }
             }
         }
-    }
-}
-
-/**
- * One animal with room above it for its number, which appears when the
- * count reaches it. The space is always reserved so nothing shifts as
- * the numbers arrive.
- */
-@Composable
-private fun CountedAnimal(
-    emoji: String,
-    position: Int,
-    counted: Int,
-    slot: Dp,
-    emojiSize: TextUnit,
-    numeralSize: TextUnit,
-) {
-    val reached = position <= counted
-    Column(
-        horizontalAlignment = Alignment.CenterHorizontally,
-        modifier = Modifier.width(slot),
-    ) {
-        Box(
-            modifier = Modifier.height(slot * 0.6f),
-            contentAlignment = Alignment.Center,
-        ) {
-            if (reached) {
-                Text(
-                    text = position.toString(),
-                    fontSize = numeralSize,
-                    fontWeight = FontWeight.Bold,
-                    fontFamily = FontFamily.Monospace,
-                    color = MaterialTheme.colorScheme.primary,
-                )
-            }
-        }
-        Text(
-            text = emoji,
-            fontSize = emojiSize,
-            modifier = Modifier.alpha(if (counted == 0 || reached) 1f else 0.45f),
-        )
     }
 }

@@ -2,6 +2,7 @@ package com.dividetask.homeschoolteacher.intro
 
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import com.dividetask.homeschoolteacher.division.divisionCells
 import com.dividetask.homeschoolteacher.lesson.LessonId
 import com.dividetask.homeschoolteacher.math.lessonRange
 import kotlin.random.Random
@@ -23,7 +24,11 @@ object LessonIntros {
     /** Whether [id] opens with a worked example. */
     fun exists(id: LessonId): Boolean = when (id) {
         LessonId.MathPictures,
-        LessonId.CountingAddition1 -> true
+        LessonId.CountingAddition1,
+        LessonId.CountingMultiplication0,
+        LessonId.MultiplicationOperands0,
+        LessonId.CountingDivision0,
+        LessonId.CountingDivision1 -> true
         else -> false
     }
 
@@ -37,6 +42,22 @@ object LessonIntros {
             LessonId.MathPictures,
             LessonId.CountingAddition1 -> CountingAdditionIntro(
                 range = lessonRange(id),
+                onFinished = onFinished,
+                modifier = modifier,
+            )
+            LessonId.CountingMultiplication0 -> CountingMultiplicationIntro(
+                range = lessonRange(id),
+                onFinished = onFinished,
+                modifier = modifier,
+            )
+            LessonId.MultiplicationOperands0 -> MultiplicationOperandsIntro(
+                range = lessonRange(id),
+                onFinished = onFinished,
+                modifier = modifier,
+            )
+            LessonId.CountingDivision0,
+            LessonId.CountingDivision1 -> CountingDivisionIntro(
+                cells = divisionCells(if (id == LessonId.CountingDivision1) 1 else 0),
                 onFinished = onFinished,
                 modifier = modifier,
             )

@@ -65,7 +65,11 @@ homeschoolteacher/
 │                            MathNumberLine.
 ├── intro/                   Worked examples played before a round.
 │   ├── LessonIntro.kt       Which lessons have one; shared operand roll.
-│   └── CountingAdditionIntro.kt
+│   ├── IntroPieces.kt       Counted animal, group box, sizing.
+│   ├── CountingAdditionIntro.kt
+│   ├── CountingMultiplicationIntro.kt
+│   ├── MultiplicationOperandsIntro.kt
+│   └── CountingDivisionIntro.kt
 │                            Not lessons: no state, no scoring. The
 │                            selector shows one at the start of a round
 │                            and the lesson follows when it ends.
