@@ -5,8 +5,8 @@ Please add the Kotlin plugin to the common parent project or the root project, t
 If the parent project does not need the plugin, add 'apply false' to the plugin line.
 See: https://docs.gradle.org/current/userguide/plugins.html#sec:subprojects_plugins_dsl
 The Kotlin plugin was loaded in the following projects: ':app', ':shared'
-> Task :shared:checkKotlinGradlePluginConfigurationErrors SKIPPED
 > Task :app:preBuild UP-TO-DATE
+> Task :shared:checkKotlinGradlePluginConfigurationErrors SKIPPED
 > Task :app:preDebugBuild UP-TO-DATE
 > Task :app:mergeDebugNativeDebugMetadata NO-SOURCE
 > Task :app:checkKotlinGradlePluginConfigurationErrors SKIPPED
@@ -49,11 +49,11 @@ The Kotlin plugin was loaded in the following projects: ':app', ':shared'
 > Task :app:dexBuilderDebug
 > Task :app:mergeDebugGlobalSynthetics UP-TO-DATE
 > Task :app:processDebugJavaRes
-> Task :app:mergeProjectDexDebug
 > Task :app:mergeDebugJavaResource
+> Task :app:mergeProjectDexDebug
 > Task :app:packageDebug
 > Task :app:createDebugApkListingFileRedirect UP-TO-DATE
 > Task :app:assembleDebug
 
-BUILD SUCCESSFUL in 1s
+BUILD SUCCESSFUL in 2s
 37 actionable tasks: 6 executed, 31 up-to-date
