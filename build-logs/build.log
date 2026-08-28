@@ -1,3 +1,4 @@
+Starting a Gradle Daemon (subsequent builds will be faster)
 
 The Kotlin Gradle plugin was loaded multiple times in different subprojects, which is not supported and may break the build. 
 This might happen in subprojects that apply the Kotlin plugins with the Gradle 'plugins { ... }' DSL if they specify explicit versions, even if the versions are equal.
@@ -10,6 +11,11 @@ The Kotlin plugin was loaded in the following projects: ':app', ':shared'
 > Task :app:preDebugBuild UP-TO-DATE
 > Task :app:mergeDebugNativeDebugMetadata NO-SOURCE
 > Task :app:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :shared:compileKotlin UP-TO-DATE
+> Task :shared:compileJava NO-SOURCE
+> Task :shared:processResources NO-SOURCE
+> Task :shared:classes UP-TO-DATE
+> Task :shared:jar UP-TO-DATE
 > Task :app:checkDebugAarMetadata UP-TO-DATE
 > Task :app:generateDebugResValues UP-TO-DATE
 > Task :app:mapDebugSourceSetPaths UP-TO-DATE
@@ -21,15 +27,10 @@ The Kotlin plugin was loaded in the following projects: ':app', ':shared'
 > Task :app:extractDeepLinksDebug UP-TO-DATE
 > Task :app:processDebugMainManifest UP-TO-DATE
 > Task :app:processDebugManifest UP-TO-DATE
-> Task :shared:compileKotlin FROM-CACHE
 > Task :app:processDebugManifestForPackage UP-TO-DATE
-> Task :shared:compileJava NO-SOURCE
-> Task :shared:processResources NO-SOURCE
-> Task :shared:classes UP-TO-DATE
-> Task :shared:jar
 > Task :app:processDebugResources UP-TO-DATE
-> Task :app:javaPreCompileDebug UP-TO-DATE
 > Task :app:compileDebugKotlin FROM-CACHE
+> Task :app:javaPreCompileDebug UP-TO-DATE
 > Task :app:compileDebugJavaWithJavac NO-SOURCE
 > Task :app:mergeDebugShaders UP-TO-DATE
 > Task :app:compileDebugShaders NO-SOURCE
@@ -42,7 +43,7 @@ The Kotlin plugin was loaded in the following projects: ':app', ':shared'
 > Task :app:processDebugJavaRes
 > Task :app:checkDebugDuplicateClasses UP-TO-DATE
 > Task :app:mergeExtDexDebug UP-TO-DATE
-> Task :app:mergeLibDexDebug FROM-CACHE
+> Task :app:mergeLibDexDebug UP-TO-DATE
 > Task :app:mergeProjectDexDebug FROM-CACHE
 > Task :app:mergeDebugJniLibFolders UP-TO-DATE
 > Task :app:mergeDebugNativeLibs UP-TO-DATE
@@ -55,5 +56,5 @@ The Kotlin plugin was loaded in the following projects: ':app', ':shared'
 > Task :app:createDebugApkListingFileRedirect UP-TO-DATE
 > Task :app:assembleDebug
 
-BUILD SUCCESSFUL in 602ms
-37 actionable tasks: 4 executed, 5 from cache, 28 up-to-date
+BUILD SUCCESSFUL in 5s
+37 actionable tasks: 3 executed, 3 from cache, 31 up-to-date
