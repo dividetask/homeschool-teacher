@@ -123,6 +123,13 @@ there to count.
 four pens of three, not three of four. Division follows from the same
 reading: the divisor is how many pens.
 
+**The picture sheets rule off each row.** A problem there is a picture
+with its equation above or below it, and without a divider the eye runs
+one problem's picture together with the next one's equation — children
+were answering the wrong one. The blocks centre their content in the row
+so the rule lands equidistant between the two problems it separates. The
+symbolic sheets are one line per problem and get no rules.
+
 **A zero operand is drawn by which operand it is**, so the two cases can
 be told apart: `0 × 5` is no groups at all and reads "(no groups)", while
 `5 × 0` is five groups that happen to be empty and draws five pens each
