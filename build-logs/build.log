@@ -6,8 +6,8 @@ Please add the Kotlin plugin to the common parent project or the root project, t
 If the parent project does not need the plugin, add 'apply false' to the plugin line.
 See: https://docs.gradle.org/current/userguide/plugins.html#sec:subprojects_plugins_dsl
 The Kotlin plugin was loaded in the following projects: ':app', ':shared'
-> Task :app:preBuild UP-TO-DATE
 > Task :shared:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :app:preBuild UP-TO-DATE
 > Task :app:preDebugBuild UP-TO-DATE
 > Task :app:mergeDebugNativeDebugMetadata NO-SOURCE
 > Task :app:checkKotlinGradlePluginConfigurationErrors SKIPPED
@@ -18,17 +18,15 @@ The Kotlin plugin was loaded in the following projects: ':app', ':shared'
 > Task :shared:jar UP-TO-DATE
 > Task :app:checkDebugAarMetadata UP-TO-DATE
 > Task :app:generateDebugResValues UP-TO-DATE
-> Task :app:mapDebugSourceSetPaths UP-TO-DATE
-> Task :app:generateDebugResources UP-TO-DATE
-> Task :app:mergeDebugResources UP-TO-DATE
-> Task :app:packageDebugResources UP-TO-DATE
-> Task :app:parseDebugLocalResources UP-TO-DATE
+> Task :app:mapDebugSourceSetPaths
+> Task :app:generateDebugResources
+> Task :app:packageDebugResources
 > Task :app:createDebugCompatibleScreenManifests UP-TO-DATE
 > Task :app:extractDeepLinksDebug UP-TO-DATE
-> Task :app:processDebugMainManifest UP-TO-DATE
-> Task :app:processDebugManifest UP-TO-DATE
-> Task :app:processDebugManifestForPackage UP-TO-DATE
-> Task :app:processDebugResources UP-TO-DATE
+> Task :app:parseDebugLocalResources
+> Task :app:processDebugMainManifest
+> Task :app:mergeDebugResources
+> Task :app:processDebugManifest
 > Task :app:javaPreCompileDebug UP-TO-DATE
 > Task :app:mergeDebugShaders UP-TO-DATE
 > Task :app:compileDebugShaders NO-SOURCE
@@ -45,6 +43,8 @@ The Kotlin plugin was loaded in the following projects: ':app', ':shared'
 > Task :app:validateSigningDebug UP-TO-DATE
 > Task :app:writeDebugAppMetadata UP-TO-DATE
 > Task :app:writeDebugSigningConfigVersions UP-TO-DATE
+> Task :app:processDebugManifestForPackage
+> Task :app:processDebugResources
 
 > Task :app:compileDebugKotlin
 w: file:///home/brett/Projects/homeschool-teacher/app/src/main/java/com/dividetask/homeschoolteacher/intro/NumberLineAdditionIntro.kt:126:29 'fun quadraticBezierTo(x1: Float, y1: Float, x2: Float, y2: Float): Unit' is deprecated. Use quadraticTo() for consistency with cubicTo().
@@ -60,4 +60,4 @@ w: file:///home/brett/Projects/homeschool-teacher/app/src/main/java/com/divideta
 > Task :app:assembleDebug
 
 BUILD SUCCESSFUL in 14s
-37 actionable tasks: 6 executed, 31 up-to-date
+37 actionable tasks: 15 executed, 22 up-to-date
