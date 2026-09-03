@@ -150,6 +150,15 @@ Each level keeps its own coverage: answering without the pens giving the
 answer away is the point of Level 1, so Level 0's coverage must not pass
 it. Default zero.
 
+### `division_equation_grid[level][dividend][divisor]`
+Integer 3D array, shaped like `division_grid` — `level ∈ 0..1`, dividend
+`0..40`, divisor `0..8` — and sparse for the same reason: only the pairs
+that divide exactly are ever asked. Coverage for the **symbolic**
+division presentations (Horizontal, Vertical, Number Line), shared by all
+three at a level and separate from the counting lesson's grid. Sharing
+animals out into pens is not the same skill as dividing from the numbers
+alone, so neither passes the other. Default zero.
+
 ### `lesson_passed[lesson]`
 Boolean, one per lesson. Sticky: once a lesson's pass criteria are met
 the flag is set to `true` and stays `true` even if streaks subsequently
@@ -228,8 +237,10 @@ A horizontal number line drawn above the equation, with the equation
 below (`X op Y = ?`). The number line:
 
 - **always starts at 0** and runs to
-  `next_multiple_of_ten(lesson_max_answer + 10)`, where
-  `lesson_max_answer` is the largest answer the lesson can ask — so the
+  `next_multiple_of_ten(lesson_line_max + 10)`, where `lesson_line_max`
+  is the largest answer the lesson can ask — except in division, where it
+  is the largest **dividend**, since that is the number a learner counts
+  along to work the answer out — so the
   line is the same length for every problem in a lesson (sizing it off
   the current answer instead would draw a stubby line for an easy
   problem, such as one with a zero operand, and a long one for the next),
@@ -862,6 +873,12 @@ over the next one.
 | 9        | Number Line Multiplication — Level 1| Math     | All symbolic Multiplication Diff 0 passed |
 | 11       | Counting Division — Level 0         | Math     | All symbolic Multiplication Diff 1 + Multiplication Construction 0 |
 | 11       | Counting Division — Level 1         | Math     | Counting Division 0 passed        |
+| 11       | Number Line Division — Level 0      | Math     | Counting Division 0 passed        |
+| 11       | Horizontal Division — Level 0       | Math     | Number Line Division 0 passed     |
+| 11       | Vertical Division — Level 0         | Math     | Number Line Division 0 passed     |
+| 11       | Horizontal Division — Level 1       | Math     | All symbolic Division Diff 0 passed |
+| 11       | Vertical Division — Level 1         | Math     | All symbolic Division Diff 0 passed |
+| 11       | Number Line Division — Level 1      | Math     | All symbolic Division Diff 0 passed |
 | 3        | Letter Sounds — Level 0             | Reading  | —                                 |
 | 3        | Phonemes — Level 0                  | Reading  | Letter Sounds 0                   |
 | 4        | Animals — Level 0                   | Reading  | Phonemes 0                        |
@@ -1433,6 +1450,54 @@ independently.
 - **Pass criteria:**
   `division_grid[1][dividend][divisor] >= cell_target(dividend, divisor)`
   for every askable cell **AND** `win_streak[11][1] >= 4`
+
+### Horizontal / Vertical / Number Line Division — Level 0
+- **Game UID:** 11
+- **Subject:** Division
+- **Difficulty:** 0
+- **Category:** Math
+- **Runs per round:** 4
+- **Unlock conditions:** Number Line Division 0 opens off Counting
+  Division 0; the Horizontal and Vertical presentations open off Number
+  Line Division 0 — the same order the multiplication presentations use.
+- **Screen:** the matching Horizontal / Vertical / Number Line Equation
+  Screen (`÷`). The number line runs to the largest **dividend** the
+  level asks, not to the answer: the dividend is what a learner counts
+  along to work a division out.
+- **Variables:** `division_equation_grid[0]`, plus each lesson's own
+  `win_streak`
+- **Random variables:** the standard range for this family and
+  Difficulty (see Rules § Standard operand ranges) — divisor and answer
+  `1..4`, dividend `≤ 16`
+- **Answer surface:** Numeric Grid (0..9) — the answer is the quotient,
+  at most 4 here, padded to a full row
+- **Problem selection:** standard math-grid selection over the askable
+  cells, **balanced on the divisor** (see Rules § Balanced operands)
+- **Pass criteria:**
+  `division_equation_grid[0][dividend][divisor] >= cell_target(dividend,
+  divisor)` for every askable cell **AND** `win_streak >= 4` (per lesson)
+
+### Horizontal / Vertical / Number Line Division — Level 1
+- **Game UID:** 11
+- **Subject:** Division
+- **Difficulty:** 1
+- **Category:** Math
+- **Runs per round:** 4
+- **Unlock conditions:** all three symbolic Division Level 0 lessons
+  passed.
+- **Screen:** as Level 0, with the number line running to 40.
+- **Variables:** `division_equation_grid[1]`, plus each lesson's own
+  `win_streak`
+- **Random variables:** divisor and answer `1..8`, dividend `≤ 40`
+- **Answer surface:** Numeric Grid (0..9) — the answer is at most 8
+- **Problem selection:** as Level 0
+- **Pass criteria:**
+  `division_equation_grid[1][dividend][divisor] >= cell_target(dividend,
+  divisor)` for every askable cell **AND** `win_streak >= 4` (per lesson)
+
+The three presentations share one grid per level but keep their own
+streaks, so they pass independently — mirroring the Multiplication
+Level 0 and Level 1 groups.
 
 ### Letter Sounds — Level 0
 - **Game UID:** 3

@@ -277,7 +277,13 @@ fun HomeschoolTeacherApp() {
                         LessonId.NumberLineMultiplication0,
                         LessonId.HorizontalMultiplication1,
                         LessonId.VerticalMultiplication1,
-                        LessonId.NumberLineMultiplication1 -> MathScreen(
+                        LessonId.NumberLineMultiplication1,
+                        LessonId.HorizontalDivision0,
+                        LessonId.VerticalDivision0,
+                        LessonId.NumberLineDivision0,
+                        LessonId.HorizontalDivision1,
+                        LessonId.VerticalDivision1,
+                        LessonId.NumberLineDivision1 -> MathScreen(
                             viewModel = math,
                             onCompleted = selector::onLessonInstanceCompleted,
                             modifier = Modifier.fillMaxWidth(),

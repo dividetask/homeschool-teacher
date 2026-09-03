@@ -42,6 +42,12 @@ enum class LessonId {
     NumberLineMultiplication1,
     CountingDivision0,
     CountingDivision1,
+    HorizontalDivision0,
+    VerticalDivision0,
+    NumberLineDivision0,
+    HorizontalDivision1,
+    VerticalDivision1,
+    NumberLineDivision1,
     LetterSounds0,
     Phonemes0,
     Reading0,
@@ -97,6 +103,13 @@ object Lessons {
         LessonId.HorizontalMultiplication1,
         LessonId.VerticalMultiplication1,
         LessonId.NumberLineMultiplication1,
+    )
+
+    /** The three symbolic Division presentations at Level 0. */
+    private val DIVISION_EQ_L0 = listOf(
+        LessonId.HorizontalDivision0,
+        LessonId.VerticalDivision0,
+        LessonId.NumberLineDivision0,
     )
 
     /** Everything past the multiplication basics — the gate for Division. */
@@ -184,6 +197,18 @@ object Lessons {
         // Level 1 lesson plus Multiplication Construction.
         LessonDefinition(LessonId.CountingDivision0, "Counting Division — Level 0", Category.Math, MULTIPLICATION_L1),
         LessonDefinition(LessonId.CountingDivision1, "Counting Division — Level 1", Category.Math, listOf(LessonId.CountingDivision0)),
+        // The symbolic division presentations, following the same order the
+        // multiplication ones do: the number line first, off the counting
+        // lesson, then the other two off it, then the whole Level 1 tier
+        // once all three Level 0 presentations are passed. They share one
+        // product-style coverage grid per level but keep their own streaks,
+        // so they pass independently.
+        LessonDefinition(LessonId.NumberLineDivision0, "Number Line Division — Level 0", Category.Math, listOf(LessonId.CountingDivision0)),
+        LessonDefinition(LessonId.HorizontalDivision0, "Horizontal Division — Level 0", Category.Math, listOf(LessonId.NumberLineDivision0)),
+        LessonDefinition(LessonId.VerticalDivision0, "Vertical Division — Level 0", Category.Math, listOf(LessonId.NumberLineDivision0)),
+        LessonDefinition(LessonId.HorizontalDivision1, "Horizontal Division — Level 1", Category.Math, DIVISION_EQ_L0),
+        LessonDefinition(LessonId.VerticalDivision1, "Vertical Division — Level 1", Category.Math, DIVISION_EQ_L0),
+        LessonDefinition(LessonId.NumberLineDivision1, "Number Line Division — Level 1", Category.Math, DIVISION_EQ_L0),
         // Letter Sounds is the head of the Reading chain: a recorded word
         // clip plays and the learner taps the letter it starts with.
         // Everything else in Reading now sits behind it (Phonemes requires

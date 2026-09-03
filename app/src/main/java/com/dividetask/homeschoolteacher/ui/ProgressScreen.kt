@@ -121,6 +121,7 @@ fun ProgressScreen(
     val divisionState by division.state.collectAsStateWithLifecycle()
 
     val subtractionStreaks by math.subtractionGrid.collectAsStateWithLifecycle()
+    val divisionEquationStreaks by math.divisionGrid.collectAsStateWithLifecycle()
     val multEquationStreaks by math.multiplicationGrid.collectAsStateWithLifecycle()
 
     // Per-lesson math streak (cells AND streak >= 4 are both required to
@@ -137,6 +138,12 @@ fun ProgressScreen(
         LessonId.NumberLineMultiplication0,
         LessonId.HorizontalMultiplication1, LessonId.VerticalMultiplication1,
         LessonId.NumberLineMultiplication1,
+        LessonId.HorizontalDivision0,
+        LessonId.VerticalDivision0,
+        LessonId.NumberLineDivision0,
+        LessonId.HorizontalDivision1,
+        LessonId.VerticalDivision1,
+        LessonId.NumberLineDivision1,
     ).associateWith { id ->
         // collectAsStateWithLifecycle inside a loop isn't possible here,
         // so we read the StateFlow's current value. The grid + lifetime
@@ -472,6 +479,47 @@ fun ProgressScreen(
                 color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f),
             )
             DivisionStreakGrid(divisionStreaks.getOrNull(1).orEmpty(), level = 1)
+        }
+
+        Section(LessonId.NumberLineDivision0) {
+            InfoRow("Correct streak", "${mathLessonStreaks[LessonId.NumberLineDivision0]} / 4")
+            Text(
+                text = "Division from the numbers alone, without the pens. " +
+                    "The three symbolic presentations share this grid but " +
+                    "keep their own streaks, and it is separate from the " +
+                    "counting lesson's — sharing animals out is not the " +
+                    "same skill." + EASY_CELL_NOTE,
+                fontSize = 12.sp,
+                color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f),
+            )
+            DivisionStreakGrid(divisionEquationStreaks.getOrNull(0).orEmpty(), level = 0)
+        }
+
+        Section(LessonId.HorizontalDivision0) {
+            InfoRow("Correct streak", "${mathLessonStreaks[LessonId.HorizontalDivision0]} / 4")
+        }
+
+        Section(LessonId.VerticalDivision0) {
+            InfoRow("Correct streak", "${mathLessonStreaks[LessonId.VerticalDivision0]} / 4")
+        }
+
+        Section(LessonId.NumberLineDivision1) {
+            InfoRow("Correct streak", "${mathLessonStreaks[LessonId.NumberLineDivision1]} / 4")
+            Text(
+                text = "The Level 1 slice of the same grid: divisor and " +
+                    "answer up to 8, dividend up to 40." + EASY_CELL_NOTE,
+                fontSize = 12.sp,
+                color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f),
+            )
+            DivisionStreakGrid(divisionEquationStreaks.getOrNull(1).orEmpty(), level = 1)
+        }
+
+        Section(LessonId.HorizontalDivision1) {
+            InfoRow("Correct streak", "${mathLessonStreaks[LessonId.HorizontalDivision1]} / 4")
+        }
+
+        Section(LessonId.VerticalDivision1) {
+            InfoRow("Correct streak", "${mathLessonStreaks[LessonId.VerticalDivision1]} / 4")
         }
 
         Section(LessonId.Reading0) {

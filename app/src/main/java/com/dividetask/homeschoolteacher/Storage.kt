@@ -166,6 +166,27 @@ object Storage {
             .apply()
     }
 
+    // --- Math (Division equations) ---
+    // Coverage for the symbolic division presentations — Horizontal,
+    // Vertical and Number Line — kept per level and separate from the
+    // counting lesson's grid, the way the multiplication equation grid is
+    // separate from the counting multiplication one. Doing it with pens is
+    // not the same as doing it from the numbers alone.
+    fun loadDivisionEquationStreaks(): Array<Array<IntArray>> =
+        Array(2) { level ->
+            Array(41) { dividend ->
+                IntArray(9) { divisor ->
+                    prefs().getInt("diveq.streak.$level.$dividend.$divisor", 0)
+                }
+            }
+        }
+
+    fun saveDivisionEquationStreak(level: Int, dividend: Int, divisor: Int, value: Int) {
+        prefs().edit()
+            .putInt("diveq.streak.$level.$dividend.$divisor", value)
+            .apply()
+    }
+
     // --- Tic Tac Toe ---
     fun loadTttScores(): Triple<Int, Int, Int> {
         val p = prefs()

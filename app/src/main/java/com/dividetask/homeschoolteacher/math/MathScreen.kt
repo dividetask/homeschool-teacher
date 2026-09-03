@@ -87,7 +87,23 @@ fun MathScreen(
         LessonId.HorizontalMultiplication1,
         LessonId.VerticalMultiplication1,
         LessonId.NumberLineMultiplication1 -> 40
+        // Division's answer is the quotient: at most 4 at Level 0 and 8 at
+        // Level 1, padded to a full row of buttons.
+        LessonId.HorizontalDivision0,
+        LessonId.VerticalDivision0,
+        LessonId.NumberLineDivision0,
+        LessonId.HorizontalDivision1,
+        LessonId.VerticalDivision1,
+        LessonId.NumberLineDivision1 -> 9
         else -> 9
+    }
+
+    // The number line is drawn to fit the numbers a lesson works with. For
+    // division that is the dividend it counts along, not the small answer.
+    val numberLineMax = when (active) {
+        LessonId.NumberLineDivision0 -> 16
+        LessonId.NumberLineDivision1 -> 40
+        else -> maxAnswer
     }
 
     val isTyped = active in TYPED_ANSWER_LESSONS
@@ -147,17 +163,21 @@ fun MathScreen(
             LessonId.NumberLineAddition0,
             LessonId.NumberLineSubtraction0,
             LessonId.NumberLineMultiplication0,
-            LessonId.NumberLineMultiplication1 -> NumberLineProblem(
+            LessonId.NumberLineMultiplication1,
+            LessonId.NumberLineDivision0,
+            LessonId.NumberLineDivision1 -> NumberLineProblem(
                 problem = problem,
                 answerText = answerText,
                 feedback = state.feedback,
-                maxAnswer = maxAnswer,
+                maxAnswer = numberLineMax,
             )
             LessonId.HorizontalAddition0,
             LessonId.HorizontalAddition1,
             LessonId.HorizontalSubtraction0,
             LessonId.HorizontalMultiplication0,
-            LessonId.HorizontalMultiplication1 -> HorizontalProblem(
+            LessonId.HorizontalMultiplication1,
+            LessonId.HorizontalDivision0,
+            LessonId.HorizontalDivision1 -> HorizontalProblem(
                 problem = problem,
                 answerText = answerText,
                 feedback = state.feedback,

@@ -330,6 +330,9 @@ All persisted state lives in one `SharedPreferences` file named
                                         Counting Subtraction 1 reaches
                                         op1 = 16, so the grids are the
                                         0..19 the docs specify, not 0..15.
+- `diveq.streak.<lvl>.<x>.<y>`       — division coverage for the symbolic
+                                        presentations, one grid per level,
+                                        separate from the counting lesson's.
 - `division.streak.<lvl>.<x>.<y>`    — 2×25×7 division coverage grid,
                                         level × dividend × divisor. Only the
                                         cells that divide evenly are ever

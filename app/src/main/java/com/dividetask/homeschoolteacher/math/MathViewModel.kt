@@ -2,6 +2,7 @@ package com.dividetask.homeschoolteacher.math
 
 import androidx.lifecycle.ViewModel
 import com.dividetask.homeschoolteacher.Storage
+import com.dividetask.homeschoolteacher.division.divisionCells
 import com.dividetask.homeschoolteacher.lesson.LessonId
 import com.dividetask.homeschoolteacher.practice.GridOperation
 import com.dividetask.homeschoolteacher.practice.PracticeGrid
@@ -13,7 +14,9 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlin.random.Random
 
-enum class MathOperator(val symbol: String) { Plus("+"), Minus("−"), Times("×") }
+enum class MathOperator(val symbol: String) {
+    Plus("+"), Minus("−"), Times("×"), DividedBy("÷")
+}
 
 data class MathProblem(
     val left: Int,
@@ -28,6 +31,9 @@ data class MathProblem(
         MathOperator.Plus -> left + right
         MathOperator.Minus -> left - right
         MathOperator.Times -> left * right
+        // left is the dividend, right the divisor; every problem asked
+        // divides exactly, so this is never a remainder.
+        MathOperator.DividedBy -> left / right
     }
 }
 
@@ -86,6 +92,13 @@ private val SUPPORTED_LESSONS = setOf(
     LessonId.HorizontalMultiplication1,
     LessonId.VerticalMultiplication1,
     LessonId.NumberLineMultiplication1,
+    // Division equations, both levels
+    LessonId.HorizontalDivision0,
+    LessonId.VerticalDivision0,
+    LessonId.NumberLineDivision0,
+    LessonId.HorizontalDivision1,
+    LessonId.VerticalDivision1,
+    LessonId.NumberLineDivision1,
 )
 
 private fun lessonOperator(id: LessonId): MathOperator = when (id) {
@@ -100,7 +113,24 @@ private fun lessonOperator(id: LessonId): MathOperator = when (id) {
     LessonId.HorizontalMultiplication1,
     LessonId.VerticalMultiplication1,
     LessonId.NumberLineMultiplication1 -> MathOperator.Times
+    LessonId.HorizontalDivision0,
+    LessonId.VerticalDivision0,
+    LessonId.NumberLineDivision0,
+    LessonId.HorizontalDivision1,
+    LessonId.VerticalDivision1,
+    LessonId.NumberLineDivision1 -> MathOperator.DividedBy
     else -> MathOperator.Plus
+}
+
+/**
+ * Division level: the symbolic presentations mirror the counting
+ * lesson's two levels, so they take their cells from the same place.
+ */
+internal fun divisionLevel(id: LessonId): Int = when (id) {
+    LessonId.HorizontalDivision1,
+    LessonId.VerticalDivision1,
+    LessonId.NumberLineDivision1 -> 1
+    else -> 0
 }
 
 /** The grid policy's name for a [MathOperator]. */
@@ -108,6 +138,7 @@ private fun gridOperation(op: MathOperator): GridOperation = when (op) {
     MathOperator.Plus -> GridOperation.Add
     MathOperator.Minus -> GridOperation.Subtract
     MathOperator.Times -> GridOperation.Multiply
+    MathOperator.DividedBy -> GridOperation.Divide
 }
 
 /**
@@ -162,6 +193,7 @@ internal fun lessonRange(id: LessonId): IntRange = when (id) {
 private fun lessonCells(id: LessonId): List<Pair<Int, Int>> {
     val range = lessonRange(id)
     return when (lessonOperator(id)) {
+        MathOperator.DividedBy -> divisionCells(divisionLevel(id))
         MathOperator.Plus -> range.flatMap { a -> range.map { b -> a to b } }
         MathOperator.Minus ->
             range.flatMap { op2 -> range.map { answer -> (op2 + answer) to op2 } }
@@ -201,6 +233,17 @@ class MathViewModel : ViewModel() {
 
     private val _multiplicationGridFlow = MutableStateFlow(snapshot(multiplicationStreaks))
     val multiplicationGrid: StateFlow<List<List<Int>>> = _multiplicationGridFlow.asStateFlow()
+
+    // Division equations: one grid per level, sparse like the counting
+    // lesson's — only the pairs that divide exactly are ever asked.
+    private val divisionStreaks: Array<Array<IntArray>> =
+        Storage.loadDivisionEquationStreaks()
+
+    private val _divisionGridFlow =
+        MutableStateFlow(divisionStreaks.map { perLevel -> snapshot(perLevel) })
+
+    /** Division-equation coverage, indexed `[level][dividend][divisor]`. */
+    val divisionGrid: StateFlow<List<List<List<Int>>>> = _divisionGridFlow.asStateFlow()
 
     private val passedFlow: MutableMap<LessonId, MutableStateFlow<Boolean>> =
         SUPPORTED_LESSONS.associateWith {
@@ -262,15 +305,15 @@ class MathViewModel : ViewModel() {
         val problem = current.problem
         val lesson = _activeLesson.value
         val correct = choice == problem.answer
-        val grid = gridFor(problem.operator)
+        val grid = gridFor(lesson)
         if (correct) {
             grid[problem.left][problem.right]++
         } else {
             grid[problem.left][problem.right] = 0
         }
-        saveCellStreak(problem.operator, problem.left, problem.right,
+        saveCellStreak(lesson, problem.left, problem.right,
             grid[problem.left][problem.right])
-        refreshGridSnapshot(problem.operator)
+        refreshGridSnapshot(lesson)
 
         // Per-lesson consecutive-correct streak.
         val lessonStreakFlow = lessonStreaks.getValue(lesson)
@@ -296,10 +339,10 @@ class MathViewModel : ViewModel() {
             current.feedback == MathFeedback.Revealed) return
         val problem = current.problem
         val lesson = _activeLesson.value
-        val grid = gridFor(problem.operator)
+        val grid = gridFor(lesson)
         grid[problem.left][problem.right] = 0
-        saveCellStreak(problem.operator, problem.left, problem.right, 0)
-        refreshGridSnapshot(problem.operator)
+        saveCellStreak(lesson, problem.left, problem.right, 0)
+        refreshGridSnapshot(lesson)
 
         // Giving up resets the lesson's consecutive-correct streak too.
         val lessonStreakFlow = lessonStreaks.getValue(lesson)
@@ -336,7 +379,7 @@ class MathViewModel : ViewModel() {
         SUPPORTED_LESSONS.forEach { id ->
             if (manualOverride[id] == true) return@forEach
             val operator = lessonOperator(id)
-            val grid = gridFor(operator)
+            val grid = gridFor(id)
             val cells = lessonCells(id)
             val cellsCovered = PracticeGrid.covered(cells, gridOperation(operator)) { a, b ->
                 grid[a][b]
@@ -352,25 +395,36 @@ class MathViewModel : ViewModel() {
         }
     }
 
-    private fun gridFor(op: MathOperator): Array<IntArray> = when (op) {
+    /**
+     * The coverage grid a lesson writes to. Keyed by lesson rather than
+     * by operator because division keeps a grid per level, the way the
+     * counting division lesson does — doing it from the numbers at Level
+     * 1 is not the same skill as at Level 0.
+     */
+    private fun gridFor(id: LessonId): Array<IntArray> = when (lessonOperator(id)) {
         MathOperator.Plus -> additionStreaks
         MathOperator.Minus -> subtractionStreaks
         MathOperator.Times -> multiplicationStreaks
+        MathOperator.DividedBy -> divisionStreaks[divisionLevel(id)]
     }
 
-    private fun saveCellStreak(op: MathOperator, a: Int, b: Int, value: Int) {
-        when (op) {
+    private fun saveCellStreak(id: LessonId, a: Int, b: Int, value: Int) {
+        when (lessonOperator(id)) {
             MathOperator.Plus -> Storage.saveMathStreak(a, b, value)
             MathOperator.Minus -> Storage.saveSubtractionStreak(a, b, value)
             MathOperator.Times -> Storage.saveMultiplicationGridStreak(a, b, value)
+            MathOperator.DividedBy ->
+                Storage.saveDivisionEquationStreak(divisionLevel(id), a, b, value)
         }
     }
 
-    private fun refreshGridSnapshot(op: MathOperator) {
-        when (op) {
+    private fun refreshGridSnapshot(id: LessonId) {
+        when (lessonOperator(id)) {
             MathOperator.Plus -> _additionGridFlow.value = snapshot(additionStreaks)
             MathOperator.Minus -> _subtractionGridFlow.value = snapshot(subtractionStreaks)
             MathOperator.Times -> _multiplicationGridFlow.value = snapshot(multiplicationStreaks)
+            MathOperator.DividedBy -> _divisionGridFlow.value =
+                divisionStreaks.map { perLevel -> snapshot(perLevel) }
         }
     }
 
@@ -378,7 +432,7 @@ class MathViewModel : ViewModel() {
 
     private fun chooseProblem(previous: MathProblem?, lesson: LessonId): MathProblem {
         val operator = lessonOperator(lesson)
-        val grid = gridFor(operator)
+        val grid = gridFor(lesson)
         val allCells = lessonCells(lesson)
 
         val (left, right) = PracticeGrid.choose(
@@ -386,6 +440,14 @@ class MathViewModel : ViewModel() {
             operation = gridOperation(operator),
             value = { a, b -> grid[a][b] },
             previous = previous?.let { it.left to it.right },
+            // Division balances on the divisor for the same reason the
+            // counting lesson does: the small divisors own far more cells
+            // than the big ones, so left alone they crowd them out.
+            balanceBy = if (operator == MathOperator.DividedBy) {
+                { _, divisor -> divisor }
+            } else {
+                null
+            },
         )
         return if (isPictureLesson(lesson)) {
             val animal = Animals.all[Random.nextInt(Animals.all.size)]
