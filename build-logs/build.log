@@ -1,3 +1,4 @@
+Starting a Gradle Daemon (subsequent builds will be faster)
 
 The Kotlin Gradle plugin was loaded multiple times in different subprojects, which is not supported and may break the build. 
 This might happen in subprojects that apply the Kotlin plugins with the Gradle 'plugins { ... }' DSL if they specify explicit versions, even if the versions are equal.
@@ -55,5 +56,5 @@ The Kotlin plugin was loaded in the following projects: ':app', ':shared'
 > Task :app:createDebugApkListingFileRedirect UP-TO-DATE
 > Task :app:assembleDebug UP-TO-DATE
 
-BUILD SUCCESSFUL in 518ms
+BUILD SUCCESSFUL in 4s
 37 actionable tasks: 37 up-to-date
