@@ -81,7 +81,45 @@ class PracticeGridTest {
     }
 
     @Test
-    fun `once everything is covered easy cells come up half as often`() {
+    fun `once covered, easy cells come up at half weight where the cap allows`() {
+        // Addition 0..8: 17 of the 81 cells are easy, so half weight puts
+        // them well under the cap and the halving is what decides.
+        val wide = (0..8).flatMap { a -> (0..8).map { b -> a to b } }
+        val easyCount = wide.count { (a, b) -> PracticeGrid.isEasy(GridOperation.Add, a, b) }
+        val ordinaryCount = wide.size - easyCount
+        val easyWeight = easyCount * PracticeGrid.EASY_CELL_WEIGHT
+        val expected = easyWeight / (easyWeight + ordinaryCount)
+        assertTrue("this grid should sit under the cap", expected < PracticeGrid.EASY_SHARE_CAP)
+
+        val random = Random(seed = 11)
+        val iterations = 20_000
+        var easy = 0
+        repeat(iterations) {
+            val (a, b) = PracticeGrid.choose(
+                cells = wide,
+                operation = GridOperation.Add,
+                value = { _, _ -> 5 },
+                previous = null,
+                random = random,
+            )
+            if (PracticeGrid.isEasy(GridOperation.Add, a, b)) easy++
+        }
+        val easyShare = easy.toDouble() / iterations
+        assertTrue(
+            "easy share was $easyShare, expected about $expected",
+            abs(easyShare - expected) < 0.02,
+        )
+    }
+
+    @Test
+    fun `the cap holds down a grid that is mostly easy cells`() {
+        // Multiplication 0..4 is the case the cap exists for: 16 easy
+        // cells against 9 ordinary ones, so half weight alone would still
+        // leave nearly half the round on times zero and times one.
+        val easyWeight = easyCount * PracticeGrid.EASY_CELL_WEIGHT
+        val uncapped = easyWeight / (easyWeight + (cells.size - easyCount))
+        assertTrue("this grid should exceed the cap", uncapped > PracticeGrid.EASY_SHARE_CAP)
+
         val random = Random(seed = 11)
         val iterations = 20_000
         var easy = 0
@@ -95,13 +133,10 @@ class PracticeGridTest {
             )
             if (PracticeGrid.isEasy(GridOperation.Multiply, a, b)) easy++
         }
-        val ordinaryCount = cells.size - easyCount
-        val easyWeight = easyCount * PracticeGrid.EASY_CELL_WEIGHT
-        val expected = easyWeight / (easyWeight + ordinaryCount)
         val easyShare = easy.toDouble() / iterations
         assertTrue(
-            "easy share was $easyShare, expected about $expected",
-            abs(easyShare - expected) < 0.02,
+            "easy share was $easyShare, expected about ${PracticeGrid.EASY_SHARE_CAP}",
+            abs(easyShare - PracticeGrid.EASY_SHARE_CAP) < 0.02,
         )
     }
 
@@ -174,7 +209,11 @@ class PracticeGridTest {
     }
 
     @Test
-    fun `without balancing, dividing by one dominates`() {
+    fun `without balancing, dividing by one takes the whole easy allowance`() {
+        // Every easy cell in the division grid is a divide by one, so the
+        // cap alone leaves it the largest single divisor by some way. That
+        // is the premise for balancing: the cap bounds it, balancing then
+        // levels it with the others.
         val random = Random(seed = 7)
         val draws = 12_000
         var byOne = 0
@@ -188,58 +227,13 @@ class PracticeGridTest {
             )
             if (divisor == 1) byOne++
         }
-        // 24 easy cells against 34 ordinary ones: half weight alone would
-        // leave ÷1 at 26% of the draw, so the share cap catches it and
-        // holds it to EASY_SHARE_CAP — still far above the 9% balancing
-        // gets to, which is the point of balancing on top of the cap.
         val share = byOne.toDouble() / draws
-        assertTrue("÷1 share was $share", abs(share - PracticeGrid.EASY_SHARE_CAP) < 0.02)
-    }
-
-    @Test
-    fun `the share cap holds easy cells down where they outnumber the rest`() {
-        // Multiplication Difficulty 0: operands 0..4, so 16 of the 25
-        // cells are easy and only 9 are not. Half weight leaves 47% of
-        // the round on × 0 and × 1; the cap is what fixes that.
-        val random = Random(seed = 11)
-        val draws = 12_000
-        var easy = 0
-        repeat(draws) {
-            val (a, b) = PracticeGrid.choose(
-                cells = cells,
-                operation = GridOperation.Multiply,
-                value = { _, _ -> PracticeGrid.CELL_TARGET },
-                previous = null,
-                random = random,
-            )
-            if (PracticeGrid.isEasy(GridOperation.Multiply, a, b)) easy++
-        }
-        val share = easy.toDouble() / draws
-        assertTrue("easy share was $share", abs(share - PracticeGrid.EASY_SHARE_CAP) < 0.02)
-    }
-
-    @Test
-    fun `a lesson already under the cap is left alone`() {
-        // Addition Difficulty 1: operands 0..8, so 17 of the 81 cells are
-        // easy. Half weight puts them at 8.5 against 64, comfortably
-        // under the cap, and nothing is scaled.
-        val wide: List<Pair<Int, Int>> = (0..8).flatMap { a -> (0..8).map { b -> a to b } }
-        val random = Random(seed = 13)
-        val draws = 12_000
-        var easy = 0
-        repeat(draws) {
-            val (a, b) = PracticeGrid.choose(
-                cells = wide,
-                operation = GridOperation.Add,
-                value = { _, _ -> PracticeGrid.CELL_TARGET },
-                previous = null,
-                random = random,
-            )
-            if (PracticeGrid.isEasy(GridOperation.Add, a, b)) easy++
-        }
-        // 17 easy at half weight against 64 ordinary: 8.5 / 72.5.
-        val share = easy.toDouble() / draws
-        assertTrue("easy share was $share", abs(share - 8.5 / 72.5) < 0.02)
-        assertTrue("expected to sit under the cap", share < PracticeGrid.EASY_SHARE_CAP)
+        assertTrue(
+            "÷1 share was $share, expected about the cap ${PracticeGrid.EASY_SHARE_CAP}",
+            abs(share - PracticeGrid.EASY_SHARE_CAP) < 0.02,
+        )
+        // Balancing takes it further still — see the test above, where it
+        // lands at a eleventh against two elevenths for each of ÷2..÷6.
+        assertTrue("balancing should improve on this", share > 1.0 / 11.0 + 0.02)
     }
 }
