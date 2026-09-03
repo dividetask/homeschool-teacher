@@ -88,6 +88,7 @@ def div_params(level: int, **extra) -> Dict[str, object]:
     span = (max(1, low), high)
     params: Dict[str, object] = {
         "divisor": span, "quotient": span, "dividend_max": std["z_max"],
+        "operator": "/",
     }
     params.update(extra)
     return params
@@ -229,11 +230,35 @@ _SHEETS = (
     Sheet("division-construction", 0, "Counting Division — Construction",
           "Counting Division — Level 0",
           "The animals are already shared out. Build the whole equation.",
-          "grouped-blanks", 2, div_params(0, operator="/", rows=6)),
+          "grouped-blanks", 2, div_params(0, rows=6)),
     Sheet("division-construction", 1, "Counting Division — Construction",
           "Counting Division — Level 1",
           "The animals are already shared out. Build the whole equation.",
-          "grouped-blanks", 2, div_params(1, operator="/", rows=6)),
+          "grouped-blanks", 2, div_params(1, rows=6)),
+    # The symbolic division presentations. Their number lines run to the
+    # largest *dividend* the level asks rather than to the answer — the
+    # dividend is what a learner counts along to work a division out
+    # (docs/lessons.md § Horizontal / Vertical / Number Line Division).
+    Sheet("division-numberline", 0, "Number Line Division", "Number Line Division — Level 0",
+          "Hop along the line in steps of the second number until you reach "
+          "the first. Write how many hops that took.",
+          "numberline", 2, div_params(0, line_origin="zero", rows=6)),
+    Sheet("division-numberline", 1, "Number Line Division", "Number Line Division — Level 1",
+          "Hop along the line in steps of the second number until you reach "
+          "the first. Write how many hops that took.",
+          "numberline", 2, div_params(1, line_origin="zero", rows=6)),
+    Sheet("division-horizontal", 0, "Division", "Horizontal Division — Level 0",
+          "Write the answer in the box.",
+          "horizontal", 2, div_params(0, rows=6), header="numberline"),
+    Sheet("division-horizontal", 1, "Division", "Horizontal Division — Level 1",
+          "Write the answer in the box.",
+          "horizontal", 2, div_params(1, rows=6), header="numberline"),
+    Sheet("division-vertical", 0, "Division", "Vertical Division — Level 0",
+          "Divide and write the answer under the line.",
+          "vertical", 4, div_params(0, rows=3), header="numberline"),
+    Sheet("division-vertical", 1, "Division", "Vertical Division — Level 1",
+          "Divide and write the answer under the line.",
+          "vertical", 4, div_params(1, rows=3), header="numberline"),
 
     # --- Binary ---------------------------------------------------------
     Sheet("binary", 0, "Binary Operations", "Binary — Level 0",
@@ -321,6 +346,12 @@ CURRICULUM = (
     "division-construction-level0",
     "division-counting-level1",
     "division-construction-level1",
+    "division-numberline-level0",
+    "division-horizontal-level0",
+    "division-vertical-level0",
+    "division-horizontal-level1",
+    "division-vertical-level1",
+    "division-numberline-level1",
 )
 
 _RANK = {slug: i for i, slug in enumerate(CURRICULUM)}

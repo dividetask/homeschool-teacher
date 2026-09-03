@@ -157,6 +157,9 @@ up. The sheets come out identical either way.
 | `multiplication-numberline`      | 0, 1   | Number Line Multiplication    |
 | `division-counting`              | 0, 1   | Counting Division             |
 | `division-construction`          | 0, 1   | Counting Division             |
+| `division-horizontal`            | 0, 1   | Horizontal Division           |
+| `division-vertical`              | 0, 1   | Vertical Division             |
+| `division-numberline`            | 0, 1   | Number Line Division          |
 | `binary`                         | 0, 1   | Binary                        |
 
 The `-construction` sheets are the build-the-whole-equation variant of
@@ -195,9 +198,9 @@ holding "none". Both multiplication sheets share one renderer, so both
 show it the same way — but only the answer-first sheet *asks* `0 × 5`,
 since the construction sheet needs the picture to pin down both numbers.
 
-Subtraction has no Level 1 in its symbolic presentations, and division
-has no symbolic presentations at all, because that's what the app
-teaches.
+Subtraction has no Level 1 in its symbolic presentations, because that's
+what the app teaches. Division has all three at both levels, matching the
+Horizontal / Vertical / Number Line Division lessons.
 
 Operand ranges are not written out sheet by sheet. Every Math lesson
 outside Binary draws from one of four standard ranges chosen by family
@@ -223,15 +226,22 @@ A few sheets are worth calling out:
 - **Counting Multiplication Level 1** asks for the two *operands* rather
   than the product — `▢ × ▢` under the pens of animals — because that's
   what the lesson asks for.
-- **Division** prints X animals above `X ÷ Y = ▢`, deliberately ungrouped:
-  sorting them into equal groups is the work. Divisors run 1–6 and the
-  dividend is always a multiple of the divisor, so every answer is a
-  whole number.
+- **Counting Division** prints X animals above `X ÷ Y = ▢`, deliberately
+  ungrouped: sorting them into equal groups is the work. The divisor and
+  the answer both come from the family range and the dividend is their
+  product, so every answer is a whole number and no problem asks for a
+  remainder.
+- **The symbolic division sheets** run their number lines to the largest
+  **dividend** the level asks — 16 and 40 — not to the answer, because the
+  dividend is what a child counts along to work a division out
+  (`../docs/lessons.md` § Horizontal / Vertical / Number Line Division).
+  That is why Number Line Division asks for the number of hops rather than
+  where you land.
 - **Binary** opens with the cheat sheet — all three single-bit truth
   tables in the same stacked layout the problems use — so a child can
   look up any column without being told which operator to use.
-- **Horizontal and Vertical Multiplication** open with a reference number
-  line, as the Level 1 addition sheets do.
+- **Horizontal and Vertical Multiplication and Division** open with a
+  reference number line, as the Level 1 addition sheets do.
 - **Multiplication Level 1** caps the product at 40 across all its
   presentations, so the number line stays countable and the reference
   line at the top of the symbolic sheets stays readable.

@@ -200,6 +200,17 @@ def arithmetic_cells(params) -> List[Tuple[int, int]]:
     return cells
 
 
+def cells(params) -> List[Tuple[int, int]]:
+    """Every (left, right) the sheet may ask, whatever the operation.
+
+    Division has its own space — only the pairs that divide exactly —
+    so the caller asks here rather than assuming the two ranges crossed.
+    """
+    if params.get("operator") == "/":
+        return _division_cells(params)
+    return arithmetic_cells(params)
+
+
 def _apply(operator: str, a: int, b: int) -> int:
     if operator == "+":
         return a + b
@@ -216,9 +227,9 @@ _arithmetic_cells = arithmetic_cells
 def _division_cells(params) -> List[Tuple[int, int]]:
     """(dividend, divisor) pairs that divide exactly.
 
-    The dividend runs 1..``dividend_max`` and the divisor 1..6, but only
-    the pairs where the division comes out whole are ever asked — so the
-    coverage grid the Android lesson keeps has gaps, by design.
+    Divisor and quotient come from the family range and the dividend is
+    their product, capped — so every answer is a whole number, and the
+    coverage grid the Android lesson keeps has gaps by design.
     """
     max_dividend = params["dividend_max"]
     lo_d, hi_d = params["divisor"]
@@ -253,11 +264,11 @@ def generate(sheet: catalog.Sheet, rng: random.Random) -> Iterator:
             yield BinaryProblem(left=a, right=b, operator=op, bits=sheet.params["bits"])
         return
 
-    if sheet.style == "division-counting" or (
-        sheet.style == "grouped-blanks" and sheet.params.get("operator") == "/"
-    ):
-        # Division is balanced on the divisor: every dividend from 1 up
-        # divides by one, so it owns far more cells than the rest.
+    if sheet.params.get("operator") == "/":
+        # Every division sheet draws from the same space, picture or
+        # symbolic. It is balanced on the divisor: every dividend from 1
+        # up divides by one, so one owns far more cells than the rest.
+        picture = sheet.style in ("division-counting", "grouped-blanks")
         for dividend, divisor in _cycle_shuffled(
             _division_cells(sheet.params), rng,
             easy=lambda cell: is_easy("/", cell[0], cell[1]),
@@ -267,7 +278,7 @@ def generate(sheet: catalog.Sheet, rng: random.Random) -> Iterator:
                 left=dividend,
                 right=divisor,
                 operator="/",
-                animal=rng.choice(animals.ALL),
+                animal=rng.choice(animals.ALL) if picture else None,
             )
         return
 

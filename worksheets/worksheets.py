@@ -148,7 +148,7 @@ PICTURE_STYLES = frozenset({
 
 def _cells(sheet: catalog.Sheet):
     """Every (left, right) the sheet can ask, for sizing its number line."""
-    return problems.arithmetic_cells(sheet.params)
+    return problems.cells(sheet.params)
 
 
 def _answer(sheet: catalog.Sheet, left: int, right: int) -> int:
@@ -157,7 +157,20 @@ def _answer(sheet: catalog.Sheet, left: int, right: int) -> int:
         return left + right
     if operator == "-":
         return left - right
+    if operator == "/":
+        return left // right
     return left * right
+
+
+def _furthest(sheet: catalog.Sheet, left: int, right: int) -> int:
+    """The largest number this problem puts on a number line.
+
+    Usually the answer, but not always: a subtraction hops back from its
+    first operand, and a division's dividend is the number a learner
+    counts along to reach — bigger than the quotient it asks for
+    (docs/lessons.md § Horizontal / Vertical / Number Line Division).
+    """
+    return max(_answer(sheet, left, right), left, right)
 
 
 def _line_origin(sheet: catalog.Sheet, problem) -> int:
@@ -186,14 +199,12 @@ def _number_line_span(sheet: catalog.Sheet) -> int:
     needed = 0
     for left, right in _cells(sheet):
         origin = min(left, right) if origin_is_min else 0
-        # The line has to reach both the answer and the starting operand:
-        # a subtraction hops backwards from the left operand.
-        furthest = max(_answer(sheet, left, right), left, right)
-        needed = max(needed, furthest - origin)
+        needed = max(needed, _furthest(sheet, left, right) - origin)
     span = max(10, ((needed + 1 + 4) // 5) * 5)
-    # Never draw past the sheet's own answer ceiling: a Multiplication
-    # Level 1 line running to 45 offers five numbers no problem can reach.
-    ceiling = sheet.params.get("answer_max")
+    # Never draw past the biggest number the sheet can ask: a
+    # Multiplication Level 1 line running to 45 offers five numbers no
+    # problem can reach, and a division line stops at its dividend.
+    ceiling = sheet.params.get("answer_max", sheet.params.get("dividend_max"))
     if ceiling is not None:
         span = min(span, int(ceiling))
     return span
@@ -248,7 +259,7 @@ def draw_sheet(c, sheet: catalog.Sheet, seed: Optional[int] = None) -> int:
             used = blocks.draw_cheat_sheet(c, render.MARGIN, top, area_width)
         elif sheet.header == "numberline":
             highest = max(
-                _answer(sheet, left, right) for left, right in _cells(sheet)
+                _furthest(sheet, left, right) for left, right in _cells(sheet)
             )
             used = blocks.draw_reference_line(
                 c, render.MARGIN, top, area_width, 0, highest,
