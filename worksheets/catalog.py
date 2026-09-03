@@ -19,6 +19,8 @@ page opens with a reference aid. They live here rather than in
 logic.
 """
 
+import difflib
+import fnmatch
 from dataclasses import dataclass, field
 from typing import Dict, Iterable, List, Optional, Tuple
 
@@ -352,3 +354,70 @@ def in_difficulty_order(sheets: Iterable[Sheet]) -> List[Sheet]:
     """
     unique = {s.slug: s for s in sheets}
     return sorted(unique.values(), key=difficulty)
+
+
+# --- selecting sheets on the command line ---------------------------------
+#
+# A key reads as family-style — `multiplication-numberline` — and either
+# half selects on its own: `multiplication` is every multiplication
+# sheet, `numberline` every number line sheet across the families. That
+# is what keeps "the multiplication and division sheets" a two-word
+# command instead of seven hyphenated keys typed out, each one a chance
+# to fumble a letter.
+#
+# Two words are a union, not an intersection: `multiplication counting`
+# is every multiplication sheet plus every counting sheet. To narrow to
+# one cell of that grid, name the key itself — that is what a key is.
+
+
+def _parts(key: str) -> Tuple[str, ...]:
+    return tuple(key.split("-"))
+
+
+def families() -> List[str]:
+    """The operation words, in catalog order: addition, subtraction, ..."""
+    out: List[str] = []
+    for s in _SHEETS:
+        word = _parts(s.key)[0]
+        if word not in out:
+            out.append(word)
+    return out
+
+
+def styles() -> List[str]:
+    """The presentation words: counting, construction, horizontal, ..."""
+    out: List[str] = []
+    for s in _SHEETS:
+        part = _parts(s.key)[1:]
+        if part and part[0] not in out:
+            out.append(part[0])
+    return out
+
+
+def selectors() -> List[str]:
+    """Every word that selects something, keys included."""
+    return families() + styles() + keys()
+
+
+def matching(term: str) -> List[Sheet]:
+    """The sheets one command-line word asks for.
+
+    A word is a family (`division`), a presentation (`numberline`), a
+    whole key (`division-counting`), or a glob over keys and slugs
+    (`'*-vertical'`, `'binary-level0'`). Anything else matches nothing,
+    and the caller turns that into an error rather than a quiet
+    do-nothing — a typo must not look like a small worksheet.
+    """
+    term = term.strip().lower()
+    if not term:
+        return []
+    if any(ch in term for ch in "*?["):
+        return [s for s in _SHEETS
+                if fnmatch.fnmatchcase(s.key, term)
+                or fnmatch.fnmatchcase(s.slug, term)]
+    return [s for s in _SHEETS if term == s.key or term in _parts(s.key)]
+
+
+def did_you_mean(term: str) -> List[str]:
+    """Selector words close enough to ``term`` to be worth suggesting."""
+    return difflib.get_close_matches(term.strip().lower(), selectors(), n=3, cutoff=0.6)

@@ -36,15 +36,49 @@ when you generate a sheet.
 ## Use
 
 ```
-./worksheets.py --list                     # what's available
-./worksheets.py addition-horizontal        # every level of one sheet
-./worksheets.py division-counting --level 0
-./worksheets.py --all --out ~/worksheets   # the whole set, one PDF
-./worksheets.py --all --out ~/term1.pdf    # ...named yourself
+./worksheets.py --list                       # what's available
+./worksheets.py multiplication division      # two families, one PDF
+./worksheets.py counting -l 0                # every counting sheet, easy level
+./worksheets.py addition-horizontal          # every level of one sheet
+./worksheets.py --all -o ~/term1.pdf         # the whole set, named yourself
 ```
 
 `--list` needs no dependencies at all — ReportLab is only imported when a
 PDF is actually being drawn.
+
+### Naming what you want
+
+A word on the command line is matched three ways, so the common asks stay
+short enough to type without a typo hiding in them:
+
+| Word                  | Selects                                        |
+| --------------------- | ---------------------------------------------- |
+| `multiplication`      | an **operation** — every multiplication sheet   |
+| `numberline`          | a **presentation** — every number line sheet    |
+| `division-counting`   | a **key** — that one sheet, every level it has  |
+| `'*-vertical'`        | a **glob** over keys and slugs (quote it)       |
+
+The operations are `addition subtraction multiplication division binary`
+and the presentations are `counting construction horizontal vertical
+numberline`; `--list` prints both lists and every key.
+
+Several words build the **union** of what they select, so "all the
+multiplication and division worksheets" is:
+
+```
+./worksheets.py multiplication division
+```
+
+which is twelve pages. To narrow to one cell of that grid — the vertical
+multiplication sheets and nothing else — name the key,
+`multiplication-vertical`. Naming the same sheet twice prints it once.
+
+A word that selects nothing is treated as the typo it is: the run stops
+and suggests the nearest words rather than quietly building a thinner
+document than you asked for.
+
+The flags have short forms too: `-a` (`--all`), `-l` (`--level`), `-o`
+(`--out`), `-s` (`--seed`).
 
 Every sheet carries exactly **12 problems** — one sitting's work. Sheets
 declare a `columns` × `rows` shape in `catalog.py` multiplying to twelve,
@@ -221,8 +255,9 @@ A few sheets are worth calling out:
 
 ```
 worksheets.py   CLI: resolves sheet names, drives the build
-catalog.py      which sheets exist, their operand ranges, and the
-                curriculum order the pages print in
+catalog.py      which sheets exist, their operand ranges, the curriculum
+                order the pages print in, and how a command-line word
+                selects them
 problems.py     random problem streams (a shuffled pass over the whole
                 problem space, so a page covers as much of it as it can
                 before repeating)
@@ -234,7 +269,9 @@ fonts/          vendored font subsets — see fonts/SOURCE.md
 To add a worksheet: add a `Sheet` to `catalog.py`, place its slug in that
 file's `CURRICULUM` where the lesson unlocks, and add a block class in
 `blocks.py` if it needs a presentation none of the existing ones cover.
-`worksheets.py` maps `Sheet.style` to the block class.
+`worksheets.py` maps `Sheet.style` to the block class. A key of the usual
+`operation-presentation` shape needs nothing else — both halves become
+selector words on their own.
 
 When a lesson's operand range changes in `../docs/lessons.md`, change the
 matching `Sheet` in `catalog.py` so the two stay in step.

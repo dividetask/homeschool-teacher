@@ -10,10 +10,15 @@ One run writes one PDF: every sheet asked for becomes a page of it, in
 curriculum order (easiest first), so a batch prints as a workbook to
 work front to back.
 
-    ./setup.sh                                  # once, to install ReportLab
-    ./worksheets.py addition-horizontal --level 1
-    ./worksheets.py division-counting binary
-    ./worksheets.py --all --out ~/worksheets
+    ./setup.sh                                 # once, to install ReportLab
+    ./worksheets.py multiplication division    # two words, twelve pages
+    ./worksheets.py counting -l 0              # every counting sheet, easy
+    ./worksheets.py addition-horizontal -l 1   # one sheet, one level
+    ./worksheets.py --all -o ~/worksheets.pdf  # the lot
+
+A word on the command line is an operation (``multiplication``), a
+presentation (``numberline``), a full key (``division-counting``) or a
+glob over keys; several words build the union of what they select.
 
 Run with no arguments to list what's available.
 
@@ -321,22 +326,53 @@ def build(sheets: Sequence[catalog.Sheet], path: str,
     return built
 
 
+def _vocabulary(with_keys: bool = True) -> str:
+    """The words that select worksheets, grouped for a listing or an error.
+
+    ``with_keys`` points at the key list rather than printing it; --list
+    is about to print the keys itself, an error message is not.
+    """
+    lines = [
+        f"  operations:    {'  '.join(catalog.families())}",
+        f"  presentations: {'  '.join(catalog.styles())}",
+    ]
+    if with_keys:
+        lines.append(
+            f"  or a full key: {catalog.keys()[0]}, {catalog.keys()[1]}, ... "
+            f"({len(catalog.keys())} of them, see --list)"
+        )
+    return "\n".join(lines)
+
+
 def _resolve(names: Sequence[str], level: Optional[int]) -> List[catalog.Sheet]:
-    """Expand the command line into the list of sheets to build."""
+    """Expand the command line into the list of sheets to build.
+
+    Each word is matched by catalog.matching(), so an operation or a
+    presentation pulls in its whole group. A word that selects nothing is
+    a typo — say so, with the nearest words, rather than quietly building
+    a thinner document than was asked for.
+    """
     chosen: List[catalog.Sheet] = []
     for name in names:
-        if name not in catalog.keys():
+        found = catalog.matching(name)
+        if not found:
+            suggestions = catalog.did_you_mean(name)
+            hint = f"did you mean: {', '.join(suggestions)}?\n" if suggestions else ""
             raise SystemExit(
-                f"worksheets: unknown worksheet '{name}'\n"
-                f"try one of: {', '.join(catalog.keys())}"
+                f"worksheets: nothing to build for '{name}'\n"
+                f"{hint}"
+                f"words that select worksheets:\n{_vocabulary()}"
             )
-        if level is None:
-            chosen.extend(catalog.get(name, lv) for lv in catalog.levels(name))
-        else:
-            try:
-                chosen.append(catalog.get(name, level))
-            except KeyError as exc:
-                raise SystemExit(f"worksheets: {exc.args[0]}")
+        if level is not None:
+            at_level = [s for s in found if s.level == level]
+            if not at_level:
+                had = sorted({s.level for s in found})
+                raise SystemExit(
+                    f"worksheets: nothing matching '{name}' has a level {level} "
+                    f"(levels there: {', '.join(str(x) for x in had)})"
+                )
+            found = at_level
+        chosen.extend(found)
     return chosen
 
 
@@ -375,14 +411,24 @@ def _check(seeds: int = 8) -> int:
 
 
 def _list_sheets() -> None:
-    print("Available worksheets (pass --level to pick one level):\n")
+    print("Name an operation, a presentation, or a full key. Whatever you")
+    print("pick lands in one PDF, its pages easiest first.\n")
+    print("Words that select whole groups:")
+    print(_vocabulary(with_keys=False))
+    print("\nThe keys:\n")
     width = max(len(k) for k in catalog.keys())
     for key in catalog.keys():
         levels = ", ".join(str(lv) for lv in catalog.levels(key))
         sample = catalog.get(key, catalog.levels(key)[0])
-        print(f"  {key.ljust(width)}  levels {levels}   {sample.lesson.split('—')[0].strip()}")
-    print("\n  --all builds every worksheet at every level.")
-    print("  Whatever you pick lands in one PDF, easiest first.")
+        print(f"  {key.ljust(width)}  levels {levels.ljust(5)}  "
+              f"{sample.lesson.split('—')[0].strip()}")
+    print("""
+For example:
+
+  worksheets.py multiplication division    the multiplication and division sheets
+  worksheets.py counting -l 0              every counting sheet, easy level only
+  worksheets.py addition binary -o ~/w.pdf addition plus binary, named file
+  worksheets.py --all                      every worksheet at every level""")
 
 
 def main(argv: Optional[Sequence[str]] = None) -> int:
@@ -391,16 +437,21 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         prog="worksheets.py",
         description="Generate printable PDF worksheets for the Homeschool Teacher lessons.",
     )
-    parser.add_argument("names", nargs="*", help="worksheet keys to build")
-    parser.add_argument("--all", action="store_true", help="build every worksheet at every level")
-    parser.add_argument("--level", type=int, default=None,
-                        help="build only this level (default: every level the sheet has)")
-    parser.add_argument("--out", default="out",
+    parser.add_argument("names", nargs="*",
+                        help="what to build: an operation (multiplication), a "
+                             "presentation (numberline), a full key "
+                             "(division-counting), or a glob over keys. "
+                             "Several words build the lot, into one PDF")
+    parser.add_argument("-a", "--all", action="store_true",
+                        help="build every worksheet at every level")
+    parser.add_argument("-l", "--level", type=int, default=None,
+                        help="build only this level (default: every level there is)")
+    parser.add_argument("-o", "--out", default="out",
                         help="where to write the PDF: a directory to put "
                              f"{DEFAULT_NAME} in, or a path ending in .pdf to "
                              "name the file. Relative to where you're standing "
                              "unless absolute (default: ./out)")
-    parser.add_argument("--seed", type=int, default=None,
+    parser.add_argument("-s", "--seed", type=int, default=None,
                         help="fix the shuffle so a sheet can be reproduced exactly")
     parser.add_argument("--list", action="store_true", help="list the available worksheets")
     parser.add_argument("--check", action="store_true",
