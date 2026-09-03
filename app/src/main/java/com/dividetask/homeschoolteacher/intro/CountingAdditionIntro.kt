@@ -57,7 +57,7 @@ private const val RESULT_MS = 2_800L
  */
 private fun countStepMs(total: Int): Long = if (total <= 8) 620L else 430L
 
-private enum class Phase { Problem, Merge, Counting, Result }
+private enum class AdditionPhase { Problem, Merge, Counting, Result }
 
 /**
  * Worked example for the counting addition lessons.
@@ -82,28 +82,28 @@ internal fun CountingAdditionIntro(
     val animal = remember { Animals.all[Random.nextInt(Animals.all.size)] }
     val total = left + right
 
-    var phase by remember { mutableStateOf(Phase.Problem) }
+    var phase by remember { mutableStateOf(AdditionPhase.Problem) }
     var counted by remember { mutableStateOf(0) }
 
     DisposableEffect(Unit) { onDispose { Tts.stopAll() } }
 
     LaunchedEffect(Unit) {
         narrate("$left plus $right", PROBLEM_MS)
-        phase = Phase.Merge
+        phase = AdditionPhase.Merge
         delay(MERGE_MS + MERGE_SETTLE_MS)
-        phase = Phase.Counting
+        phase = AdditionPhase.Counting
         val step = countStepMs(total)
         for (n in 1..total) {
             counted = n
             narrate(n.toString(), step)
         }
         delay(COUNT_TAIL_MS)
-        phase = Phase.Result
+        phase = AdditionPhase.Result
         narrate("$left plus $right equals $total ${animal.name.lowercase()}s", RESULT_MS)
         onFinished()
     }
 
-    val merged = phase != Phase.Problem
+    val merged = phase != AdditionPhase.Problem
     val gap by animateDpAsState(
         targetValue = if (merged) 0.dp else 20.dp,
         animationSpec = tween(MERGE_MS.toInt()),

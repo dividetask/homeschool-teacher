@@ -1,12 +1,16 @@
 package com.dividetask.homeschoolteacher.intro
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -17,33 +21,52 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.dividetask.homeschoolteacher.Tts
 import com.dividetask.homeschoolteacher.reading.Animals
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
 import kotlin.random.Random
 
-/** Held on the picture while the sentence explaining it is spoken. */
-private const val MEANS_MS = 3_400L
+/** Held on the picture while a sentence explaining it is spoken. */
+private const val SENTENCE_MS = 3_400L
 
-/** Each group lights in turn while "and X groups" is said. */
-private const val GROUP_SWEEP_MS = 700L
+/** A shorter sentence — the lead-in to a count. */
+private const val LEAD_MS = 1_600L
 
-private const val COUNT_TAIL_MS = 800L
-private const val RESULT_MS = 3_000L
+/** One group being counted, and one animal being counted. */
+private const val GROUP_STEP_MS = 700L
+private const val ANIMAL_STEP_MS = 620L
 
-private fun countStepMs(total: Int): Long = if (total <= 8) 620L else 430L
+/** A beat between one count finishing and the next thing being said. */
+private const val BETWEEN_MS = 700L
+
+private const val RESULT_MS = 3_200L
+
+/** A long total is counted a little faster so it doesn't drag. */
+private fun countStepMs(total: Int): Long = if (total <= 8) ANIMAL_STEP_MS else 430L
+
+/** Which count is running, which decides what the numbers mean. */
+private enum class MultiplicationPhase { Means, Groups, FirstGroup, All }
 
 /**
  * Worked example for Counting Multiplication.
  *
  * `X × Y` is drawn as X boxed groups of Y animals, the way the lesson
- * draws it, and narrated as what it means: "3 times 4 means 3 groups of
- * 4. There are 4 zebras in each group, and 3 groups." One group lights
- * while the size of a group is named, then each in turn while they are
- * counted. Every animal is then counted straight through, numbers
- * appearing above them, and the sentence closes: "3 times 4 equals 12".
+ * draws it, and read out as what it means before anything is counted:
+ *
+ * 1. "4 times 3 means 4 groups of 3."
+ * 2. "Count the groups" — 1, 2, 3, 4, a number landing on each box.
+ * 3. "Count the zebras in the first group" — 1, 2, 3 inside that box.
+ * 4. "The answer is the total number of zebras, let's count them" —
+ *    1 through 12, straight through every box.
+ * 5. "4 times 3 equals 12 zebras."
+ *
+ * The three counts answer three different questions with the same
+ * picture, which is the point: how many groups, how big a group, and how
+ * many altogether.
  */
 @Composable
 internal fun CountingMultiplicationIntro(
@@ -56,40 +79,52 @@ internal fun CountingMultiplicationIntro(
     val animal = remember { Animals.all[Random.nextInt(Animals.all.size)] }
     val total = groups * each
 
-    var counted by remember { mutableStateOf(0) }
-    // -1 lights every group at once, null lights none.
+    var phase by remember { mutableStateOf(MultiplicationPhase.Means) }
+    var countedGroups by remember { mutableStateOf(0) }
+    var countedFirst by remember { mutableStateOf(0) }
+    var countedAll by remember { mutableStateOf(0) }
     var litGroup by remember { mutableStateOf<Int?>(null) }
 
     DisposableEffect(Unit) { onDispose { Tts.stopAll() } }
 
     LaunchedEffect(Unit) {
         val plural = "${animal.name.lowercase()}s"
-        narrate("$groups times $each means $groups groups of $each", MEANS_MS)
 
-        // "There are Y zebras in each group" — one group stands out, so
-        // it is clear which number is which.
-        litGroup = 0
-        narrate("There are $each $plural in each group", MEANS_MS)
+        narrate("$groups times $each means $groups groups of $each", SENTENCE_MS)
 
-        // "...and X groups" — the outline walks along them while it is
-        // said, so both finish before the counting starts.
-        val sweep = launch {
-            for (g in 0 until groups) {
-                litGroup = g
-                delay(GROUP_SWEEP_MS)
-            }
+        // How many groups: a number lands on each box in turn.
+        phase = MultiplicationPhase.Groups
+        narrate("Count the groups", LEAD_MS)
+        for (g in 1..groups) {
+            countedGroups = g
+            litGroup = g - 1
+            narrate(g.toString(), GROUP_STEP_MS)
         }
-        Tts.sayAwait("and $groups groups")
-        sweep.join()
         litGroup = null
+        delay(BETWEEN_MS)
 
+        // How big a group: only the first one is opened up.
+        phase = MultiplicationPhase.FirstGroup
+        litGroup = 0
+        narrate("Count the $plural in the first group", SENTENCE_MS)
+        for (n in 1..each) {
+            countedFirst = n
+            narrate(n.toString(), ANIMAL_STEP_MS)
+        }
+        litGroup = null
+        delay(BETWEEN_MS)
+
+        // How many altogether: straight through every box.
+        phase = MultiplicationPhase.All
+        narrate("The answer is the total number of $plural, let's count them", SENTENCE_MS)
         val step = countStepMs(total)
         for (n in 1..total) {
-            counted = n
+            countedAll = n
             narrate(n.toString(), step)
         }
-        delay(COUNT_TAIL_MS)
-        narrate("$groups times $each equals $total", RESULT_MS)
+        delay(BETWEEN_MS)
+
+        narrate("$groups times $each equals $total $plural", RESULT_MS)
         onFinished()
     }
 
@@ -125,16 +160,47 @@ internal fun CountingMultiplicationIntro(
                         modifier = Modifier.fillMaxWidth(),
                     ) {
                         row.forEach { group ->
-                            GroupBox(highlighted = litGroup == group) {
-                                repeat(each) { i ->
-                                    CountedAnimal(
-                                        emoji = animal.emoji,
-                                        position = group * each + i + 1,
-                                        counted = counted,
-                                        slot = slot,
-                                        emojiSize = emoji,
-                                        numeralSize = numeral,
-                                    )
+                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                // The group's own number, from the first count.
+                                Box(
+                                    modifier = Modifier.width(slot),
+                                    contentAlignment = Alignment.Center,
+                                ) {
+                                    if (group < countedGroups) {
+                                        Text(
+                                            text = (group + 1).toString(),
+                                            fontSize = 22.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            fontFamily = FontFamily.Monospace,
+                                            color = MaterialTheme.colorScheme.primary,
+                                        )
+                                    }
+                                }
+                                GroupBox(highlighted = litGroup == group) {
+                                    repeat(each) { i ->
+                                        // What a number over an animal means
+                                        // depends on which count is running:
+                                        // its place in this group, or its
+                                        // place among all of them.
+                                        val position = when (phase) {
+                                            MultiplicationPhase.FirstGroup -> if (group == 0) i + 1 else 0
+                                            MultiplicationPhase.All -> group * each + i + 1
+                                            else -> 0
+                                        }
+                                        val counted = when (phase) {
+                                            MultiplicationPhase.FirstGroup -> countedFirst
+                                            MultiplicationPhase.All -> countedAll
+                                            else -> 0
+                                        }
+                                        CountedAnimal(
+                                            emoji = animal.emoji,
+                                            position = position,
+                                            counted = counted,
+                                            slot = slot,
+                                            emojiSize = emoji,
+                                            numeralSize = numeral,
+                                        )
+                                    }
                                 }
                             }
                         }

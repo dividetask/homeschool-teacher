@@ -314,12 +314,20 @@ a little quicker above eight so a long one does not drag.
 ### Counting Multiplication Intro
 
 The worked example that opens Counting Multiplication. `X × Y` is drawn
-as X boxed groups of Y animals, the picture the lesson uses, and what
-that means is said out loud: "3 times 4 means 3 groups of 4. There are 4
-zebras in each group, and 3 groups." One group is outlined while the size
-of a group is named, then each in turn while the groups are counted.
-Every animal is then counted straight through, its number appearing over
-it, and it closes on "3 times 4 equals 12".
+as X boxed groups of Y animals, the picture the lesson uses, and read out
+as what it means before anything is counted. Three counts follow, each
+answering a different question about the same picture:
+
+1. "4 times 3 means 4 groups of 3."
+2. "Count the groups" — 1, 2, 3, 4, with a number landing on each box.
+3. "Count the zebras in the first group" — 1, 2, 3 inside that one box,
+   which is outlined while it is counted.
+4. "The answer is the total number of zebras, let's count them" — 1
+   through 12, straight through every box.
+5. "4 times 3 equals 12 zebras."
+
+How many groups, how big a group, how many altogether: the same picture
+answers all three, which is what the notation means.
 
 ### Multiplication Construction Intro
 
