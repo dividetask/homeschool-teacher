@@ -6,6 +6,10 @@ same presentation — and is filled with as many problems as the page
 holds. Every run reshuffles, so the same command twice gives two
 different worksheets.
 
+One run writes one PDF: every sheet asked for becomes a page of it, in
+curriculum order (easiest first), so a batch prints as a workbook to
+work front to back.
+
     ./setup.sh                                  # once, to install ReportLab
     ./worksheets.py addition-horizontal --level 1
     ./worksheets.py division-counting binary
@@ -22,7 +26,8 @@ import itertools
 import os
 import random
 import sys
-from typing import Iterator, List, Optional, Sequence
+import zlib
+from typing import Iterator, List, Optional, Sequence, Tuple
 
 import catalog
 import problems
@@ -187,21 +192,49 @@ def _number_line_span(sheet: catalog.Sheet) -> int:
     if ceiling is not None:
         span = min(span, int(ceiling))
     return span
-def build(sheet: catalog.Sheet, path: str, seed: Optional[int] = None) -> int:
-    """Write one worksheet PDF. Returns the number of problems on it."""
-    _require_reportlab()
 
+
+# One run makes one document: every worksheet asked for lands in this
+# file, in curriculum order, so a batch prints as a workbook rather than
+# thirty-one files to collate by hand.
+DEFAULT_NAME = "worksheets.pdf"
+
+
+def resolve_out(out: str) -> str:
+    """Turn ``--out`` into the absolute path of the PDF to write.
+
+    A path ending in ``.pdf`` names the file itself; anything else is a
+    directory to drop ``worksheets.pdf`` into, which is what keeps
+    ``--out ~/worksheets`` meaning what it always did.
+    """
+    path = os.path.abspath(out)
+    if os.path.splitext(path)[1].lower() == ".pdf":
+        return path
+    return os.path.join(path, DEFAULT_NAME)
+
+
+def _sheet_seed(seed: Optional[int], sheet: catalog.Sheet) -> Optional[int]:
+    """Vary a run's seed per sheet, so a batch isn't the same shuffle twice.
+
+    crc32 of the slug rather than hash(): string hashing is salted per
+    process, so hash() gave a different worksheet every run from the same
+    --seed — which is the one thing --seed exists to prevent.
+    """
+    if seed is None:
+        return None
+    return seed + zlib.crc32(sheet.slug.encode("utf-8")) % 100000
+
+
+def draw_sheet(c, sheet: catalog.Sheet, seed: Optional[int] = None) -> int:
+    """Draw one worksheet as the next page of ``c``.
+
+    Returns the number of problems on it. The canvas is left ready for
+    the next page.
+    """
     import blocks
     import render
-    from reportlab.pdfgen.canvas import Canvas
 
-    render.register_fonts()
     rng = random.Random(seed)
-
-    c = Canvas(path, pagesize=render.PAGE_SIZE)
-    c.setTitle(f"{sheet.title} — Level {sheet.level}")
-    c.setAuthor("Homeschool Teacher")
-    c.setSubject(sheet.lesson)
 
     top = render.draw_header(c, sheet)
     if sheet.header:
@@ -238,7 +271,6 @@ def build(sheet: catalog.Sheet, path: str, seed: Optional[int] = None) -> int:
     )
     render.draw_footer(c, sheet)
     c.showPage()
-    c.save()
 
     if count < catalog.MIN_PROBLEMS:
         raise SystemExit(
@@ -248,6 +280,45 @@ def build(sheet: catalog.Sheet, path: str, seed: Optional[int] = None) -> int:
             "the shape or shrink the block rather than shipping a thin page."
         )
     return count
+
+
+def build(sheets: Sequence[catalog.Sheet], path: str,
+          seed: Optional[int] = None) -> List[Tuple[catalog.Sheet, int]]:
+    """Write one PDF holding every sheet given, easiest first.
+
+    Returns (sheet, problem count) pairs in the order the pages come out,
+    which is the order the caller should report them in.
+    """
+    _require_reportlab()
+
+    import render
+    from reportlab.pdfgen.canvas import Canvas
+
+    render.register_fonts()
+    ordered = catalog.in_difficulty_order(sheets)
+
+    c = Canvas(path, pagesize=render.PAGE_SIZE)
+    c.setAuthor("Homeschool Teacher")
+    if len(ordered) == 1:
+        only = ordered[0]
+        c.setTitle(f"{only.title} — Level {only.level}")
+        c.setSubject(only.lesson)
+    else:
+        c.setTitle("Homeschool Teacher Worksheets")
+        c.setSubject(f"{len(ordered)} worksheets, easiest first")
+
+    built: List[Tuple[catalog.Sheet, int]] = []
+    for sheet in ordered:
+        # Bookmark before drawing: the outline entry points at whichever
+        # page the canvas is on, and draw_sheet is what ends it. Thirty
+        # pages need a way to jump to one.
+        c.bookmarkPage(sheet.slug)
+        c.addOutlineEntry(f"{sheet.title} — Level {sheet.level}", sheet.slug)
+        built.append((sheet, draw_sheet(c, sheet, _sheet_seed(seed, sheet))))
+    if len(ordered) > 1:
+        c.showOutline()
+    c.save()
+    return built
 
 
 def _resolve(names: Sequence[str], level: Optional[int]) -> List[catalog.Sheet]:
@@ -281,8 +352,8 @@ def _check(seeds: int = 8) -> int:
     counts = {}
     with tempfile.TemporaryDirectory() as tmp:
         for seed in range(seeds):
-            for sheet in catalog.ALL:
-                n = build(sheet, os.path.join(tmp, f"{sheet.slug}.pdf"), seed)
+            path = os.path.join(tmp, f"check-{seed}.pdf")
+            for sheet, n in build(catalog.ALL, path, seed):
                 counts.setdefault(sheet.slug, set()).add(n)
 
     width = max(len(k) for k in counts)
@@ -311,6 +382,7 @@ def _list_sheets() -> None:
         sample = catalog.get(key, catalog.levels(key)[0])
         print(f"  {key.ljust(width)}  levels {levels}   {sample.lesson.split('—')[0].strip()}")
     print("\n  --all builds every worksheet at every level.")
+    print("  Whatever you pick lands in one PDF, easiest first.")
 
 
 def main(argv: Optional[Sequence[str]] = None) -> int:
@@ -324,8 +396,10 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     parser.add_argument("--level", type=int, default=None,
                         help="build only this level (default: every level the sheet has)")
     parser.add_argument("--out", default="out",
-                        help="directory to write PDFs into, relative to where "
-                             "you're standing unless absolute (default: ./out)")
+                        help="where to write the PDF: a directory to put "
+                             f"{DEFAULT_NAME} in, or a path ending in .pdf to "
+                             "name the file. Relative to where you're standing "
+                             "unless absolute (default: ./out)")
     parser.add_argument("--seed", type=int, default=None,
                         help="fix the shuffle so a sheet can be reproduced exactly")
     parser.add_argument("--list", action="store_true", help="list the available worksheets")
@@ -345,23 +419,21 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     if args.all and args.level is not None:
         sheets = [s for s in sheets if s.level == args.level]
 
-    # Resolve before printing: "out/foo.pdf" doesn't tell you which "out",
-    # and the answer depends on where you ran this from.
-    out_dir = os.path.abspath(args.out)
-    os.makedirs(out_dir, exist_ok=True)
-    print(f"Writing to {out_dir}\n")
+    # Resolve before printing: "out/worksheets.pdf" doesn't tell you which
+    # "out", and the answer depends on where you ran this from.
+    path = resolve_out(args.out)
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    print(f"Writing {path}\n")
 
-    width = max(len(f"{s.slug}.pdf") for s in sheets)
-    for sheet in sheets:
-        name = f"{sheet.slug}.pdf"
-        # Vary the seed per sheet so --seed still gives every sheet in a
-        # batch its own problem set rather than the same shuffle.
-        seed = None if args.seed is None else args.seed + hash(sheet.slug) % 100000
-        count = build(sheet, os.path.join(out_dir, name), seed)
-        print(f"  {name.ljust(width)}  {count} problems")
+    built = build(sheets, path, args.seed)
+    width = max(len(s.slug) for s, _ in built)
+    for page, (sheet, count) in enumerate(built, 1):
+        print(f"  {page:>3}.  {sheet.slug.ljust(width)}  {count} problems")
 
-    sheet_word = "worksheet" if len(sheets) == 1 else "worksheets"
-    print(f"\n{len(sheets)} {sheet_word} written to {out_dir}")
+    if len(built) == 1:
+        print(f"\n1 page written to {path}")
+    else:
+        print(f"\n{len(built)} pages, easiest first, written to {path}")
     return 0
 
 
