@@ -10,25 +10,25 @@ The Kotlin plugin was loaded in the following projects: ':app', ':shared'
 > Task :app:preDebugBuild UP-TO-DATE
 > Task :app:mergeDebugNativeDebugMetadata NO-SOURCE
 > Task :app:checkKotlinGradlePluginConfigurationErrors SKIPPED
-> Task :shared:compileKotlin UP-TO-DATE
+> Task :app:checkDebugAarMetadata UP-TO-DATE
+> Task :shared:compileKotlin FROM-CACHE
+> Task :app:generateDebugResValues UP-TO-DATE
 > Task :shared:compileJava NO-SOURCE
 > Task :shared:processResources NO-SOURCE
 > Task :shared:classes UP-TO-DATE
-> Task :shared:jar UP-TO-DATE
-> Task :app:checkDebugAarMetadata UP-TO-DATE
-> Task :app:generateDebugResValues UP-TO-DATE
-> Task :app:mapDebugSourceSetPaths UP-TO-DATE
-> Task :app:generateDebugResources UP-TO-DATE
-> Task :app:mergeDebugResources UP-TO-DATE
-> Task :app:packageDebugResources UP-TO-DATE
-> Task :app:parseDebugLocalResources UP-TO-DATE
+> Task :app:mapDebugSourceSetPaths
+> Task :app:generateDebugResources FROM-CACHE
+> Task :shared:jar
+> Task :app:mergeDebugResources FROM-CACHE
+> Task :app:packageDebugResources FROM-CACHE
+> Task :app:parseDebugLocalResources FROM-CACHE
 > Task :app:createDebugCompatibleScreenManifests UP-TO-DATE
 > Task :app:extractDeepLinksDebug UP-TO-DATE
-> Task :app:processDebugMainManifest UP-TO-DATE
-> Task :app:processDebugManifest UP-TO-DATE
-> Task :app:processDebugManifestForPackage UP-TO-DATE
-> Task :app:processDebugResources UP-TO-DATE
-> Task :app:compileDebugKotlin UP-TO-DATE
+> Task :app:processDebugMainManifest FROM-CACHE
+> Task :app:processDebugManifest FROM-CACHE
+> Task :app:processDebugManifestForPackage FROM-CACHE
+> Task :app:processDebugResources FROM-CACHE
+> Task :app:compileDebugKotlin FROM-CACHE
 > Task :app:javaPreCompileDebug UP-TO-DATE
 > Task :app:compileDebugJavaWithJavac NO-SOURCE
 > Task :app:mergeDebugShaders UP-TO-DATE
@@ -37,23 +37,23 @@ The Kotlin plugin was loaded in the following projects: ':app', ':shared'
 > Task :app:mergeDebugAssets UP-TO-DATE
 > Task :app:compressDebugAssets UP-TO-DATE
 > Task :app:desugarDebugFileDependencies UP-TO-DATE
-> Task :app:dexBuilderDebug UP-TO-DATE
+> Task :app:dexBuilderDebug FROM-CACHE
 > Task :app:mergeDebugGlobalSynthetics UP-TO-DATE
-> Task :app:processDebugJavaRes UP-TO-DATE
-> Task :app:mergeDebugJavaResource UP-TO-DATE
+> Task :app:processDebugJavaRes
 > Task :app:checkDebugDuplicateClasses UP-TO-DATE
 > Task :app:mergeExtDexDebug UP-TO-DATE
-> Task :app:mergeLibDexDebug UP-TO-DATE
-> Task :app:mergeProjectDexDebug UP-TO-DATE
+> Task :app:mergeLibDexDebug FROM-CACHE
+> Task :app:mergeProjectDexDebug FROM-CACHE
 > Task :app:mergeDebugJniLibFolders UP-TO-DATE
 > Task :app:mergeDebugNativeLibs UP-TO-DATE
 > Task :app:stripDebugDebugSymbols UP-TO-DATE
 > Task :app:validateSigningDebug UP-TO-DATE
 > Task :app:writeDebugAppMetadata UP-TO-DATE
 > Task :app:writeDebugSigningConfigVersions UP-TO-DATE
-> Task :app:packageDebug UP-TO-DATE
+> Task :app:mergeDebugJavaResource
+> Task :app:packageDebug
 > Task :app:createDebugApkListingFileRedirect UP-TO-DATE
-> Task :app:assembleDebug UP-TO-DATE
+> Task :app:assembleDebug
 
-BUILD SUCCESSFUL in 2s
-37 actionable tasks: 37 up-to-date
+BUILD SUCCESSFUL in 856ms
+37 actionable tasks: 5 executed, 13 from cache, 19 up-to-date
