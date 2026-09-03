@@ -242,6 +242,7 @@ def fill_page(
     area,
     columns: int,
     max_rows: Optional[int] = None,
+    row_rules: bool = False,
 ) -> int:
     """Lay blocks into a ``columns``-wide grid until the page is full.
 
@@ -252,6 +253,11 @@ def fill_page(
     ``max_rows`` stops after that many rows even if more would fit, for
     sheets that ask for an exact shape; the blocks on those sheets have
     already been given a matching height budget, so the page still fills.
+
+    ``row_rules`` draws a hairline between rows. The picture sheets need
+    it: a problem there is a picture with its equation underneath, and
+    without a divider the eye runs a picture together with the equation
+    of the problem below it — children were answering the wrong one.
 
     Returns how many blocks were drawn. Blocks pulled from the stream but
     left undrawn are discarded — the stream is endless, so nothing is lost.
@@ -279,6 +285,17 @@ def fill_page(
         needed = row_height if drawn == 0 else row_height + ROW_GAP
         if used + needed > total_height:
             break
+
+        if row_rules and drawn:
+            # Half way down the gap this row is about to open below the
+            # previous one. Both rows centre their content, so the rule
+            # lands equidistant from the two problems it separates.
+            rule_y = top - used - ROW_GAP / 2.0
+            c.saveState()
+            c.setStrokeColor(HAIRLINE)
+            c.setLineWidth(0.8)
+            c.line(x0, rule_y, x0 + total_width, rule_y)
+            c.restoreState()
 
         used += needed
         placed_rows += 1

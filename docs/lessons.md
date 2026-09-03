@@ -453,6 +453,12 @@ of `5 × 0` is that five groups of nothing is still nothing.
 
 **Answer surface:** Numeric Grid (0..max).
 
+On paper, where several of these sit on one page, each problem is ruled
+off from the next: a picture with its equation above it reads as
+belonging to whichever equation the eye reaches first, and children were
+answering the group below rather than the one above. The screen shows one
+problem at a time and needs no divider.
+
 ### Animal Division Screen
 The problem stated as `X ÷ Y = ?` on its own line, with `X` animals of a
 single randomly-picked species loose in the middle of the screen and a

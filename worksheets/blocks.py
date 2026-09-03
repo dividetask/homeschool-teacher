@@ -550,6 +550,17 @@ class _BoxedGroups:
         c.restoreState()
 
 
+def _centred_top(top: float, natural: float, band: float) -> float:
+    """Where to start drawing so ``natural`` sits centred in ``band``.
+
+    The stacked picture blocks draw downwards from their top edge, so a
+    band with room to spare used to leave all the slack underneath. That
+    put a row rule nearer the *next* problem's picture than its own,
+    which is exactly the confusion the rules are there to remove.
+    """
+    return top - max(0.0, (band - natural) / 2.0)
+
+
 def fit_pens(groups: int, per_group: int, emoji: str, width: float,
              budget: Optional[float], max_size: float = 14.0,
              min_size: float = 5.0) -> "_BoxedGroups":
@@ -587,15 +598,18 @@ class MultCountingBlock:
             budget = self.height_budget - self._head() - 6
         return fit_pens(p.left, p.right, p.animal.emoji, width - LABEL_WIDTH, budget)
 
+    def _natural(self, width: float) -> float:
+        return self._head() + 6 + self._groups(width).height(width - LABEL_WIDTH)
+
     def height(self, width: float) -> float:
-        inner = width - LABEL_WIDTH
-        natural = self._head() + 6 + self._groups(width).height(inner)
+        natural = self._natural(width)
         if self.height_budget is None:
             return natural
         return max(natural, self.height_budget)
 
     def draw(self, c: Canvas, x: float, top: float, width: float) -> None:
         number_label(c, x, top, self.index)
+        top = _centred_top(top, self._natural(width), self.height(width))
         p = self.problem
         left = x + LABEL_WIDTH
         text = f"{p.left} × {p.right} ="
@@ -671,13 +685,17 @@ class CountingBlanksBlock:
     def _picture_height(self, width: float) -> float:
         return self._picture.height(width)
 
+    def _natural(self, width: float) -> float:
+        return self._picture_height(width) + self.GAP + BOX_HEIGHT
+
     def height(self, width: float) -> float:
-        natural = self._picture_height(width) + self.GAP + BOX_HEIGHT
+        natural = self._natural(width)
         if self.height_budget is None:
             return natural
         return max(natural, self.height_budget)
 
     def draw(self, c: Canvas, x: float, top: float, width: float) -> None:
+        top = _centred_top(top, self._natural(width), self.height(width))
         # The picture block draws the animals and the operator; its own
         # answer box is replaced by the blanks row underneath, so ask it
         # to lay out the groups only.
@@ -726,15 +744,19 @@ class GroupedBlanksBlock:
             budget = self.height_budget - self.GAP - BOX_HEIGHT
         return fit_pens(pens, per_pen, p.animal.emoji, width - LABEL_WIDTH, budget)
 
+    def _natural(self, width: float) -> float:
+        return (self._pens(width).height(width - LABEL_WIDTH)
+                + self.GAP + BOX_HEIGHT + self._trailing())
+
     def height(self, width: float) -> float:
-        inner = width - LABEL_WIDTH
-        natural = self._pens(width).height(inner) + self.GAP + BOX_HEIGHT + self._trailing()
+        natural = self._natural(width)
         if self.height_budget is None:
             return natural
         return max(natural, self.height_budget)
 
     def draw(self, c: Canvas, x: float, top: float, width: float) -> None:
         number_label(c, x, top, self.index)
+        top = _centred_top(top, self._natural(width), self.height(width))
         left = x + LABEL_WIDTH
         pens = self._pens(width)
         pens_height = pens.height(width - LABEL_WIDTH)
@@ -806,18 +828,22 @@ class DivisionCountingBlock:
         self._layout_cache = (width, (size, best[1]))
         return size, best[1]
 
-    def height(self, width: float) -> float:
+    def _natural(self, width: float) -> float:
         size, per_row = self._layout(width)
         _, grid_height = animal_grid_size(
             self.problem.left, per_row, size, self.TRACKING, self.LEADING,
         )
-        natural = grid_height + self._equation_band()
+        return grid_height + self._equation_band()
+
+    def height(self, width: float) -> float:
+        natural = self._natural(width)
         if self.height_budget is None:
             return natural
         return max(natural, self.height_budget)
 
     def draw(self, c: Canvas, x: float, top: float, width: float) -> None:
         number_label(c, x, top, self.index)
+        top = _centred_top(top, self._natural(width), self.height(width))
         p = self.problem
         left = x + LABEL_WIDTH
         size, per_row = self._layout(width)

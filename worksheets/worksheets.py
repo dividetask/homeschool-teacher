@@ -126,6 +126,16 @@ def _blocks_for(sheet: catalog.Sheet, rng: random.Random,
             raise ValueError(f"unknown style {sheet.style!r}")
 
 
+# Styles that draw animals. On these a problem is a picture with its
+# equation above or below it, so without a divider the eye runs one
+# problem's picture together with the next one's equation. The symbolic
+# sheets are one line each and need no help.
+PICTURE_STYLES = frozenset({
+    "counting", "counting-blanks", "mult-counting",
+    "grouped-blanks", "division-counting",
+})
+
+
 def _cells(sheet: catalog.Sheet):
     """Every (left, right) the sheet can ask, for sizing its number line."""
     return problems.arithmetic_cells(sheet.params)
@@ -224,6 +234,7 @@ def build(sheet: catalog.Sheet, path: str, seed: Optional[int] = None) -> int:
         area,
         sheet.columns,
         max_rows=int(rows) if rows else None,
+        row_rules=sheet.style in PICTURE_STYLES,
     )
     render.draw_footer(c, sheet)
     c.showPage()
