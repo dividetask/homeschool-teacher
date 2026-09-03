@@ -33,6 +33,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.dividetask.homeschoolteacher.Tts
+import com.dividetask.homeschoolteacher.ui.FeedbackHold
 import kotlinx.coroutines.delay
 
 @Composable
@@ -59,17 +60,17 @@ fun SightWordsScreen(
     LaunchedEffect(state.feedback, state.problem) {
         when (state.feedback) {
             SightWordsFeedback.Correct -> {
-                delay(900)
+                delay(FeedbackHold.CORRECT_MS)
                 Tts.stopAll()
                 onCompleted()
             }
             SightWordsFeedback.Wrong -> {
-                delay(2000)
+                delay(FeedbackHold.WRONG_MS)
                 Tts.stopAll()
                 onCompleted()
             }
             SightWordsFeedback.Revealed -> {
-                delay(1600)
+                delay(FeedbackHold.REVEALED_MS)
                 Tts.stopAll()
                 onCompleted()
             }

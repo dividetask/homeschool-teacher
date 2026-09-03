@@ -24,6 +24,7 @@ import androidx.compose.material3.ModalNavigationDrawer
 import androidx.compose.material3.NavigationDrawerItem
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.Composable
@@ -37,6 +38,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.dividetask.homeschoolteacher.binary.BinaryOperationsScreen
@@ -44,9 +46,11 @@ import com.dividetask.homeschoolteacher.binary.BinaryOperationsViewModel
 import com.dividetask.homeschoolteacher.chess.ChessScreen
 import com.dividetask.homeschoolteacher.multiplication.CountingMultiplicationScreen
 import com.dividetask.homeschoolteacher.multiplication.CountingMultiplicationViewModel
-import com.dividetask.homeschoolteacher.multiplication.MultiplicationOperandsScreen
-import com.dividetask.homeschoolteacher.multiplication.MultiplicationOperandsViewModel
+import com.dividetask.homeschoolteacher.multiplication.MultiplicationConstructionScreen
+import com.dividetask.homeschoolteacher.multiplication.MultiplicationConstructionViewModel
 import com.dividetask.homeschoolteacher.chess.ChessViewModel
+import com.dividetask.homeschoolteacher.division.CountingDivisionScreen
+import com.dividetask.homeschoolteacher.division.CountingDivisionViewModel
 import com.dividetask.homeschoolteacher.lesson.LessonId
 import com.dividetask.homeschoolteacher.lesson.LessonSelector
 import com.dividetask.homeschoolteacher.lesson.LessonSelectorFactory
@@ -70,6 +74,7 @@ import com.dividetask.homeschoolteacher.tictactoe.GameScreen
 import com.dividetask.homeschoolteacher.tictactoe.GameViewModel
 import com.dividetask.homeschoolteacher.tictactoe.TttPuzzleScreen
 import com.dividetask.homeschoolteacher.tictactoe.TttPuzzleViewModel
+import com.dividetask.homeschoolteacher.intro.LessonIntros
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
@@ -82,7 +87,8 @@ fun HomeschoolTeacherApp() {
     val math: MathViewModel = viewModel()
     val binary: BinaryOperationsViewModel = viewModel()
     val multiplication: CountingMultiplicationViewModel = viewModel()
-    val multiplicationOperands: MultiplicationOperandsViewModel = viewModel()
+    val multiplicationConstruction: MultiplicationConstructionViewModel = viewModel()
+    val division: CountingDivisionViewModel = viewModel()
     val letterSounds: LetterSoundsViewModel = viewModel()
     val phonemes: PhonemesViewModel = viewModel()
     val reading: ReadingViewModel = viewModel()
@@ -90,11 +96,14 @@ fun HomeschoolTeacherApp() {
     val rhymingWords: RhymingWordsViewModel = viewModel()
     val positionWords: PositionWordsViewModel = viewModel()
     val selector: LessonSelector = viewModel(
-        factory = LessonSelectorFactory(game, tttPuzzle, chess, math, binary, multiplication, multiplicationOperands, letterSounds, phonemes, reading, sightWords, rhymingWords, positionWords),
+        factory = LessonSelectorFactory(game, tttPuzzle, chess, math, binary, multiplication, multiplicationConstruction, division, letterSounds, phonemes, reading, sightWords, rhymingWords, positionWords),
     )
 
     val mode by selector.mode.collectAsStateWithLifecycle()
     val current by selector.currentLesson.collectAsStateWithLifecycle()
+    val intro by selector.intro.collectAsStateWithLifecycle()
+    // Held in a local so the null check below narrows the type.
+    val playing: LessonId? = intro
     val passed by selector.passedMap.collectAsStateWithLifecycle()
     val manualUnlock by selector.manualUnlockMap.collectAsStateWithLifecycle()
 
@@ -179,6 +188,19 @@ fun HomeschoolTeacherApp() {
                             onTriggered = { scope.launch { drawerState.open() } },
                         )
                     },
+                    actions = {
+                        // Replays the lesson's worked example. Only on the
+                        // lessons that have one, and not while one is
+                        // already playing.
+                        if (mode != SelectionMode.Progress &&
+                            playing == null &&
+                            LessonIntros.exists(current)
+                        ) {
+                            TextButton(onClick = selector::replayIntro) {
+                                Text("Learn", fontSize = 16.sp)
+                            }
+                        }
+                    },
                 )
             },
             modifier = Modifier.fillMaxSize(),
@@ -191,7 +213,8 @@ fun HomeschoolTeacherApp() {
                         math = math,
                         binary = binary,
                         multiplication = multiplication,
-                        multiplicationOperands = multiplicationOperands,
+                        multiplicationConstruction = multiplicationConstruction,
+                        division = division,
                         letterSounds = letterSounds,
                         phonemes = phonemes,
                         reading = reading,
@@ -203,6 +226,15 @@ fun HomeschoolTeacherApp() {
                         manualUnlockMap = manualUnlock,
                         onToggleManualUnlock = { id, value -> selector.setManualUnlock(id, value) },
                         onSetPassed = { id, value -> selector.setPassed(id, value) },
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                } else if (playing != null) {
+                    // A round opens with its worked example, if it has one.
+                    // The lesson's first problem is already prepared behind
+                    // this; it appears when the animation finishes.
+                    LessonIntros.Play(
+                        id = playing,
+                        onFinished = selector::onIntroFinished,
                         modifier = Modifier.fillMaxWidth(),
                     )
                 } else {
@@ -239,12 +271,19 @@ fun HomeschoolTeacherApp() {
                         LessonId.HorizontalSubtraction0,
                         LessonId.VerticalSubtraction0,
                         LessonId.NumberLineSubtraction0,
+                        LessonId.CountingSubtraction1,
                         LessonId.HorizontalMultiplication0,
                         LessonId.VerticalMultiplication0,
                         LessonId.NumberLineMultiplication0,
                         LessonId.HorizontalMultiplication1,
                         LessonId.VerticalMultiplication1,
-                        LessonId.NumberLineMultiplication1 -> MathScreen(
+                        LessonId.NumberLineMultiplication1,
+                        LessonId.HorizontalDivision0,
+                        LessonId.VerticalDivision0,
+                        LessonId.NumberLineDivision0,
+                        LessonId.HorizontalDivision1,
+                        LessonId.VerticalDivision1,
+                        LessonId.NumberLineDivision1 -> MathScreen(
                             viewModel = math,
                             onCompleted = selector::onLessonInstanceCompleted,
                             modifier = Modifier.fillMaxWidth(),
@@ -260,8 +299,14 @@ fun HomeschoolTeacherApp() {
                             onCompleted = selector::onLessonInstanceCompleted,
                             modifier = Modifier.fillMaxWidth(),
                         )
-                        LessonId.CountingMultiplication1 -> MultiplicationOperandsScreen(
-                            viewModel = multiplicationOperands,
+                        LessonId.MultiplicationConstruction0 -> MultiplicationConstructionScreen(
+                            viewModel = multiplicationConstruction,
+                            onCompleted = selector::onLessonInstanceCompleted,
+                            modifier = Modifier.fillMaxWidth(),
+                        )
+                        LessonId.CountingDivision0,
+                        LessonId.CountingDivision1 -> CountingDivisionScreen(
+                            viewModel = division,
                             onCompleted = selector::onLessonInstanceCompleted,
                             modifier = Modifier.fillMaxWidth(),
                         )

@@ -33,6 +33,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.dividetask.homeschoolteacher.Tts
+import com.dividetask.homeschoolteacher.ui.FeedbackHold
+import com.dividetask.homeschoolteacher.ui.NumericGrid
 import kotlinx.coroutines.delay
 
 @OptIn(ExperimentalLayoutApi::class)
@@ -55,17 +57,17 @@ fun CountingMultiplicationScreen(
     LaunchedEffect(state.feedback, state.problem) {
         when (state.feedback) {
             MultiplicationFeedback.Correct -> {
-                delay(900)
+                delay(FeedbackHold.CORRECT_MS)
                 Tts.stopAll()
                 onCompleted()
             }
             MultiplicationFeedback.Wrong -> {
-                delay(2000)
+                delay(FeedbackHold.WRONG_MS)
                 Tts.stopAll()
                 onCompleted()
             }
             MultiplicationFeedback.Revealed -> {
-                delay(1600)
+                delay(FeedbackHold.REVEALED_MS)
                 Tts.stopAll()
                 onCompleted()
             }
@@ -117,12 +119,13 @@ fun CountingMultiplicationScreen(
             },
         )
 
-        ChoiceGrid(
+        NumericGrid(
+            maxAnswer = MAX_PRODUCT,
             selected = state.selected,
-            feedback = state.feedback,
             correct = problem.answer,
-            onChoose = viewModel::onAnswer,
+            answered = state.feedback != MultiplicationFeedback.None,
             inputEnabled = inputReady,
+            onChoose = viewModel::onAnswer,
         )
 
         TextButton(onClick = viewModel::giveUp) {
@@ -149,9 +152,10 @@ private fun ScoreItem(label: String, value: Int, color: Color) {
 }
 
 /**
- * Render `op2` groups, each containing `op1` copies of [emoji]. Each group
- * is drawn inside its own rounded box with a wide gap between boxes, so a
- * child can clearly see "this many groups of this many". Groups flow
+ * Render `op1` groups, each containing `op2` copies of [emoji] — multiplication
+ * is always read as "op1 groups of op2", so 4 × 3 draws four groups of three.
+ * Each group is drawn inside its own rounded box with a wide gap between boxes,
+ * so a child can clearly see "this many groups of this many". Groups flow
  * left-to-right and wrap to additional lines as needed; a single group is
  * never broken across a line because each group is its own [Row].
  */
@@ -177,7 +181,7 @@ internal fun AnimalGroups(
         horizontalArrangement = Arrangement.spacedBy(24.dp, Alignment.CenterHorizontally),
         verticalArrangement = Arrangement.spacedBy(20.dp),
     ) {
-        repeat(op2) {
+        repeat(op1) {
             Row(
                 horizontalArrangement = Arrangement.spacedBy(4.dp),
                 verticalAlignment = Alignment.CenterVertically,
@@ -189,63 +193,8 @@ internal fun AnimalGroups(
                     )
                     .padding(horizontal = 10.dp, vertical = 8.dp),
             ) {
-                repeat(op1) {
+                repeat(op2) {
                     Text(text = emoji, fontSize = 28.sp)
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun ChoiceGrid(
-    selected: Int?,
-    feedback: MultiplicationFeedback,
-    correct: Int,
-    onChoose: (Int) -> Unit,
-    inputEnabled: Boolean,
-) {
-    val maxAnswer = 16  // 4 × 4 = 16
-    val cols = 6        // 17 cells → 3 rows of 6 + 1 spacer in the last row
-    val cells = (0..maxAnswer).toList()
-    Column(
-        verticalArrangement = Arrangement.spacedBy(8.dp),
-        modifier = Modifier.widthIn(max = 480.dp).fillMaxWidth(),
-    ) {
-        cells.chunked(cols).forEach { row ->
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                modifier = Modifier.fillMaxWidth(),
-            ) {
-                row.forEach { choice ->
-                    val container = when {
-                        feedback == MultiplicationFeedback.None -> MaterialTheme.colorScheme.primary
-                        choice == correct -> Color(0xFF22C55E)
-                        choice == selected -> Color(0xFFEF4444)
-                        else -> MaterialTheme.colorScheme.primary.copy(alpha = 0.4f)
-                    }
-                    Button(
-                        onClick = { onChoose(choice) },
-                        enabled = inputEnabled && feedback == MultiplicationFeedback.None,
-                        shape = RoundedCornerShape(14.dp),
-                        contentPadding = PaddingValues(2.dp),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = container,
-                            disabledContainerColor = container,
-                            contentColor = Color.White,
-                            disabledContentColor = Color.White,
-                        ),
-                        modifier = Modifier.weight(1f).heightIn(min = 48.dp),
-                    ) {
-                        Text(
-                            text = choice.toString(),
-                            fontSize = 18.sp,
-                            fontWeight = FontWeight.Bold,
-                        )
-                    }
-                }
-                repeat(cols - row.size) {
-                    Spacer(modifier = Modifier.weight(1f))
                 }
             }
         }

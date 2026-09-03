@@ -32,6 +32,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.coroutines.delay
+import com.dividetask.homeschoolteacher.ui.FeedbackHold
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
@@ -53,9 +54,9 @@ fun PositionWordsScreen(
     LaunchedEffect(state.feedback, state.problem) {
         val hold = when (state.feedback) {
             PositionFeedback.None -> return@LaunchedEffect
-            PositionFeedback.Correct -> 1100L
-            PositionFeedback.Wrong -> 2200L
-            PositionFeedback.Revealed -> 1800L
+            PositionFeedback.Correct -> FeedbackHold.CORRECT_MS
+            PositionFeedback.Wrong -> FeedbackHold.WRONG_MS
+            PositionFeedback.Revealed -> FeedbackHold.REVEALED_MS
         }
         delay(hold)
         onCompleted()

@@ -10,7 +10,19 @@ import kotlin.random.Random
 object LessonRoulette {
 
     /**
+     * Share of draws that go to a lesson the learner has already passed.
+     * Revision keeps earlier material fresh, but the bulk of a session
+     * should be spent on what is still being learned.
+     */
+    const val PASSED_LESSON_SHARE = 0.10
+
+    /**
      * Pick the next lesson at random.
+     *
+     * One draw in ten (see [PASSED_LESSON_SHARE]) comes from the lessons
+     * already passed; the rest come from the lessons still unpassed. When
+     * only one of the two groups has any lessons in it, every draw comes
+     * from that group. Within a group the pick is uniform.
      *
      * @param unlocked lessons currently eligible to run (no-parent lessons
      *   or lessons whose parent has been passed).
@@ -32,16 +44,13 @@ object LessonRoulette {
         val pool = unlocked
             .filter { excludeCategory == null || it.category != excludeCategory }
             .ifEmpty { unlocked }
-        val weighted = pool.map { def ->
-            val w = if (passed[def.id] == true) 1 else 2
-            def to w
+        val (done, todo) = pool.partition { passed[it.id] == true }
+        val group = when {
+            done.isEmpty() -> todo
+            todo.isEmpty() -> done
+            random.nextDouble() < PASSED_LESSON_SHARE -> done
+            else -> todo
         }
-        val total = weighted.sumOf { it.second }
-        var r = random.nextInt(total)
-        for ((def, w) in weighted) {
-            if (r < w) return def
-            r -= w
-        }
-        return pool.last()
+        return group[random.nextInt(group.size)]
     }
 }

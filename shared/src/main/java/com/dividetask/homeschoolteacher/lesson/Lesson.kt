@@ -29,14 +29,25 @@ enum class LessonId {
     HorizontalSubtraction0,
     VerticalSubtraction0,
     NumberLineSubtraction0,
+    CountingSubtraction1,
     CountingMultiplication0,
-    CountingMultiplication1,
+    // Fill-in-the-operands lessons. One per operation and level as they are
+    // written; only multiplication has one so far.
+    MultiplicationConstruction0,
     HorizontalMultiplication0,
     VerticalMultiplication0,
     NumberLineMultiplication0,
     HorizontalMultiplication1,
     VerticalMultiplication1,
     NumberLineMultiplication1,
+    CountingDivision0,
+    CountingDivision1,
+    HorizontalDivision0,
+    VerticalDivision0,
+    NumberLineDivision0,
+    HorizontalDivision1,
+    VerticalDivision1,
+    NumberLineDivision1,
     LetterSounds0,
     Phonemes0,
     Reading0,
@@ -88,6 +99,21 @@ object Lessons {
         LessonId.VerticalMultiplication0,
         LessonId.NumberLineMultiplication0,
     )
+    private val MULTIPLICATION_EQ_L1 = listOf(
+        LessonId.HorizontalMultiplication1,
+        LessonId.VerticalMultiplication1,
+        LessonId.NumberLineMultiplication1,
+    )
+
+    /** The three symbolic Division presentations at Level 0. */
+    private val DIVISION_EQ_L0 = listOf(
+        LessonId.HorizontalDivision0,
+        LessonId.VerticalDivision0,
+        LessonId.NumberLineDivision0,
+    )
+
+    /** Everything past the multiplication basics — the gate for Division. */
+    private val MULTIPLICATION_L1 = MULTIPLICATION_EQ_L1 + LessonId.MultiplicationConstruction0
 
     val definitions: Map<LessonId, LessonDefinition> = listOf(
         LessonDefinition(LessonId.TicTacToe0, "Tic Tac Toe — Level 0", Category.Game),
@@ -131,15 +157,24 @@ object Lessons {
         LessonDefinition(LessonId.HorizontalSubtraction0, "Horizontal Subtraction — Level 0", Category.Math, ADDITION_L1),
         LessonDefinition(LessonId.VerticalSubtraction0, "Vertical Subtraction — Level 0", Category.Math, ADDITION_L1),
         LessonDefinition(LessonId.NumberLineSubtraction0, "Number Line Subtraction — Level 0", Category.Math, ADDITION_L1),
+        // Subtraction — Level 1. The inverse of Addition Level 1: that tier
+        // adds operands 0..8 to reach 0..16, this one takes 0..8 back off a
+        // number in 8..16, so it is the same family of facts read the other
+        // way round. Counting only for now — the symbolic presentations stay
+        // at Level 0.
+        LessonDefinition(LessonId.CountingSubtraction1, "Counting Subtraction — Level 1", Category.Math, SUBTRACTION_L0),
         // Counting Multiplication unlocks after the whole Subtraction
         // L0 group is passed. The Level 0 presentations then run in a fixed
         // order: Counting 0 first, then Number Line 0, then the remaining
         // two (Horizontal / Vertical). Counting 1 (identify the operands)
         // opens alongside Number Line 0, off Counting 0.
         LessonDefinition(LessonId.CountingMultiplication0, "Counting Multiplication — Level 0", Category.Math, SUBTRACTION_L0),
-        // Level 1 keeps the same boxed groups but asks which two numbers are
-        // being multiplied (operands, not the product); operands 1..4.
-        LessonDefinition(LessonId.CountingMultiplication1, "Counting Multiplication — Level 1", Category.Math, listOf(LessonId.CountingMultiplication0)),
+        // Filling in the operands is its own exercise, not a harder level of
+        // Counting Multiplication: the same boxed groups are shown, but the
+        // question is which two numbers are being multiplied rather than
+        // what they come to. Operands 1..4. Each operation will get one of
+        // these, at each level, as they are written.
+        LessonDefinition(LessonId.MultiplicationConstruction0, "Multiplication Construction — Level 0", Category.Math, listOf(LessonId.CountingMultiplication0)),
         // Number Line Multiplication 0 is offered only after Counting 0.
         LessonDefinition(LessonId.NumberLineMultiplication0, "Number Line Multiplication — Level 0", Category.Math, listOf(LessonId.CountingMultiplication0)),
         // The rest of the Level 0 presentations are offered only after
@@ -154,6 +189,26 @@ object Lessons {
         LessonDefinition(LessonId.HorizontalMultiplication1, "Horizontal Multiplication — Level 1", Category.Math, MULTIPLICATION_EQ_L0),
         LessonDefinition(LessonId.VerticalMultiplication1, "Vertical Multiplication — Level 1", Category.Math, MULTIPLICATION_EQ_L0),
         LessonDefinition(LessonId.NumberLineMultiplication1, "Number Line Multiplication — Level 1", Category.Math, MULTIPLICATION_EQ_L0),
+        // Division. Both levels ask the same question — share X animals
+        // into Y equal groups and say how many land in each — and differ
+        // only in how much the screen scaffolds it: Level 0 puts out
+        // exactly Y pens, Level 1 always puts out six. Level 0 opens at the
+        // end of the multiplication chain: every symbolic Multiplication
+        // Level 1 lesson plus Multiplication Construction.
+        LessonDefinition(LessonId.CountingDivision0, "Counting Division — Level 0", Category.Math, MULTIPLICATION_L1),
+        LessonDefinition(LessonId.CountingDivision1, "Counting Division — Level 1", Category.Math, listOf(LessonId.CountingDivision0)),
+        // The symbolic division presentations, following the same order the
+        // multiplication ones do: the number line first, off the counting
+        // lesson, then the other two off it, then the whole Level 1 tier
+        // once all three Level 0 presentations are passed. They share one
+        // product-style coverage grid per level but keep their own streaks,
+        // so they pass independently.
+        LessonDefinition(LessonId.NumberLineDivision0, "Number Line Division — Level 0", Category.Math, listOf(LessonId.CountingDivision0)),
+        LessonDefinition(LessonId.HorizontalDivision0, "Horizontal Division — Level 0", Category.Math, listOf(LessonId.NumberLineDivision0)),
+        LessonDefinition(LessonId.VerticalDivision0, "Vertical Division — Level 0", Category.Math, listOf(LessonId.NumberLineDivision0)),
+        LessonDefinition(LessonId.HorizontalDivision1, "Horizontal Division — Level 1", Category.Math, DIVISION_EQ_L0),
+        LessonDefinition(LessonId.VerticalDivision1, "Vertical Division — Level 1", Category.Math, DIVISION_EQ_L0),
+        LessonDefinition(LessonId.NumberLineDivision1, "Number Line Division — Level 1", Category.Math, DIVISION_EQ_L0),
         // Letter Sounds is the head of the Reading chain: a recorded word
         // clip plays and the learner taps the letter it starts with.
         // Everything else in Reading now sits behind it (Phonemes requires

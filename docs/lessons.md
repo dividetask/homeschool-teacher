@@ -70,6 +70,7 @@ multiple levels of the same game family (e.g. `win_streak[game][level]`).
 | 8   | Binary         |
 | 9   | Multiplication |
 | 10  | Position Words |
+| 11  | Division       |
 
 ## Variables
 
@@ -112,19 +113,23 @@ tracks correct answers for the matching multiplication problem when
 shown via the Counting Multiplication Screen.
 
 ### `multiplication_equation_grid[op1][op2]`
-Integer 2D array, `op1` and `op2` indexed `0..4`. Product-coverage grid
+Integer 2D array, `op1` and `op2` indexed `0..15` (Level 0 fills the
+`0..4` slice, Level 1 the `0..8` slice). Product-coverage grid
 shared by the Horizontal / Vertical / Number Line multiplication screens
 (tap-the-product lessons). Separate from `multiplication_grid` (the
 counting/product lesson) and `multiplication_operands_grid`. Default zero.
 
 ### `multiplication_operands_grid[op1][op2]`
 Integer 2D array, `op1` and `op2` indexed `1..4`. Cell tracks correct
-identifications of the two operands in Counting Multiplication Level 1
-(separate from `multiplication_grid`, which tracks products in Level 0).
+identifications of the two operands in Multiplication Construction — Level 0
+(separate from `multiplication_grid`, which tracks products in Counting
+Multiplication).
 Default zero.
 
 ### `addition_grid[op1][op2]`
-Integer 2D array, `op1` and `op2` indexed `0..19` (length 20 each). Cell
+Integer 2D array, `op1` and `op2` indexed `0..19` (length 20 each). The
+row index is a first operand, which subtraction takes to 16; no operand
+itself passes 8. Cell
 tracks correct answers for the matching addition problem when shown via
 the Vertical, Horizontal, or Number Line equation screens. Shared
 across those three screens.
@@ -134,6 +139,25 @@ Integer 2D array, `op1` and `op2` indexed `0..19`. Cell tracks correct
 answers for the matching subtraction problem when shown via the
 Vertical, Horizontal, or Number Line equation screens. Shared across
 those three screens.
+
+### `division_grid[level][dividend][divisor]`
+Integer 3D array. `level ∈ 0..1`; `dividend` indexed `0..40`; `divisor`
+indexed `0..8`. Cell tracks correct answers for `dividend ÷ divisor` at
+that level. Only the cells where the division comes out whole are ever
+asked, so the grid is **sparse by design** — `division_grid[0][7][2]`,
+for instance, stays at zero forever and is not counted towards mastery.
+Each level keeps its own coverage: answering without the pens giving the
+answer away is the point of Level 1, so Level 0's coverage must not pass
+it. Default zero.
+
+### `division_equation_grid[level][dividend][divisor]`
+Integer 3D array, shaped like `division_grid` — `level ∈ 0..1`, dividend
+`0..40`, divisor `0..8` — and sparse for the same reason: only the pairs
+that divide exactly are ever asked. Coverage for the **symbolic**
+division presentations (Horizontal, Vertical, Number Line), shared by all
+three at a level and separate from the counting lesson's grid. Sharing
+animals out into pens is not the same skill as dividing from the numbers
+alone, so neither passes the other. Default zero.
 
 ### `lesson_passed[lesson]`
 Boolean, one per lesson. Sticky: once a lesson's pass criteria are met
@@ -180,8 +204,10 @@ over 3). Example for `op1 = 3`, `op2 = 2` with the left group split:
 ```
 
 The arrangement is chosen once per problem and stays fixed until the
-next problem. For subtraction the operator becomes `-`. The single
-animal species used is chosen at random per problem.
+next problem. An operand of **0** draws as blank space about one animal
+wide, so the equation keeps its shape and the gap reads as "none here".
+For subtraction the operator becomes `-`. The single animal species used
+is chosen at random per problem.
 
 **Answer surface:** single-tap grid covering every possible answer
 within the lesson's operand range.
@@ -210,8 +236,15 @@ The two operands stacked, with the operator on the second line:
 A horizontal number line drawn above the equation, with the equation
 below (`X op Y = ?`). The number line:
 
-- **always starts at 0** and runs to `next_multiple_of_ten(answer + 10)`
-  — so the answer sits comfortably inside the range, never at the edge;
+- **always starts at 0** and runs to
+  `next_multiple_of_ten(lesson_line_max + 10)`, where `lesson_line_max`
+  is the largest answer the lesson can ask — except in division, where it
+  is the largest **dividend**, since that is the number a learner counts
+  along to work the answer out — so the
+  line is the same length for every problem in a lesson (sizing it off
+  the current answer instead would draw a stubby line for an easy
+  problem, such as one with a zero operand, and a long one for the next),
+  and every answer sits comfortably inside the range, never at the edge;
 - **labels every integer** with a tick;
 - **scrolls horizontally** — the learner drags it left/right with a
   finger (it is wider than the screen);
@@ -268,6 +301,89 @@ emoji replays the audio.
 
 **Answer surface:** full A–Z keypad.
 
+### Counting Addition Intro
+
+The worked example that opens the counting addition lessons (see Rules §
+Lesson intros). Four steps, on a screen of its own:
+
+1. The two groups of animals with the `+` and `= ?` between them —
+   exactly the picture the lesson puts up. The problem is spoken: "3
+   plus 2".
+2. The groups slide together and the operator and question mark clear
+   away, leaving one row of animals.
+3. The row is counted off one animal at a time, left to right, each
+   number appearing above its animal as it is said. Those numbers are
+   the only writing the intro puts on screen.
+4. The whole sentence is spoken — "3 plus 2 equals 5 zebras", with the
+   animal's own name — over the counted row, whose last number is the
+   answer.
+
+The animals shrink to fit as the total grows, so the biggest problem the
+Level 1 range allows still counts along a single row, and the count runs
+a little quicker above eight so a long one does not drag.
+
+### Counting Multiplication Intro
+
+The worked example that opens Counting Multiplication. `X × Y` is drawn
+as X boxed groups of Y animals, the picture the lesson uses, and read out
+as what it means before anything is counted. Three counts follow, each
+answering a different question about the same picture:
+
+1. "4 times 3 means 4 groups of 3."
+2. "Count the groups" — 1, 2, 3, 4, with a number landing on each box.
+3. "Count the zebras in the first group" — 1, 2, 3 inside that one box,
+   which is outlined while it is counted.
+4. "The answer is the total number of zebras, let's count them" — 1
+   through 12, straight through every box.
+5. "4 times 3 equals 12 zebras."
+
+How many groups, how big a group, how many altogether: the same picture
+answers all three, which is what the notation means.
+
+### Multiplication Construction Intro
+
+Multiplication Construction asks the question backwards — the picture is
+given and the two numbers are missing — so its intro reads the picture.
+The boxed groups appear above the lesson's `_ × _`, the groups are
+counted first, each numbered as it is counted, and that count drops into
+the first blank; then one group is outlined and its animals counted, and
+that drops into the second. It closes on "3 times 4".
+
+### Counting Division Intro
+
+The dividend stands loose above a row of empty pens. The animals are
+dealt into the pens one at a time, round and round, so the sharing
+happens in view rather than off screen; the pen receiving each animal
+lights as it lands. When the last one is placed, one pen is outlined and
+its animals counted — that count is the answer, and the same in every
+pen: "4 zebras in every pen. 12 divided by 3 equals 4."
+
+The example is drawn from the level's own problems, and never has one
+pen or one animal per pen: a share-out has to share.
+
+### Number Line Addition Intro
+
+The worked example that opens the number line addition lessons. A dot
+lands on the **first operand** — you start from what you already have
+rather than counting up from zero — and then hops one place at a time,
+an arc drawn over each hop and left on screen so the whole journey
+stays visible, counting aloud as it lands. Where it stops is the answer,
+and the numbers it passed through stay marked.
+
+The line runs from 0 to one past the answer, so the last hop is never at
+the very edge.
+
+### Letter Sound Clip Screen
+A large tappable speaker button in the centre of the screen. On each new
+problem it plays a pre-recorded clip of a word (`<x>3.mp3`); tapping the
+speaker replays it. The learner taps the letter the word starts with.
+After any answer the matching letter clip (`<x>1.mp3`) plays as
+reinforcement, and the screen holds until it has finished (see the
+lesson's **Show answer** row). A score row above shows correct, current
+streak, and wrong counts.
+
+**Answer surface:** full A–Z keypad.
+
 ### Word Display Screen
 A word shown with one letter replaced by an underscore; the whole word
 is spoken aloud via TTS. Tapping the word replays the audio.
@@ -305,24 +421,84 @@ answers, then they are revealed alongside the green/red feedback. A
 **Answer surface:** A–Z Keypad.
 
 ### Counting Multiplication Screen
-The equation displayed on its own line followed by `op2` groups, each
-containing `op1` copies of a randomly-picked animal emoji. **Each group
-is drawn inside its own rounded box, with a wide gap between boxes**, so
-the "this many groups of this many" structure is clear. Groups flow
-left-to-right and wrap to additional lines as needed; a single group is
-never split across a line. Example for `op1 = 2`, `op2 = 4`:
+The equation displayed on its own line followed by `op1` groups, each
+containing `op2` copies of a randomly-picked animal emoji — multiplication
+is always read as "`op1` groups of `op2`". **Each group is drawn inside
+its own rounded box, with a wide gap between boxes**, so the "this many
+groups of this many" structure is clear. Groups flow left-to-right and
+wrap to additional lines as needed; a single group is never split across
+a line. Example for `op1 = 2`, `op2 = 4`:
 
 ```
 2 × 4 = ?
-[🐱🐱]  [🐱🐱]  [🐱🐱]  [🐱🐱]
+[🐱🐱🐱🐱]  [🐱🐱🐱🐱]
 ```
 
 For products that don't fit on one line (e.g. `4 × 4 = 16`), the
 boxed groups wrap onto two or three lines while staying visually
-grouped. When either operand is 0 the area shows "(no 🐱)" instead of
-empty space.
+grouped.
+
+**A zero operand is drawn according to which one it is**, since `0 × 5`
+and `5 × 0` are different pictures and must not look alike:
+
+- `op1 = 0` — *no groups at all*. There is nothing to box, so the area
+  shows **"(no groups)"**.
+- `op2 = 0` — *`op1` groups, each empty*. The boxes are drawn as usual,
+  `op1` of them, each holding **"(none)"** where its animals would be.
+- `0 × 0` — no groups, so it reads as `op1 = 0` does.
+
+Showing a single "(no 🐱)" for both cases, as the screen did before this
+was written down, loses the distinction the lesson is teaching: the point
+of `5 × 0` is that five groups of nothing is still nothing.
 
 **Answer surface:** Numeric Grid (0..max).
+
+On paper, where several of these sit on one page, each problem is ruled
+off from the next: a picture with its equation above it reads as
+belonging to whichever equation the eye reaches first, and children were
+answering the group below rather than the one above. The screen shows one
+problem at a time and needs no divider.
+
+### Animal Division Screen
+The problem stated as `X ÷ Y = ?` on its own line, with `X` animals of a
+single randomly-picked species loose in the middle of the screen and a
+column of empty **pens** down the side:
+
+```
+        12 ÷ 3 = ?
+
+  ┌────┐
+  │    │     🐰🐰🐰🐰🐰🐰
+  ├────┤     🐰🐰🐰🐰🐰🐰
+  │    │
+  ├────┤
+  │    │
+  └────┘
+```
+
+Tapping a pen selects it (a thicker, tinted border); tapping any animal
+in the middle then moves one animal into that pen. Tapping an animal
+already inside a pen sends it back to the middle, and a **Start over**
+button empties every pen at once. The arrangement resets on each new
+problem.
+
+Sharing the animals out is **only an aid** — the answer is graded off
+the tapped number, so a learner who already knows it can answer without
+moving anything, and a learner who shares them unevenly is not marked
+wrong for it.
+
+How many pens appear is what separates the two levels:
+
+- **Level 0** puts out exactly `Y` pens, so filling them evenly makes
+  the answer visible — this is the level that *shows* what dividing is.
+- **Level 1** always puts out **eight** pens — as many as the widest
+  divisor the level can ask — whatever the divisor actually is, so the
+  count of pens never gives the answer away and the learner has to work
+  out how many of them to use.
+
+**Answer surface:** Numeric Grid (0..8) — the answer is how many
+land in each pen, which never passes the level's operand ceiling, not
+the dividend.
 
 ### Binary Vertical Equation Screen
 Two binary operands stacked, with a bitwise operator on the second line
@@ -347,7 +523,7 @@ and size as the problem itself** (operands stacked, `₂` subscripts, rule
 line, result). AND shows the AND table; OR the OR table; XOR the XOR
 table. For Level 0 these four are every possible question; for Level 1
 they are the per-column rule for each of the three bits. Pressing the
-button again hides it; otherwise it auto-hides after 8 seconds (or on a
+button again hides it; otherwise it auto-hides after 16 seconds (or on a
 tap). It resets to hidden on each new problem.
 
 **Answer surface:** Binary Keypad with `bits` slots.
@@ -360,10 +536,12 @@ it inline.
 
 ### Numeric Grid (0..max)
 Grid of single-tap buttons, each labelled with one candidate answer
-from `0` to `max`. Used by every math equation screen. Column count
-scales with `max` so the grid stays comfortable on a phone (5 columns
-through `max = 18`, 7 columns above that). Tapping a button submits
-that value as the answer.
+from `0` to `max`. One shared surface behind every math lesson that taps
+its answer — the equation screens, Counting Multiplication and Counting
+Division alike — so the button size and colours never differ between
+them. Column count scales with `max` so the grid stays comfortable on a
+phone (5 columns through `max = 18`, 7 columns above that). Tapping a
+button submits that value as the answer.
 
 ### A–Z Keypad
 Full alphabet keypad of 26 single-tap buttons arranged in rows of 7
@@ -378,7 +556,7 @@ digit. Used where the answer range is too large for a comfortable tap grid
 (multiplication products up to 81, so answers are at most two digits).
 
 ### Operand Picker
-Row of single-tap buttons `1..4` used by Counting Multiplication Level 1.
+Row of single-tap buttons `1..4` used by Multiplication Construction.
 The displayed equation has two blanks (`▢ × ▢`); the first tap fills the
 left blank, the second fills the right blank and submits. The answer is
 order-independent. A **Clear** button resets the picks before the second
@@ -397,16 +575,165 @@ the only slot and submits immediately).
 
 Shared rule sets referenced by multiple lessons.
 
+### Lesson intros
+
+Some lessons open with a **worked example**: a short animation that
+solves one problem end to end, narrated, before the questions start.
+
+An intro is **not a lesson**. Nothing is asked, nothing is scored, and
+nothing about it is stored — it has no entry in the catalog, no pass
+criteria, and no row on the Progress screen. It is a preamble attached
+to a lesson.
+
+- **When it plays.** Once at the start of a round, whichever way the
+  round began — picked from the menu, or drawn by Random / Mixed. A
+  round of four questions plays it once, before the first of them, not
+  before each. Coming back to the same lesson later is a new round, so
+  it plays again.
+- **What it shows.** Its own problem, rolled at random, independent of
+  the questions that follow. Operands are drawn from the lesson's
+  standard range but are **never 0 or 1**: a worked example needs
+  something to work, and nothing merges into a group of zero or takes
+  more than a moment to count when there is one of something. The
+  questions still ask those cells.
+- **Interaction.** None while it plays: no answer surface, no skip; it
+  ends on its own and the lesson appears. A lesson that has an intro
+  carries a **Learn** button in the top bar, which plays it again — the
+  question waiting underneath is left alone, so a learner who wants to
+  see the method again comes back to the problem they were on.
+- **Sound.** One pass of narration at normal speed (not the three speeds
+  the reading lessons use). Each step waits for its own words to finish
+  before the next begins, so counting aloud is never cut off mid-number
+  — a step's stated timing is a floor, not a budget. Where there is no
+  speech engine the animation runs at those same timings. The narration is where the words live —
+  **nothing is written on screen**. An intro shows the same picture its
+  lesson shows and marks it up as it works (the numbers written over the
+  animals as they are counted, say), but it never spells out the
+  equation or the sentence. With the sound off, the pictures carry it.
+
+A lesson with no intro written yet simply starts as it always has.
+
+### Standard operand ranges
+
+Every Math lesson outside Binary draws from one of four ranges, chosen by
+its **operation family** and its **Difficulty**. A lesson states its
+Difficulty and inherits the range; it does not invent its own.
+
+`Z` is the big number in both multiplication families — the product a
+multiplication asks for, and the dividend a division starts from — so a
+Level 1 sheet of either never runs past 40.
+
+| Family                     | Difficulty 0            | Difficulty 1            |
+| -------------------------- | ----------------------- | ----------------------- |
+| Addition / Subtraction     | `op1, op2 ∈ 0..4`       | `op1, op2 ∈ 0..8`       |
+| Multiplication / Division  | `X, Y ∈ 0..4`, `Z ∈ 0..16` | `X, Y ∈ 0..8`, `Z ∈ 0..40` |
+
+Read each pair of families as one triple seen from either side:
+`X + Y = Z` for addition and `Z - X = Y` for subtraction, `X × Y = Z`
+for multiplication and `Z ÷ X = Y` for division. In both cases the
+forward operation takes `X` and `Y` from the range and lets `Z` fall
+out; the backward one takes `X` and the **answer** `Y` from the range
+and derives the `Z` it starts from.
+
+Three constraints fall out of the ranges rather than being stated per
+lesson:
+
+- **Subtraction is built from the answer, not from two operands.** The
+  number being taken away and the answer both come from the family
+  range, and the number they are taken from is their sum — so it runs to
+  **twice** the family ceiling (8 at Difficulty 0, 16 at Difficulty 1)
+  while the answer stays inside the range and can never go negative.
+  This is the same construction division uses, and it makes each level
+  the exact inverse of the addition level beside it: Addition Level 1
+  adds two numbers up to 8 and lands in 0..16, Subtraction Level 1 takes
+  a number up to 8 off something in 0..16.
+- **Division excludes a zero divisor and a zero dividend.** `X` and `Y`
+  each run `1..4` / `1..8`; `Z` is their product. Dividing zero by
+  something is degenerate, and dividing by zero is undefined.
+- **`Z` is a ceiling, not a guarantee.** Where `X × Y` would exceed it —
+  `7 × 8` at Difficulty 1 — that pair is simply not asked. So the
+  Difficulty 1 grids are sparse in their top-right corner, the same way
+  the division grid is sparse everywhere `X` does not divide `Z`.
+
+Pass criteria are judged over the cells a lesson can actually ask, never
+over cells its ceiling rules out.
+
+### Easy cells
+
+Some cells are right on sight and are not worth drilling like the rest:
+
+| Operation      | Easy when                                              |
+| -------------- | ------------------------------------------------------ |
+| Addition       | `op1 == 0` or `op2 == 0`                               |
+| Subtraction    | `op1 == 0` or `op2 == 0`                               |
+| Multiplication | either operand is `0` or `1`                           |
+| Division       | `divisor <= 1` (or `dividend == 0`, never asked)       |
+
+Three things follow, wherever a lesson uses an operand grid:
+
+- **`cell_target(op1, op2)`** — the count a cell needs before it counts
+  as covered — is **1** for an easy cell and **2** for every other cell.
+- Easy cells are drawn at **half the weight** of an ordinary cell, so
+  they come up about half as often. This holds both while the lesson is
+  still being covered and once every cell is covered.
+- The easy cells **together** never take more than **one problem in six**.
+  Halving each cell is not enough where most of a lesson's cells are
+  easy: Multiplication Difficulty 0 has sixteen easy cells against nine
+  ordinary ones, so half weight still leaves nearly half of every round
+  on `× 0` and `× 1`. The cap binds only in that case — every other
+  lesson already sits under it and is left exactly as it was.
+
+| Lesson                          | Easy share, half weight only | With the cap |
+| ------------------------------- | ---------------------------- | ------------ |
+| Multiplication Difficulty 0     | 47%                          | **17%**      |
+| Addition / Subtraction Diff 0   | 22%                          | **17%**      |
+| Division Difficulty 0           | 14%                          | 14%          |
+| Addition / Subtraction Diff 1   | 12%                          | 12%          |
+| Division Difficulty 1           | 7%                           | 7%           |
+
+Grids that are not arithmetic (the binary AND/OR/XOR grids, the per-word
+reading lists) have no easy cells: every one of their cells needs 2 and
+every one is drawn at the same weight. The binary lessons otherwise run
+the same selection as the arithmetic ones, over their own
+`(operator, op1, op2)` cells.
+
+### Balanced operands
+
+A lesson's cells are not always spread evenly across its operands.
+Division is the clear case, because the dividend has to be a whole
+number of groups: at Difficulty 1 the divisors `1..5` each own eight
+cells, while `÷ 6` owns six and `÷ 7` and `÷ 8` own five apiece — the
+bigger the divisor, the fewer quotients fit under the `Z` ceiling. Left
+alone, the small divisors crowd out exactly the ones a learner finds
+hard.
+
+Where a lesson names a **balance operand**, every distinct value of that
+operand comes up equally often, however many cells it owns: a cell's pick
+weight is divided by the number of cells in the pool sharing its balance
+value. This multiplies with the easy-cell weight rather than replacing
+it, so `÷ 1` is damped twice — once for being one divisor of several,
+once for being easy.
+
+Only the division lessons name one, and it is the **divisor**. It leaves
+`÷ 1` at roughly a fifteenth of Difficulty 1 problems and the other
+seven divisors level with each other.
+
 ### Random problem selection (math grid)
 
 For lessons that use a 2D operand grid:
 
 1. Roll `wildcard ∈ 1..10`.
-2. If `wildcard == 1`, choose any `(op1, op2)` uniformly at random from
-   the lesson's declared operand range.
-3. Otherwise, choose `(op1, op2)` where `grid[op1][op2]` is at the
-   **minimum** value within the lesson's range. Break ties uniformly at
-   random.
+2. If `wildcard == 1`, or every cell has reached its `cell_target`,
+   draw from the lesson's whole declared operand range.
+3. Otherwise, draw from the cells furthest behind their `cell_target`
+   (largest `cell_target(op1, op2) - grid[op1][op2]` first), so a cell
+   that has never been asked outranks one already answered right once.
+
+Every draw is weighted: an easy cell counts half as much as an ordinary
+one (see Rules § Easy cells), and where the lesson names a balance
+operand, a cell counts for less the more cells share its value of that
+operand (see Rules § Balanced operands). Ties are otherwise broken
+uniformly at random.
 
 The next-problem selection avoids repeating the previous problem when
 the candidate pool has more than one entry.
@@ -422,6 +749,15 @@ own streak:
    the pool. Break ties uniformly at random.
 
 Avoid repeating the previous entry when an alternative exists.
+
+### CPU level slip
+
+Tic Tac Toe above Level 0 gives the learner a way through: when a game
+starts, there is a **10% chance** the CPU plays that game at a level
+drawn uniformly from the levels below the lesson's own (so Level 2 may
+play at Level 1 or Level 0, Level 1 at Level 0). The choice is made once
+per game and holds for every move in it. Level 0 has nothing below it
+and always plays its own rule.
 
 ### Chess piece movement
 
@@ -458,18 +794,25 @@ is an incorrect move.
 ### Show answer time
 
 After the learner answers (or gives up) the correct answer is shown
-highlighted, then the app advances. Default hold times:
+highlighted, then the app advances. Every lesson holds for the same
+times, so the pacing does not change from screen to screen:
 
 - **Correct answer:** 0.9 seconds.
 - **Wrong answer:** 2 seconds.
 - **Give up / reveal:** 1.6 seconds.
 
-A lesson definition may carry a **Show answer time** row; that single
-value then replaces all three defaults for that lesson. The row is
-present only when the lesson overrides the defaults — its absence
-means the defaults above apply. (Tic Tac Toe is a game rather than a
-single-answer problem; it instead waits the configurable
-`tictactoe.auto_restart_seconds` after a game ends.)
+Two lessons wait longer because they are still playing audio when the
+answer lands, and both say so in their own definition: **Phonemes**
+carries a **Show answer time** row (a single value replacing all three),
+and **Letter Sounds** holds until its letter clip has finished. A
+**Show answer time** row appears only on a lesson that overrides these
+values; its absence means the three above apply.
+
+(Tic Tac Toe is a game rather than a single-answer problem; it instead
+waits the configurable `tictactoe.auto_restart_seconds` after a game
+ends. The Win-or-Block puzzle screen runs its own staged timeline —
+blink the missed move, draw the winning line, let the opponent punish a
+missed block — rather than a single hold.)
 
 ### Runs per round
 
@@ -525,14 +868,23 @@ over the next one.
 | 7        | Horizontal Subtraction — Level 0    | Math     | All Addition Difficulty 1 passed  |
 | 7        | Vertical Subtraction — Level 0      | Math     | All Addition Difficulty 1 passed  |
 | 7        | Number Line Subtraction — Level 0   | Math     | All Addition Difficulty 1 passed  |
+| 7        | Counting Subtraction — Level 1      | Math     | All Subtraction Difficulty 0 passed |
 | 9        | Counting Multiplication — Level 0   | Math     | All Subtraction Difficulty 0 passed |
-| 9        | Counting Multiplication — Level 1   | Math     | Counting Multiplication 0 passed  |
+| 9        | Multiplication Construction — Level 0   | Math     | Counting Multiplication 0 passed  |
 | 9        | Number Line Multiplication — Level 0| Math     | Counting Multiplication 0 passed  |
 | 9        | Horizontal Multiplication — Level 0 | Math     | Number Line Multiplication 0 passed |
 | 9        | Vertical Multiplication — Level 0   | Math     | Number Line Multiplication 0 passed |
 | 9        | Horizontal Multiplication — Level 1 | Math     | All symbolic Multiplication Diff 0 passed |
 | 9        | Vertical Multiplication — Level 1   | Math     | All symbolic Multiplication Diff 0 passed |
 | 9        | Number Line Multiplication — Level 1| Math     | All symbolic Multiplication Diff 0 passed |
+| 11       | Counting Division — Level 0         | Math     | All symbolic Multiplication Diff 1 + Multiplication Construction 0 |
+| 11       | Counting Division — Level 1         | Math     | Counting Division 0 passed        |
+| 11       | Number Line Division — Level 0      | Math     | Counting Division 0 passed        |
+| 11       | Horizontal Division — Level 0       | Math     | Number Line Division 0 passed     |
+| 11       | Vertical Division — Level 0         | Math     | Number Line Division 0 passed     |
+| 11       | Horizontal Division — Level 1       | Math     | All symbolic Division Diff 0 passed |
+| 11       | Vertical Division — Level 1         | Math     | All symbolic Division Diff 0 passed |
+| 11       | Number Line Division — Level 1      | Math     | All symbolic Division Diff 0 passed |
 | 3        | Letter Sounds — Level 0             | Reading  | —                                 |
 | 3        | Phonemes — Level 0                  | Reading  | Letter Sounds 0                   |
 | 4        | Animals — Level 0                   | Reading  | Phonemes 0                        |
@@ -567,7 +919,8 @@ over the next one.
 - **Unlock conditions:** Tic Tac Toe — Win or Block passed.
 - **Screen:** Tic Tac Toe Board Screen
 - **CPU rule:** take a winning move if one exists; else uniformly random
-  legal move.
+  legal move. In **10% of games** the CPU instead plays at a randomly
+  chosen lower level for that whole game (see Rules § CPU level slip).
 - **Variables:** `win_streak[0][1]`
 - **Pass criteria:** `win_streak[0][1] >= 8`
 
@@ -581,7 +934,8 @@ over the next one.
 - **Screen:** Tic Tac Toe Board Screen
 - **CPU rule:** take a winning move if one exists; else block the
   opponent's winning move if one exists; else uniformly random legal
-  move.
+  move. In **10% of games** the CPU instead plays at a randomly chosen
+  lower level for that whole game (see Rules § CPU level slip).
 - **Variables:** `win_streak[0][2]`
 - **Pass criteria:** `win_streak[0][2] >= 8`
 
@@ -671,12 +1025,12 @@ over the next one.
 - **Unlock conditions:** always.
 - **Screen:** Counting Equation Screen (addition operator)
 - **Variables:** `addition_grid`, `win_streak[2][0]`
-- **Random variables:**
-  - `op1, op2 ∈ 0..4`
+- **Random variables:** the standard range for this family and
+  Difficulty (see Rules § Standard operand ranges)
 - **Problem selection:** standard math-grid selection
   (see Rules § Random problem selection (math grid))
-- **Pass criteria:** `addition_grid[op1][op2] >= 2` for
-  every `op1, op2 ∈ 0..4` **AND** `win_streak[2][0] >= 4`
+- **Pass criteria:** `addition_grid[op1][op2] >= cell_target(op1, op2)`
+  for every cell the lesson can ask **AND** `win_streak[2][0] >= 4`
 
 ### Horizontal Addition — Level 0
 - **Game UID:** 2
@@ -687,11 +1041,11 @@ over the next one.
 - **Unlock conditions:** always.
 - **Screen:** Horizontal Equation Screen (addition operator)
 - **Variables:** `addition_grid`, `win_streak[2][0]`
-- **Random variables:**
-  - `op1, op2 ∈ 0..4`
+- **Random variables:** the standard range for this family and
+  Difficulty (see Rules § Standard operand ranges)
 - **Problem selection:** standard math-grid selection
-- **Pass criteria:** `addition_grid[op1][op2] >= 2` for every
-  `op1, op2 ∈ 0..4` **AND** `win_streak[2][0] >= 4`
+- **Pass criteria:** `addition_grid[op1][op2] >= cell_target(op1, op2)`
+  for every cell the lesson can ask **AND** `win_streak[2][0] >= 4`
 
 ### Vertical Addition — Level 0
 - **Game UID:** 2
@@ -702,11 +1056,11 @@ over the next one.
 - **Unlock conditions:** always.
 - **Screen:** Vertical Equation Screen (addition operator)
 - **Variables:** `addition_grid`, `win_streak[2][0]`
-- **Random variables:**
-  - `op1, op2 ∈ 0..4`
+- **Random variables:** the standard range for this family and
+  Difficulty (see Rules § Standard operand ranges)
 - **Problem selection:** standard math-grid selection
-- **Pass criteria:** `addition_grid[op1][op2] >= 2` for every
-  `op1, op2 ∈ 0..4` **AND** `win_streak[2][0] >= 4`
+- **Pass criteria:** `addition_grid[op1][op2] >= cell_target(op1, op2)`
+  for every cell the lesson can ask **AND** `win_streak[2][0] >= 4`
 
 ### Number Line Addition — Level 0
 - **Game UID:** 2
@@ -717,11 +1071,11 @@ over the next one.
 - **Unlock conditions:** always.
 - **Screen:** Number Line Equation Screen (addition operator)
 - **Variables:** `addition_grid`, `win_streak[2][0]`
-- **Random variables:**
-  - `op1, op2 ∈ 0..4`
+- **Random variables:** the standard range for this family and
+  Difficulty (see Rules § Standard operand ranges)
 - **Problem selection:** standard math-grid selection
-- **Pass criteria:** `addition_grid[op1][op2] >= 2` for every
-  `op1, op2 ∈ 0..4` **AND** `win_streak[2][0] >= 4`
+- **Pass criteria:** `addition_grid[op1][op2] >= cell_target(op1, op2)`
+  for every cell the lesson can ask **AND** `win_streak[2][0] >= 4`
 
 ### Counting Addition — Level 1
 - **Game UID:** 2
@@ -733,11 +1087,11 @@ over the next one.
   Line Addition 1 passed.
 - **Screen:** Counting Equation Screen (addition operator)
 - **Variables:** `addition_grid`, `win_streak[Counting Addition 1]`
-- **Random variables:**
-  - `op1, op2 ∈ 0..8`
+- **Random variables:** the standard range for this family and
+  Difficulty (see Rules § Standard operand ranges)
 - **Problem selection:** standard math-grid selection
-- **Pass criteria:** `addition_grid[op1][op2] >= 2` for every
-  `op1, op2 ∈ 0..8` **AND** `win_streak[2][1] >= 4`
+- **Pass criteria:** `addition_grid[op1][op2] >= cell_target(op1, op2)`
+  for every cell the lesson can ask **AND** `win_streak[2][1] >= 4`
 
 ### Horizontal Addition — Level 1
 - **Game UID:** 2
@@ -748,11 +1102,11 @@ over the next one.
 - **Unlock conditions:** All Addition Difficulty 0 passed and Number Line Addition 1 passed.
 - **Screen:** Horizontal Equation Screen (addition operator)
 - **Variables:** `addition_grid`, `win_streak[2][1]`
-- **Random variables:**
-  - `op1, op2 ∈ 0..8`
+- **Random variables:** the standard range for this family and
+  Difficulty (see Rules § Standard operand ranges)
 - **Problem selection:** standard math-grid selection
-- **Pass criteria:** `addition_grid[op1][op2] >= 2` for every
-  `op1, op2 ∈ 0..8` **AND** `win_streak[2][1] >= 4`
+- **Pass criteria:** `addition_grid[op1][op2] >= cell_target(op1, op2)`
+  for every cell the lesson can ask **AND** `win_streak[2][1] >= 4`
 
 ### Vertical Addition — Level 1
 - **Game UID:** 2
@@ -763,11 +1117,11 @@ over the next one.
 - **Unlock conditions:** All Addition Difficulty 0 passed and Number Line Addition 1 passed.
 - **Screen:** Vertical Equation Screen (addition operator)
 - **Variables:** `addition_grid`, `win_streak[2][1]`
-- **Random variables:**
-  - `op1, op2 ∈ 0..8`
+- **Random variables:** the standard range for this family and
+  Difficulty (see Rules § Standard operand ranges)
 - **Problem selection:** standard math-grid selection
-- **Pass criteria:** `addition_grid[op1][op2] >= 2` for every
-  `op1, op2 ∈ 0..8` **AND** `win_streak[2][1] >= 4`
+- **Pass criteria:** `addition_grid[op1][op2] >= cell_target(op1, op2)`
+  for every cell the lesson can ask **AND** `win_streak[2][1] >= 4`
 
 ### Number Line Addition — Level 1
 - **Game UID:** 2
@@ -778,11 +1132,11 @@ over the next one.
 - **Unlock conditions:** Number Line Addition 0 passed.
 - **Screen:** Number Line Equation Screen (addition operator)
 - **Variables:** `addition_grid`, `win_streak[2][1]`
-- **Random variables:**
-  - `op1, op2 ∈ 0..8`
+- **Random variables:** the standard range for this family and
+  Difficulty (see Rules § Standard operand ranges)
 - **Problem selection:** standard math-grid selection
-- **Pass criteria:** `addition_grid[op1][op2] >= 2` for every
-  `op1, op2 ∈ 0..8` **AND** `win_streak[2][1] >= 4`
+- **Pass criteria:** `addition_grid[op1][op2] >= cell_target(op1, op2)`
+  for every cell the lesson can ask **AND** `win_streak[2][1] >= 4`
 
 ### Binary — Level 0
 - **Game UID:** 8
@@ -820,6 +1174,29 @@ over the next one.
 - **Pass criteria:** `binary_grid[1][operator][op1][op2] >= 2` for
   every operator and every `op1, op2 ∈ 0..7`.
 
+### Counting Subtraction — Level 1
+- **Game UID:** 7
+- **Subject:** Subtraction
+- **Difficulty:** 1
+- **Category:** Math
+- **Runs per round:** 4
+- **Unlock conditions:** All Subtraction Difficulty 0 passed.
+- **Screen:** Counting Equation Screen (subtraction operator)
+- **Variables:** `subtraction_grid`, `win_streak[7][1]`
+- **Random variables:** the standard range for this family and
+  Difficulty (see Rules § Standard operand ranges)
+- **Answer surface:** Numeric Grid (0..9) — the largest difference is 8,
+  padded to a full row
+- **Problem selection:** standard math-grid selection
+- **Pass criteria:** `subtraction_grid[op1][op2] >= cell_target(op1, op2)`
+  for every cell the lesson can ask **AND** `win_streak[7][1] >= 4`
+
+The number taken away and the answer both come from the same `0..8`
+range as Addition Level 1, so the number they come off runs to 16 — the
+exact inverse of that lesson's sums. Only the counting presentation
+exists at this level; the Horizontal, Vertical and Number Line
+subtraction screens stay at Level 0.
+
 ### Counting Multiplication — Level 0
 - **Game UID:** 9
 - **Subject:** Multiplication
@@ -829,19 +1206,45 @@ over the next one.
 - **Unlock conditions:** All Subtraction Difficulty 0 passed.
 - **Screen:** Counting Multiplication Screen
 - **Variables:** `multiplication_grid`
-- **Random variables:**
-  - `op1, op2 ∈ 0..4` (max product 16)
+- **Random variables:** the standard range for this family and
+  Difficulty (see Rules § Standard operand ranges)
   - A random animal emoji per problem (independent of streak)
 - **Answer surface:** Numeric Grid (0..16)
 - **Problem selection:** standard math-grid selection over the
   `(op1, op2)` cell space.
-- **Pass criteria:** `multiplication_grid[op1][op2] >= 2` for every
-  `op1, op2 ∈ 0..4`.
+- **Pass criteria:**
+  `multiplication_grid[op1][op2] >= cell_target(op1, op2)` for every cell the lesson can ask.
 
-### Counting Multiplication — Level 1
+### Multiplication Construction — Level 0
+Building the equation is its own exercise rather than a harder level of
+Counting Multiplication: the picture is the same, but the question runs
+backwards — the learner reads the groups and says which two numbers made
+them.
+
+**Construction** is the name for this shape of lesson wherever it
+appears: the learner is given the picture and writes the numbers, rather
+than being given the numbers and writing the answer. Each operation gets
+a Construction lesson at each level as they are written; multiplication
+is the first. The printed sheets already cover all four operations — see
+`worksheets/README.md`.
+
+A Construction question may only be asked where **the picture pins down
+both numbers**. That is a stronger requirement than the answer-first
+lessons have, and for multiplication it rules out a **zero first
+operand**: `0 × 5` draws no groups at all, so nothing on the page says
+the second operand was 5 — every `0 × Y` is the same picture. A zero
+*second* operand is fine, and worth asking: `5 × 0` draws five pens each
+holding "none", so both numbers are there to be counted, and it is the
+case that teaches five groups of nothing is nothing.
+
+This lesson additionally never asks a zero operand at all, because its
+Operand Picker only offers `1..4`. Widening the picker to include zero
+would let it ask the `X × 0` half; the printed sheet, which has no
+picker, already does.
+
 - **Game UID:** 9
-- **Subject:** Multiplication
-- **Difficulty:** 1
+- **Subject:** Multiplication Construction
+- **Difficulty:** 0
 - **Category:** Math
 - **Runs per round:** 4
 - **Unlock conditions:** Counting Multiplication — Level 0 passed.
@@ -849,9 +1252,10 @@ over the next one.
   but the operands are hidden and the answer surface is the Operand
   Picker (below) instead of the numeric grid. The product is never shown.
 - **Variables:** `multiplication_operands_grid` — a separate coverage
-  grid from Level 0, cells indexed `(op1, op2) ∈ 1..4`.
-- **Random variables:**
-  - `op1, op2 ∈ 1..4` (**never 0**)
+  grid from Counting Multiplication, cells indexed `(op1, op2) ∈ 1..4`.
+- **Random variables:** the standard range for this family and
+  Difficulty (see Rules § Standard operand ranges) — the operand
+  picker means neither operand is 0
   - A random animal emoji per problem
 - **Answer surface:** Operand Picker — buttons `1..4`; the first tap fills
   the first operand blank, the second tap fills the second and submits.
@@ -859,8 +1263,9 @@ over the next one.
   undoes the first pick before submitting.
 - **Problem selection:** standard math-grid selection over the
   `(op1, op2) ∈ 1..4` cell space.
-- **Pass criteria:** `multiplication_operands_grid[op1][op2] >= 2` for
-  every `op1, op2 ∈ 1..4`.
+- **Pass criteria:**
+  `multiplication_operands_grid[op1][op2] >= cell_target(op1, op2)` for
+  every cell the lesson can ask.
 
 ### Horizontal Multiplication — Level 0
 - **Game UID:** 9
@@ -871,11 +1276,12 @@ over the next one.
 - **Unlock conditions:** Number Line Multiplication — Level 0 passed.
 - **Screen:** Horizontal Equation Screen (`×` operator)
 - **Variables:** `multiplication_equation_grid`, `win_streak[9][Horizontal]`
-- **Random variables:**
-  - `op1, op2 ∈ 0..4` (max product 16)
+- **Random variables:** the standard range for this family and
+  Difficulty (see Rules § Standard operand ranges)
 - **Answer surface:** Numeric Grid (0..16)
 - **Problem selection:** standard math-grid selection
-- **Pass criteria:** `multiplication_equation_grid[op1][op2] >= 2` for
+- **Pass criteria:**
+  `multiplication_equation_grid[op1][op2] >= cell_target(op1, op2)` for
   every `op1, op2 ∈ 0..4` **AND** `win_streak >= 4`
 
 ### Vertical Multiplication — Level 0
@@ -887,11 +1293,12 @@ over the next one.
 - **Unlock conditions:** Number Line Multiplication — Level 0 passed.
 - **Screen:** Vertical Equation Screen (`×` operator)
 - **Variables:** `multiplication_equation_grid`, `win_streak[9][Vertical]`
-- **Random variables:**
-  - `op1, op2 ∈ 0..4`
+- **Random variables:** the standard range for this family and
+  Difficulty (see Rules § Standard operand ranges)
 - **Answer surface:** Numeric Grid (0..16)
 - **Problem selection:** standard math-grid selection
-- **Pass criteria:** `multiplication_equation_grid[op1][op2] >= 2` for
+- **Pass criteria:**
+  `multiplication_equation_grid[op1][op2] >= cell_target(op1, op2)` for
   every `op1, op2 ∈ 0..4` **AND** `win_streak >= 4`
 
 ### Number Line Multiplication — Level 0
@@ -904,11 +1311,12 @@ over the next one.
 - **Screen:** Number Line Equation Screen (`×` operator) — the scrollable,
   markable line from 0; the learner still taps the product.
 - **Variables:** `multiplication_equation_grid`, `win_streak[9][NumberLine]`
-- **Random variables:**
-  - `op1, op2 ∈ 0..4`
+- **Random variables:** the standard range for this family and
+  Difficulty (see Rules § Standard operand ranges)
 - **Answer surface:** Numeric Grid (0..16)
 - **Problem selection:** standard math-grid selection
-- **Pass criteria:** `multiplication_equation_grid[op1][op2] >= 2` for
+- **Pass criteria:**
+  `multiplication_equation_grid[op1][op2] >= cell_target(op1, op2)` for
   every `op1, op2 ∈ 0..4` **AND** `win_streak >= 4`
 
 The three share one `multiplication_equation_grid` (product coverage) but
@@ -925,16 +1333,25 @@ counting-multiplication grids.
 - **Unlock conditions:** all three symbolic Multiplication Level 0 lessons
   passed (Horizontal, Vertical, and Number Line Multiplication 0).
 - **Screen:** the matching Horizontal / Vertical / Number Line Equation
-  Screen (`×`). The Number Line screen scrolls (it runs 0 to the answer +
-  10, rounded to the next ten — up to 90 for the largest products).
+  Screen (`×`). The Number Line screen scrolls; it runs 0 to 50 — the
+  largest product this tier can ask, 40, plus 10, rounded to the next
+  ten (see the product ceiling below).
 - **Variables:** `multiplication_equation_grid` (the same grid as Level 0,
-  now covering the `0..9` slice), plus each lesson's own `win_streak`.
-- **Random variables:** `op1, op2 ∈ 0..9` (max product 81).
+  now covering the `0..8` slice), plus each lesson's own `win_streak`.
+- **Random variables:** the standard range for this family and Difficulty
+  (see Rules § Standard operand ranges) — `X, Y ∈ 0..8` with the product
+  capped at **40**. All three presentations share the cap: the number
+  line has to draw every integer up to the answer, and a line to 90 is an
+  unreadable smear of ticks on a phone, so the ceiling that keeps that
+  screen countable is the one the whole tier uses.
 - **Answer surface:** **Number Pad** — the learner types the product and
-  presses **Enter** (products up to 81 are too many for a tap grid).
-- **Problem selection:** standard math-grid selection over `0..9`.
-- **Pass criteria:** `multiplication_equation_grid[op1][op2] >= 2` for
-  every `op1, op2 ∈ 0..9` **AND** `win_streak >= 4` (per lesson).
+  presses **Enter** (products up to 40 are too many for a tap grid).
+- **Problem selection:** standard math-grid selection over the cells the
+  ceiling allows.
+- **Pass criteria:**
+  `multiplication_equation_grid[op1][op2] >= cell_target(op1, op2)` for
+  every cell the lesson can ask **AND** `win_streak >= 4` (per lesson) —
+  never over pairs the product ceiling rules out.
 
 Like Level 0, the three presentations share the grid and pass
 independently.
@@ -948,11 +1365,11 @@ independently.
 - **Unlock conditions:** All Addition Difficulty 1 passed.
 - **Screen:** Counting Equation Screen (subtraction operator)
 - **Variables:** `subtraction_grid`, `win_streak[7][0]`
-- **Random variables:**
-  - `op1 ∈ 4..9`, `op2 ∈ 0..4`
+- **Random variables:** the standard range for this family and
+  Difficulty (see Rules § Standard operand ranges)
 - **Problem selection:** standard math-grid selection
-- **Pass criteria:** `subtraction_grid[op1][op2] >= 2` for
-  every `op1 ∈ 4..9`, `op2 ∈ 0..4` **AND** `win_streak[7][0] >= 4`
+- **Pass criteria:** `subtraction_grid[op1][op2] >= cell_target(op1, op2)`
+  for every cell the lesson can ask **AND** `win_streak[7][0] >= 4`
 
 ### Horizontal Subtraction — Level 0
 - **Game UID:** 7
@@ -963,11 +1380,11 @@ independently.
 - **Unlock conditions:** All Addition Difficulty 1 passed.
 - **Screen:** Horizontal Equation Screen (subtraction operator)
 - **Variables:** `subtraction_grid`, `win_streak[7][0]`
-- **Random variables:**
-  - `op1 ∈ 4..9`, `op2 ∈ 0..4`
+- **Random variables:** the standard range for this family and
+  Difficulty (see Rules § Standard operand ranges)
 - **Problem selection:** standard math-grid selection
-- **Pass criteria:** `subtraction_grid[op1][op2] >= 2` for every
-  `op1 ∈ 4..9`, `op2 ∈ 0..4` **AND** `win_streak[7][0] >= 4`
+- **Pass criteria:** `subtraction_grid[op1][op2] >= cell_target(op1, op2)`
+  for every cell the lesson can ask **AND** `win_streak[7][0] >= 4`
 
 ### Vertical Subtraction — Level 0
 - **Game UID:** 7
@@ -978,11 +1395,11 @@ independently.
 - **Unlock conditions:** All Addition Difficulty 1 passed.
 - **Screen:** Vertical Equation Screen (subtraction operator)
 - **Variables:** `subtraction_grid`, `win_streak[7][0]`
-- **Random variables:**
-  - `op1 ∈ 4..9`, `op2 ∈ 0..4`
+- **Random variables:** the standard range for this family and
+  Difficulty (see Rules § Standard operand ranges)
 - **Problem selection:** standard math-grid selection
-- **Pass criteria:** `subtraction_grid[op1][op2] >= 2` for every
-  `op1 ∈ 4..9`, `op2 ∈ 0..4` **AND** `win_streak[7][0] >= 4`
+- **Pass criteria:** `subtraction_grid[op1][op2] >= cell_target(op1, op2)`
+  for every cell the lesson can ask **AND** `win_streak[7][0] >= 4`
 
 ### Number Line Subtraction — Level 0
 - **Game UID:** 7
@@ -993,11 +1410,100 @@ independently.
 - **Unlock conditions:** All Addition Difficulty 1 passed.
 - **Screen:** Number Line Equation Screen (subtraction operator)
 - **Variables:** `subtraction_grid`, `win_streak[7][0]`
-- **Random variables:**
-  - `op1 ∈ 4..9`, `op2 ∈ 0..4`
+- **Random variables:** the standard range for this family and
+  Difficulty (see Rules § Standard operand ranges)
 - **Problem selection:** standard math-grid selection
-- **Pass criteria:** `subtraction_grid[op1][op2] >= 2` for every
-  `op1 ∈ 4..9`, `op2 ∈ 0..4` **AND** `win_streak[7][0] >= 4`
+- **Pass criteria:** `subtraction_grid[op1][op2] >= cell_target(op1, op2)`
+  for every cell the lesson can ask **AND** `win_streak[7][0] >= 4`
+
+### Counting Division — Level 0
+- **Game UID:** 11
+- **Subject:** Division
+- **Difficulty:** 0
+- **Category:** Math
+- **Runs per round:** 4
+- **Unlock conditions:** the end of the multiplication chain — all three
+  symbolic Multiplication Level 1 lessons **and** Multiplication
+  Operands — Level 0.
+- **Screen:** Animal Division Screen, with `Y` pens
+- **Variables:** `division_grid[0]`, `win_streak[11][0]`
+- **Random variables:** the standard range for this family and
+  Difficulty (see Rules § Standard operand ranges) — divisor `X ∈ 1..4`,
+  quotient `Y ∈ 1..4`, dividend `Z = X × Y ≤ 16`. The dividend is always
+  a whole number of groups, so the answer is always an integer.
+- **Problem selection:** standard math-grid selection, restricted to the
+  cells above (the rest of `division_grid` is never asked), **balanced on
+  the divisor** (see Rules § Balanced operands) so dividing by one does
+  not crowd out the rest
+- **Pass criteria:**
+  `division_grid[0][dividend][divisor] >= cell_target(dividend, divisor)`
+  for every askable cell **AND** `win_streak[11][0] >= 4`
+
+### Counting Division — Level 1
+- **Game UID:** 11
+- **Subject:** Division
+- **Difficulty:** 1
+- **Category:** Math
+- **Runs per round:** 4
+- **Unlock conditions:** Counting Division 0 passed.
+- **Screen:** Animal Division Screen, with eight pens always
+- **Variables:** `division_grid[1]` (its own slice — Level 0 progress
+  does not count towards it), `win_streak[11][1]`
+- **Random variables:** the Difficulty 1 range — divisor `X ∈ 1..8`,
+  quotient `Y ∈ 1..8`, dividend `Z = X × Y ≤ 40`
+- **Problem selection:** standard math-grid selection, restricted to the
+  askable cells, balanced on the divisor as at Level 0
+- **Pass criteria:**
+  `division_grid[1][dividend][divisor] >= cell_target(dividend, divisor)`
+  for every askable cell **AND** `win_streak[11][1] >= 4`
+
+### Horizontal / Vertical / Number Line Division — Level 0
+- **Game UID:** 11
+- **Subject:** Division
+- **Difficulty:** 0
+- **Category:** Math
+- **Runs per round:** 4
+- **Unlock conditions:** Number Line Division 0 opens off Counting
+  Division 0; the Horizontal and Vertical presentations open off Number
+  Line Division 0 — the same order the multiplication presentations use.
+- **Screen:** the matching Horizontal / Vertical / Number Line Equation
+  Screen (`÷`). The number line runs to the largest **dividend** the
+  level asks, not to the answer: the dividend is what a learner counts
+  along to work a division out.
+- **Variables:** `division_equation_grid[0]`, plus each lesson's own
+  `win_streak`
+- **Random variables:** the standard range for this family and
+  Difficulty (see Rules § Standard operand ranges) — divisor and answer
+  `1..4`, dividend `≤ 16`
+- **Answer surface:** Numeric Grid (0..9) — the answer is the quotient,
+  at most 4 here, padded to a full row
+- **Problem selection:** standard math-grid selection over the askable
+  cells, **balanced on the divisor** (see Rules § Balanced operands)
+- **Pass criteria:**
+  `division_equation_grid[0][dividend][divisor] >= cell_target(dividend,
+  divisor)` for every askable cell **AND** `win_streak >= 4` (per lesson)
+
+### Horizontal / Vertical / Number Line Division — Level 1
+- **Game UID:** 11
+- **Subject:** Division
+- **Difficulty:** 1
+- **Category:** Math
+- **Runs per round:** 4
+- **Unlock conditions:** all three symbolic Division Level 0 lessons
+  passed.
+- **Screen:** as Level 0, with the number line running to 40.
+- **Variables:** `division_equation_grid[1]`, plus each lesson's own
+  `win_streak`
+- **Random variables:** divisor and answer `1..8`, dividend `≤ 40`
+- **Answer surface:** Numeric Grid (0..9) — the answer is at most 8
+- **Problem selection:** as Level 0
+- **Pass criteria:**
+  `division_equation_grid[1][dividend][divisor] >= cell_target(dividend,
+  divisor)` for every askable cell **AND** `win_streak >= 4` (per lesson)
+
+The three presentations share one grid per level but keep their own
+streaks, so they pass independently — mirroring the Multiplication
+Level 0 and Level 1 groups.
 
 ### Letter Sounds — Level 0
 - **Game UID:** 3
@@ -1023,10 +1529,12 @@ independently.
   keypad).
 - **Show answer:** after any answer (correct, wrong, or Give up) the
   letter clip (`<x>1.mp3`) plays as reinforcement. The lesson waits for
-  the clip to finish in full (plus a short buffer, and never less than the
-  usual feedback hold) before advancing, so it is never cut off.
-- **Pass criteria (both required):**
-  - `win_streak[3][run] >= 8` (eight correct answers in a row), AND
+  the clip to finish in full (plus a short buffer) before advancing, so
+  it is never cut off, and never less than a floor of 2 / 2.4 / 2.2
+  seconds (correct / wrong / reveal) — longer than the usual holds
+  because the shortest clips would otherwise flash past.
+- **Pass criteria (either one):**
+  - `win_streak[3][run] >= 8` (eight correct answers in a row), OR
   - `win_streak[3][letter] >= 2` for every letter that has a clip.
 
   Any wrong answer (or Give up) resets both the run streak and the
@@ -1101,9 +1609,10 @@ independently.
   Level 0)
 - **Word bank:** same as Level 0
 - **Random variables:**
-  - `position` chosen uniformly at random within the word
+  - `position` — any letter position within the word
 - **Problem selection:** per-word list selection over the set of
-  `(word, position)` pairs.
+  `(word, position)` pairs, so the position is driven by which pairs
+  still need coverage rather than drawn uniformly.
 - **Pass criteria:** `win_streak[5][word][p] >= 2` for every word
   and every letter position `p` of every word.
 
@@ -1235,19 +1744,19 @@ lesson before mastering everything below it, or skip a lesson outright.
 ## Random / Mixed mode
 
 When the **Random / Mixed** menu option is active, after every
-completed problem or game the app draws the next activity randomly
-from the pool of **all currently unlocked lessons**.
+completed round the app draws the next activity randomly from the pool
+of **all currently unlocked lessons**.
 
-**Weighting:**
+**Revision share:** one draw in ten goes to a lesson the learner has
+**already passed**; the other nine go to lessons **still unpassed**.
+Within each of the two groups the pick is uniform. When one group is
+empty — nothing passed yet, or everything passed — every draw comes
+from the other.
 
-- Unlocked but **not yet passed** lessons get weight **2**.
-- Unlocked **and already passed** lessons get weight **1**.
-
-So unfinished lessons are about twice as likely to appear as
-completed ones, but earlier (already-passed) lessons still come up
-regularly. The just-completed lesson is excluded from the next draw
-whenever the pool contains more than one entry, so two different
-lessons are never drawn back-to-back.
+**Category change:** the whole category just played is excluded from the
+next draw, so a run of Math is followed by Reading or a Game rather than
+more Math. The filter is dropped if it would leave the pool empty (e.g.
+only one category is unlocked).
 
 Each draw runs the picked lesson's **Runs per round** (see Rules §
 Runs per round) problems / games before re-drawing. Counts live in

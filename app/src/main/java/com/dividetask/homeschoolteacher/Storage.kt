@@ -72,10 +72,13 @@ object Storage {
     }
 
     // --- Math (Addition) ---
+    // 20x20 to match the 0..19 indexing docs/lessons.md gives the addition
+    // and subtraction grids. Counting Subtraction Level 1 reaches op1 = 16,
+    // which the old 16-wide array could not hold.
     fun loadMathStreaks(): Array<IntArray> {
         val p = prefs()
-        val out = Array(16) { IntArray(16) }
-        for (a in 0..15) for (b in 0..15) {
+        val out = Array(20) { IntArray(20) }
+        for (a in 0..19) for (b in 0..19) {
             out[a][b] = p.getInt("math.streak.$a.$b", 0)
         }
         return out
@@ -100,8 +103,8 @@ object Storage {
     // --- Math (Subtraction) ---
     fun loadSubtractionStreaks(): Array<IntArray> {
         val p = prefs()
-        val out = Array(16) { IntArray(16) }
-        for (a in 0..15) for (b in 0..15) {
+        val out = Array(20) { IntArray(20) }
+        for (a in 0..19) for (b in 0..19) {
             out[a][b] = p.getInt("subtraction.streak.$a.$b", 0)
         }
         return out
@@ -117,8 +120,8 @@ object Storage {
     // from the counting-multiplication grid (`multiplication.streak`).
     fun loadMultiplicationGridStreaks(): Array<IntArray> {
         val p = prefs()
-        val out = Array(16) { IntArray(16) }
-        for (a in 0..15) for (b in 0..15) {
+        val out = Array(20) { IntArray(20) }
+        for (a in 0..19) for (b in 0..19) {
             out[a][b] = p.getInt("multgrid.streak.$a.$b", 0)
         }
         return out
@@ -126,6 +129,62 @@ object Storage {
 
     fun saveMultiplicationGridStreak(a: Int, b: Int, value: Int) {
         prefs().edit().putInt("multgrid.streak.$a.$b", value).apply()
+    }
+
+    // --- Math (Division) ---
+    // grid[level][dividend][divisor], dividend 0..40 and divisor 0..8.
+    // Only the cells where the division comes out whole are ever written,
+    // so the grid is sparse by design — see DIVISION_CELLS in
+    // division/CountingDivisionViewModel.kt. The two levels ask the same
+    // questions with different on-screen scaffolding, so each keeps its
+    // own coverage: Level 1 has to be earned without the pens giving the
+    // answer away.
+    fun loadDivisionStreaks(): Array<Array<IntArray>> =
+        Array(2) { level ->
+            Array(41) { dividend ->
+                IntArray(9) { divisor ->
+                    prefs().getInt("division.streak.$level.$dividend.$divisor", 0)
+                }
+            }
+        }
+
+    fun saveDivisionStreak(level: Int, dividend: Int, divisor: Int, value: Int) {
+        prefs().edit()
+            .putInt("division.streak.$level.$dividend.$divisor", value)
+            .apply()
+    }
+
+    fun loadDivisionCounts(): Pair<Int, Int> {
+        val p = prefs()
+        return p.getInt("division.correct", 0) to p.getInt("division.wrong", 0)
+    }
+
+    fun saveDivisionCounts(correct: Int, wrong: Int) {
+        prefs().edit()
+            .putInt("division.correct", correct)
+            .putInt("division.wrong", wrong)
+            .apply()
+    }
+
+    // --- Math (Division equations) ---
+    // Coverage for the symbolic division presentations — Horizontal,
+    // Vertical and Number Line — kept per level and separate from the
+    // counting lesson's grid, the way the multiplication equation grid is
+    // separate from the counting multiplication one. Doing it with pens is
+    // not the same as doing it from the numbers alone.
+    fun loadDivisionEquationStreaks(): Array<Array<IntArray>> =
+        Array(2) { level ->
+            Array(41) { dividend ->
+                IntArray(9) { divisor ->
+                    prefs().getInt("diveq.streak.$level.$dividend.$divisor", 0)
+                }
+            }
+        }
+
+    fun saveDivisionEquationStreak(level: Int, dividend: Int, divisor: Int, value: Int) {
+        prefs().edit()
+            .putInt("diveq.streak.$level.$dividend.$divisor", value)
+            .apply()
     }
 
     // --- Tic Tac Toe ---
@@ -257,10 +316,14 @@ object Storage {
             .apply()
     }
 
-    // --- Counting Multiplication — operands (Level 1) ---
+    // --- Multiplication Construction ---
+    // The stored keys still say `multoperands` — they predate the lesson
+    // being renamed from Multiplication Operands, and are not derived
+    // from the lesson id, so moving them would only cost a learner their
+    // coverage for nothing.
     // Coverage grid for "which two numbers are being multiplied"; cells
     // track correct identifications of (op1, op2). Separate from the
-    // Level 0 product grid above.
+    // Counting Multiplication product grid above.
     fun loadMultiplicationOperandsStreak(op1: Int, op2: Int): Int =
         prefs().getInt("multoperands.streak.$op1.$op2", 0)
 
@@ -402,6 +465,63 @@ object Storage {
                 }
             }
             editor.putBoolean("migration.v5", true)
+            editor.apply()
+        }
+
+        if (!p.contains("migration.v6")) {
+            // "Counting Multiplication — Level 1" became a lesson of its own,
+            // "Multiplication Operands — Level 0", because filling in the
+            // operands is a different exercise rather than a harder level of
+            // counting. Carry its per-lesson state over to the new id so a
+            // learner who passed it keeps the pass (and whatever it unlocks).
+            // Its coverage grid (`multoperands.streak.*`) is not keyed by
+            // lesson id, so it needs no migration.
+            val editor = p.edit()
+            val oldId = "CountingMultiplication1"
+            val newId = "MultiplicationOperands0"
+            listOf("passed", "manualOverride", "manualUnlock").forEach { suffix ->
+                val oldKey = "lesson.$oldId.$suffix"
+                if (p.contains(oldKey)) {
+                    editor.putBoolean("lesson.$newId.$suffix", p.getBoolean(oldKey, false))
+                    editor.remove(oldKey)
+                }
+            }
+            val oldRun = "win_streak.run.$oldId"
+            if (p.contains(oldRun)) {
+                editor.putInt("win_streak.run.$newId", p.getInt(oldRun, 0))
+                editor.remove(oldRun)
+            }
+            editor.putBoolean("migration.v6", true)
+            editor.apply()
+        }
+
+        if (!p.contains("migration.v7")) {
+            // "Multiplication Operands — Level 0" is now "Multiplication
+            // Construction — Level 0": every lesson that asks the learner
+            // to build the equation rather than just answer it is called
+            // Construction. Same carry-over as v6 — and it runs after it,
+            // so a learner coming all the way from CountingMultiplication1
+            // is carried through both. The coverage grid
+            // (`multoperands.streak.*`) is not keyed by lesson id and stays
+            // where it is.
+            val editor = p.edit()
+            val oldId = "MultiplicationOperands0"
+            val newId = "MultiplicationConstruction0"
+            listOf("passed", "manualOverride", "manualUnlock").forEach { suffix ->
+                val oldKey = "lesson.$oldId.$suffix"
+                if (p.contains(oldKey)) {
+                    editor.putBoolean("lesson.$newId.$suffix", p.getBoolean(oldKey, false))
+                    editor.remove(oldKey)
+                }
+            }
+            listOf("win_streak.$oldId", "win_streak.run.$oldId").forEach { oldKey ->
+                if (p.contains(oldKey)) {
+                    val newKey = oldKey.replace(oldId, newId)
+                    editor.putInt(newKey, p.getInt(oldKey, 0))
+                    editor.remove(oldKey)
+                }
+            }
+            editor.putBoolean("migration.v7", true)
             editor.apply()
         }
     }

@@ -42,6 +42,8 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.dividetask.homeschoolteacher.Tts
 import com.dividetask.homeschoolteacher.lesson.LessonId
+import com.dividetask.homeschoolteacher.ui.FeedbackHold
+import com.dividetask.homeschoolteacher.ui.NumericGrid
 import kotlin.random.Random
 import kotlinx.coroutines.delay
 
@@ -64,25 +66,44 @@ fun MathScreen(
     val active by viewModel.activeLesson.collectAsStateWithLifecycle()
     val problem = state.problem
     val maxAnswer = when (active) {
-        LessonId.MathPictures -> 9          // addition operands 1..4, max sum 8 (pad to 9)
+        LessonId.MathPictures,
         LessonId.Math0,
         LessonId.HorizontalAddition0,
         LessonId.NumberLineAddition0 -> 9   // addition operands 0..4, max sum 8 (pad to 9)
         LessonId.CountingAddition1,
         LessonId.Math1,
         LessonId.HorizontalAddition1,
-        LessonId.MathNumberLine -> 18       // addition operands 0..9, max sum 18
+        LessonId.MathNumberLine -> 16       // addition operands 0..8, max sum 16
         LessonId.CountingSubtraction0,
         LessonId.HorizontalSubtraction0,
         LessonId.VerticalSubtraction0,
-        LessonId.NumberLineSubtraction0 -> 9 // subtraction op1 4..9, op2 0..4, max diff 9
+        LessonId.NumberLineSubtraction0 -> 9 // subtraction operands 0..4, max diff 4 (pad to 9)
+        LessonId.CountingSubtraction1 -> 9  // subtraction operands 0..8, max diff 8 (pad to 9)
         LessonId.HorizontalMultiplication0,
         LessonId.VerticalMultiplication0,
         LessonId.NumberLineMultiplication0 -> 16 // multiplication operands 0..4, max product 16
+        // The whole Level 1 tier stops at the same product, so the number
+        // line stays countable and all three screens ask the same problems.
         LessonId.HorizontalMultiplication1,
         LessonId.VerticalMultiplication1,
-        LessonId.NumberLineMultiplication1 -> 81 // multiplication operands 0..9, max product 81
+        LessonId.NumberLineMultiplication1 -> 40
+        // Division's answer is the quotient: at most 4 at Level 0 and 8 at
+        // Level 1, padded to a full row of buttons.
+        LessonId.HorizontalDivision0,
+        LessonId.VerticalDivision0,
+        LessonId.NumberLineDivision0,
+        LessonId.HorizontalDivision1,
+        LessonId.VerticalDivision1,
+        LessonId.NumberLineDivision1 -> 9
         else -> 9
+    }
+
+    // The number line is drawn to fit the numbers a lesson works with. For
+    // division that is the dividend it counts along, not the small answer.
+    val numberLineMax = when (active) {
+        LessonId.NumberLineDivision0 -> 16
+        LessonId.NumberLineDivision1 -> 40
+        else -> maxAnswer
     }
 
     val isTyped = active in TYPED_ANSWER_LESSONS
@@ -106,17 +127,17 @@ fun MathScreen(
     LaunchedEffect(state.feedback, state.problem) {
         when (state.feedback) {
             MathFeedback.Correct -> {
-                delay(900)
+                delay(FeedbackHold.CORRECT_MS)
                 Tts.stopAll()
                 onCompleted()
             }
             MathFeedback.Wrong -> {
-                delay(2000)
+                delay(FeedbackHold.WRONG_MS)
                 Tts.stopAll()
                 onCompleted()
             }
             MathFeedback.Revealed -> {
-                delay(1600)
+                delay(FeedbackHold.REVEALED_MS)
                 Tts.stopAll()
                 onCompleted()
             }
@@ -136,21 +157,27 @@ fun MathScreen(
         when (active) {
             LessonId.MathPictures,
             LessonId.CountingAddition1,
-            LessonId.CountingSubtraction0 -> PictureProblem(problem)
+            LessonId.CountingSubtraction0,
+            LessonId.CountingSubtraction1 -> PictureProblem(problem)
             LessonId.MathNumberLine,
             LessonId.NumberLineAddition0,
             LessonId.NumberLineSubtraction0,
             LessonId.NumberLineMultiplication0,
-            LessonId.NumberLineMultiplication1 -> NumberLineProblem(
+            LessonId.NumberLineMultiplication1,
+            LessonId.NumberLineDivision0,
+            LessonId.NumberLineDivision1 -> NumberLineProblem(
                 problem = problem,
                 answerText = answerText,
                 feedback = state.feedback,
+                maxAnswer = numberLineMax,
             )
             LessonId.HorizontalAddition0,
             LessonId.HorizontalAddition1,
             LessonId.HorizontalSubtraction0,
             LessonId.HorizontalMultiplication0,
-            LessonId.HorizontalMultiplication1 -> HorizontalProblem(
+            LessonId.HorizontalMultiplication1,
+            LessonId.HorizontalDivision0,
+            LessonId.HorizontalDivision1 -> HorizontalProblem(
                 problem = problem,
                 answerText = answerText,
                 feedback = state.feedback,
@@ -187,13 +214,13 @@ fun MathScreen(
                 onEnter = { if (typed.isNotEmpty()) viewModel.onAnswer(typed.toInt()) },
             )
         } else {
-            ChoiceGrid(
-                selected = state.selected,
-                feedback = state.feedback,
-                correct = problem.answer,
-                onChoose = viewModel::onAnswer,
-                inputEnabled = inputReady,
+            NumericGrid(
                 maxAnswer = maxAnswer,
+                selected = state.selected,
+                correct = problem.answer,
+                answered = state.feedback != MathFeedback.None,
+                inputEnabled = inputReady,
+                onChoose = viewModel::onAnswer,
             )
         }
 
@@ -301,6 +328,12 @@ private fun splitGroup(count: Int): Boolean = when {
 
 @Composable
 private fun AnimalGroup(animal: String, count: Int, twoLines: Boolean) {
+    if (count == 0) {
+        // A zero operand draws as blank space — roughly one animal wide, so
+        // the equation keeps its shape and the gap reads as "none here".
+        Spacer(modifier = Modifier.width(32.dp))
+        return
+    }
     if (!twoLines) {
         Row(horizontalArrangement = Arrangement.spacedBy(2.dp)) {
             repeat(count) {
@@ -351,11 +384,15 @@ private fun NumberLineProblem(
     problem: MathProblem,
     answerText: String,
     feedback: MathFeedback,
+    maxAnswer: Int,
 ) {
-    // The line always starts at 0 and runs to the answer + 10, rounded up
-    // to the next multiple of ten — so the answer sits comfortably inside
-    // the range rather than at the far edge.
-    val highest = nextMultipleOfTen(problem.answer + 10)
+    // The line always starts at 0 and runs to the lesson's largest possible
+    // answer + 10, rounded up to the next multiple of ten. Sizing it from the
+    // lesson rather than from this problem's answer keeps the line the same
+    // length for every problem in a lesson — otherwise an easy problem (say
+    // one with a zero operand, whose answer is 0) would draw a stubby line
+    // while the next problem drew a long one.
+    val highest = nextMultipleOfTen(maxAnswer + 10)
 
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -595,67 +632,6 @@ private fun KeypadButton(
     }
 }
 
-@Composable
-private fun ChoiceGrid(
-    selected: Int?,
-    feedback: MathFeedback,
-    correct: Int,
-    onChoose: (Int) -> Unit,
-    inputEnabled: Boolean,
-    maxAnswer: Int,
-) {
-    val cols = when {
-        maxAnswer <= 9 -> 5
-        maxAnswer <= 18 -> 5
-        else -> 7
-    }
-    val cells = (0..maxAnswer).toList()
-    Column(
-        verticalArrangement = Arrangement.spacedBy(8.dp),
-        modifier = Modifier.widthIn(max = 480.dp).fillMaxWidth(),
-    ) {
-        cells.chunked(cols).forEach { row ->
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                modifier = Modifier.fillMaxWidth(),
-            ) {
-                row.forEach { choice ->
-                    val container = when {
-                        feedback == MathFeedback.None -> MaterialTheme.colorScheme.primary
-                        choice == correct -> Color(0xFF22C55E)
-                        choice == selected -> Color(0xFFEF4444)
-                        else -> MaterialTheme.colorScheme.primary.copy(alpha = 0.4f)
-                    }
-                    Button(
-                        onClick = { onChoose(choice) },
-                        enabled = inputEnabled && feedback == MathFeedback.None,
-                        shape = RoundedCornerShape(14.dp),
-                        contentPadding = PaddingValues(2.dp),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = container,
-                            disabledContainerColor = container,
-                            contentColor = Color.White,
-                            disabledContentColor = Color.White,
-                        ),
-                        modifier = Modifier
-                            .weight(1f)
-                            .heightIn(min = 52.dp),
-                    ) {
-                        Text(
-                            text = choice.toString(),
-                            fontSize = if (maxAnswer <= 9) 24.sp else 18.sp,
-                            fontWeight = FontWeight.Bold,
-                        )
-                    }
-                }
-                repeat(cols - row.size) {
-                    Spacer(modifier = Modifier.weight(1f))
-                }
-            }
-        }
-    }
-}
-
 // Numpad and NumpadButton helpers were removed when math switched to
-// single-tap answers across every lesson. ChoiceGrid now handles all
-// answer surfaces, expanding to cover whatever range each lesson needs.
+// single-tap answers across every lesson. The shared ui/NumericGrid now
+// handles the tap surface, expanding to whatever range a lesson needs.

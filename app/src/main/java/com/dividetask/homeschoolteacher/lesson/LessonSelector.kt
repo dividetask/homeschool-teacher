@@ -7,8 +7,9 @@ import com.dividetask.homeschoolteacher.AppConfig
 import com.dividetask.homeschoolteacher.Storage
 import com.dividetask.homeschoolteacher.binary.BinaryOperationsViewModel
 import com.dividetask.homeschoolteacher.chess.ChessViewModel
+import com.dividetask.homeschoolteacher.division.CountingDivisionViewModel
 import com.dividetask.homeschoolteacher.multiplication.CountingMultiplicationViewModel
-import com.dividetask.homeschoolteacher.multiplication.MultiplicationOperandsViewModel
+import com.dividetask.homeschoolteacher.multiplication.MultiplicationConstructionViewModel
 import com.dividetask.homeschoolteacher.math.MathViewModel
 import com.dividetask.homeschoolteacher.reading.LetterSoundsViewModel
 import com.dividetask.homeschoolteacher.reading.PhonemesViewModel
@@ -18,6 +19,7 @@ import com.dividetask.homeschoolteacher.reading.RhymingWordsViewModel
 import com.dividetask.homeschoolteacher.reading.SightWordsViewModel
 import com.dividetask.homeschoolteacher.tictactoe.GameViewModel
 import com.dividetask.homeschoolteacher.tictactoe.TttPuzzleViewModel
+import com.dividetask.homeschoolteacher.intro.LessonIntros
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -39,7 +41,8 @@ class LessonSelector(
     private val math: MathViewModel,
     private val binary: BinaryOperationsViewModel,
     private val multiplication: CountingMultiplicationViewModel,
-    private val multiplicationOperands: MultiplicationOperandsViewModel,
+    private val multiplicationConstruction: MultiplicationConstructionViewModel,
+    private val division: CountingDivisionViewModel,
     private val letterSounds: LetterSoundsViewModel,
     private val phonemes: PhonemesViewModel,
     private val reading: ReadingViewModel,
@@ -82,14 +85,23 @@ class LessonSelector(
         LessonId.HorizontalSubtraction0,
         LessonId.VerticalSubtraction0,
         LessonId.NumberLineSubtraction0,
+        LessonId.CountingSubtraction1,
         LessonId.CountingMultiplication0,
-        LessonId.CountingMultiplication1,
+        LessonId.MultiplicationConstruction0,
         LessonId.HorizontalMultiplication0,
         LessonId.VerticalMultiplication0,
         LessonId.NumberLineMultiplication0,
         LessonId.HorizontalMultiplication1,
         LessonId.VerticalMultiplication1,
         LessonId.NumberLineMultiplication1,
+        LessonId.HorizontalDivision0,
+        LessonId.VerticalDivision0,
+        LessonId.NumberLineDivision0,
+        LessonId.HorizontalDivision1,
+        LessonId.VerticalDivision1,
+        LessonId.NumberLineDivision1,
+        LessonId.CountingDivision0,
+        LessonId.CountingDivision1,
         LessonId.LetterSounds0,
         LessonId.Phonemes0,
         LessonId.Reading0,
@@ -111,13 +123,21 @@ class LessonSelector(
         LessonId.HorizontalAddition1, LessonId.MathNumberLine,
         LessonId.CountingSubtraction0, LessonId.HorizontalSubtraction0,
         LessonId.VerticalSubtraction0, LessonId.NumberLineSubtraction0,
+        LessonId.CountingSubtraction1,
         LessonId.HorizontalMultiplication0, LessonId.VerticalMultiplication0,
         LessonId.NumberLineMultiplication0,
         LessonId.HorizontalMultiplication1, LessonId.VerticalMultiplication1,
-        LessonId.NumberLineMultiplication1 -> math.passed(id)
+        LessonId.NumberLineMultiplication1,
+        LessonId.HorizontalDivision0,
+        LessonId.VerticalDivision0,
+        LessonId.NumberLineDivision0,
+        LessonId.HorizontalDivision1,
+        LessonId.VerticalDivision1,
+        LessonId.NumberLineDivision1 -> math.passed(id)
         LessonId.BinaryOps0, LessonId.BinaryOps1 -> binary.passed(id)
         LessonId.CountingMultiplication0 -> multiplication.passed
-        LessonId.CountingMultiplication1 -> multiplicationOperands.passed
+        LessonId.MultiplicationConstruction0 -> multiplicationConstruction.passed
+        LessonId.CountingDivision0, LessonId.CountingDivision1 -> division.passed(id)
         LessonId.LetterSounds0 -> letterSounds.passed
         LessonId.Phonemes0 -> phonemes.passed
         LessonId.Reading0 -> reading.passed
@@ -156,6 +176,36 @@ class LessonSelector(
     private var remaining: Int = 1
     private var lastCompletedCategory: Category? = null
 
+    /**
+     * The lesson whose worked example is playing, or null once it has —
+     * an intro is a preamble to a round, not a lesson of its own, so it
+     * lives here rather than in the catalog. Set when a round starts and
+     * cleared by [onIntroFinished]; a round of four questions therefore
+     * sees it once, before the first of them.
+     */
+    private val _intro = MutableStateFlow<LessonId?>(null)
+    val intro: StateFlow<LessonId?> = _intro.asStateFlow()
+
+    /** Called by the intro when its animation has played out. */
+    fun onIntroFinished() {
+        _intro.value = null
+    }
+
+    private fun startRound(id: LessonId) {
+        _intro.value = if (LessonIntros.exists(id)) id else null
+    }
+
+    /**
+     * Play the current lesson's worked example again, from the **Learn**
+     * button. The lesson's problem is left as it is, waiting behind it,
+     * so a learner who asks to see the method again comes back to the
+     * question they were on.
+     */
+    fun replayIntro() {
+        val id = _currentLesson.value
+        if (LessonIntros.exists(id)) _intro.value = id
+    }
+
     init {
         // Default mode is Random. Roll the first lesson immediately.
         rollRandomLesson(excludeCategory = null)
@@ -172,6 +222,7 @@ class LessonSelector(
         // state would fire twice (once for the stale state, once for the new
         // one) and any audio cue for the first item would be cut off.
         startInstance(id)
+        startRound(id)
         _currentLesson.value = id
     }
 
@@ -184,6 +235,7 @@ class LessonSelector(
 
     /** Switch to the progress / debug view. Activity ViewModels are untouched. */
     fun selectProgress() {
+        _intro.value = null
         _mode.value = SelectionMode.Progress
     }
 
@@ -208,6 +260,7 @@ class LessonSelector(
         // Same ordering as selectLesson: start the instance first so the
         // screen mounts with the new state already in place.
         startInstance(pickedDef.id)
+        startRound(pickedDef.id)
         _currentLesson.value = pickedDef.id
     }
 
@@ -233,15 +286,24 @@ class LessonSelector(
             LessonId.HorizontalSubtraction0,
             LessonId.VerticalSubtraction0,
             LessonId.NumberLineSubtraction0,
+            LessonId.CountingSubtraction1,
             LessonId.HorizontalMultiplication0,
             LessonId.VerticalMultiplication0,
             LessonId.NumberLineMultiplication0,
             LessonId.HorizontalMultiplication1,
             LessonId.VerticalMultiplication1,
-            LessonId.NumberLineMultiplication1 -> math.startLesson(id)
+            LessonId.NumberLineMultiplication1,
+            LessonId.HorizontalDivision0,
+            LessonId.VerticalDivision0,
+            LessonId.NumberLineDivision0,
+            LessonId.HorizontalDivision1,
+            LessonId.VerticalDivision1,
+            LessonId.NumberLineDivision1 -> math.startLesson(id)
             LessonId.BinaryOps0, LessonId.BinaryOps1 -> binary.startLesson(id)
             LessonId.CountingMultiplication0 -> multiplication.startLesson()
-            LessonId.CountingMultiplication1 -> multiplicationOperands.startLesson()
+            LessonId.MultiplicationConstruction0 -> multiplicationConstruction.startLesson()
+            LessonId.CountingDivision0,
+            LessonId.CountingDivision1 -> division.startLesson(id)
             LessonId.LetterSounds0 -> letterSounds.startLesson()
             LessonId.Phonemes0 -> phonemes.startLesson()
             LessonId.Reading0 -> reading.startLesson()
@@ -274,15 +336,24 @@ class LessonSelector(
             LessonId.HorizontalSubtraction0,
             LessonId.VerticalSubtraction0,
             LessonId.NumberLineSubtraction0,
+            LessonId.CountingSubtraction1,
             LessonId.HorizontalMultiplication0,
             LessonId.VerticalMultiplication0,
             LessonId.NumberLineMultiplication0,
             LessonId.HorizontalMultiplication1,
             LessonId.VerticalMultiplication1,
-            LessonId.NumberLineMultiplication1 -> math.setPassed(id, value)
+            LessonId.NumberLineMultiplication1,
+            LessonId.HorizontalDivision0,
+            LessonId.VerticalDivision0,
+            LessonId.NumberLineDivision0,
+            LessonId.HorizontalDivision1,
+            LessonId.VerticalDivision1,
+            LessonId.NumberLineDivision1 -> math.setPassed(id, value)
             LessonId.BinaryOps0, LessonId.BinaryOps1 -> binary.setPassed(id, value)
             LessonId.CountingMultiplication0 -> multiplication.setPassed(value)
-            LessonId.CountingMultiplication1 -> multiplicationOperands.setPassed(value)
+            LessonId.MultiplicationConstruction0 -> multiplicationConstruction.setPassed(value)
+            LessonId.CountingDivision0,
+            LessonId.CountingDivision1 -> division.setPassed(id, value)
             LessonId.LetterSounds0 -> letterSounds.setPassed(value)
             LessonId.Phonemes0 -> phonemes.setPassed(value)
             LessonId.Reading0 -> reading.setPassed(value)
@@ -301,7 +372,8 @@ class LessonSelectorFactory(
     private val math: MathViewModel,
     private val binary: BinaryOperationsViewModel,
     private val multiplication: CountingMultiplicationViewModel,
-    private val multiplicationOperands: MultiplicationOperandsViewModel,
+    private val multiplicationConstruction: MultiplicationConstructionViewModel,
+    private val division: CountingDivisionViewModel,
     private val letterSounds: LetterSoundsViewModel,
     private val phonemes: PhonemesViewModel,
     private val reading: ReadingViewModel,
@@ -311,6 +383,6 @@ class LessonSelectorFactory(
 ) : ViewModelProvider.Factory {
     @Suppress("UNCHECKED_CAST")
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
-        return LessonSelector(ttt, tttPuzzle, chess, math, binary, multiplication, multiplicationOperands, letterSounds, phonemes, reading, sightWords, rhymingWords, positionWords) as T
+        return LessonSelector(ttt, tttPuzzle, chess, math, binary, multiplication, multiplicationConstruction, division, letterSounds, phonemes, reading, sightWords, rhymingWords, positionWords) as T
     }
 }

@@ -12,8 +12,9 @@ The codebase has two Gradle modules:
   set of files we can move into a Kotlin Multiplatform `commonMain`
   source set when an iOS target is added: `lesson/Lesson.kt`,
   `lesson/LessonRoulette.kt`, `chess/ChessEngine.kt`,
-  `tictactoe/GameLogic.kt`, `reading/Animal.kt`. The roulette unit
-  test (`LessonRouletteTest`) also lives here.
+  `tictactoe/GameLogic.kt`, `practice/PracticeGrid.kt`,
+  `reading/Animal.kt`. The unit tests (`LessonRouletteTest`,
+  `PracticeGridTest`) also live here.
 - **`:app`** — Android application module. Compose UI, `Storage` (built
   on SharedPreferences), `Tts` (Android `TextToSpeech`), `AppConfig`
   (parses `config.yaml`), `LessonSelector` (orchestrator wiring the
@@ -62,13 +63,30 @@ homeschoolteacher/
 │                            NumberLineAddition0; L1: Math1
 │                            (vertical), HorizontalAddition1,
 │                            MathNumberLine.
+├── intro/                   Worked examples played before a round.
+│   ├── LessonIntro.kt       Which lessons have one; shared operand roll.
+│   ├── IntroPieces.kt       Counted animal, group box, sizing.
+│   ├── CountingAdditionIntro.kt
+│   ├── NumberLineAdditionIntro.kt
+│   ├── CountingMultiplicationIntro.kt
+│   ├── MultiplicationConstructionIntro.kt
+│   └── CountingDivisionIntro.kt
+│                            Not lessons: no state, no scoring. The
+│                            selector shows one at the start of a round
+│                            and the lesson follows when it ends.
+├── division/                Lessons: CountingDivision0/1
+│   ├── CountingDivisionViewModel.kt
+│   └── CountingDivisionScreen.kt
+│                            Share X animals into pens to see what
+│                            dividing does; the sorting is an aid only.
 ├── binary/                  Lessons: BinaryOps0, BinaryOps1
 │   ├── BinaryOperationsViewModel.kt
 │   └── BinaryOperationsScreen.kt
-├── multiplication/          Lessons: CountingMultiplication0/1
+├── multiplication/          Lessons: CountingMultiplication0,
+│   │                        MultiplicationConstruction0
 │   ├── CountingMultiplicationViewModel.kt / CountingMultiplicationScreen.kt
-│   └── MultiplicationOperandsViewModel.kt / MultiplicationOperandsScreen.kt
-│                            (Level 1: pick the two operands)
+│   └── MultiplicationConstructionViewModel.kt / MultiplicationConstructionScreen.kt
+│                            (read the groups, pick the two operands)
 └── reading/                 Lessons: LetterSounds0, Phonemes0,
     ├── LetterSounds.kt      Reading0, SightWords0/1, RhymingWords0
     ├── LetterSoundsViewModel.kt / LetterSoundsScreen.kt
@@ -79,9 +97,29 @@ homeschoolteacher/
     └── RhymingWords.kt / RhymingWordsViewModel.kt / RhymingWordsScreen.kt
 ```
 
+`shared/.../practice/PracticeGrid.kt` holds the shared grid policy: which
+cell a lesson asks next and how many correct answers a cell needs to
+count as covered. Easy cells (adding or subtracting zero, multiplying by
+zero or one, dividing by one) need one instead of two and are drawn at
+half weight. A lesson may also pass `balanceBy` to make every value of
+one operand come up equally often — division does, on the divisor, since
+every dividend from 1 to 24 divides by one and would otherwise fill a
+quarter of the round. It is pure, so `PracticeGridTest` exercises it
+without Android.
+
 Pure-Kotlin logic lives in `shared/src/main/java/...`: `lesson/Lesson.kt`
 (LessonId + registry), `lesson/LessonRoulette.kt` (random selection),
-`chess/ChessEngine.kt`, `tictactoe/GameLogic.kt`, `reading/Animal.kt`.
+`practice/PracticeGrid.kt` (which operand cell a math lesson asks next,
+and how much coverage each one needs), `chess/ChessEngine.kt`,
+`tictactoe/GameLogic.kt`, `reading/Animal.kt`.
+
+`PracticeGrid` is shared by every operand-grid lesson — addition,
+subtraction, both multiplication families and division. It also decides
+which cells are **easy** (a zero operand; multiplying by zero or one;
+dividing by one): those need one correct answer instead of two before
+they count as covered, and are drawn at half the weight of an ordinary
+cell so they come up half as often. See `docs/lessons.md` §
+Rules → Easy cells.
 
 `app/src/main/assets/config.yaml` is the runtime config; it ships
 inside the APK and is read on app start.
@@ -98,9 +136,10 @@ enum class LessonId {
     MathPictures, Math0, HorizontalAddition0, NumberLineAddition0,
     CountingAddition1, Math1, HorizontalAddition1, MathNumberLine,
     BinaryOps0, BinaryOps1,
+    CountingDivision0, CountingDivision1,
     CountingSubtraction0, HorizontalSubtraction0,
-    VerticalSubtraction0, NumberLineSubtraction0,
-    CountingMultiplication0,
+    VerticalSubtraction0, NumberLineSubtraction0, CountingSubtraction1,
+    CountingMultiplication0, MultiplicationConstruction0,
     LetterSounds0, Phonemes0, Reading0, SightWords0, SightWords1, RhymingWords0,
 }
 
@@ -192,7 +231,8 @@ math.startLesson(id)           // MathPictures, Math0, HorizontalAddition0,
                                // VerticalSubtraction0, NumberLineSubtraction0
 binary.startLesson(id)         // BinaryOps0 / BinaryOps1
 multiplication.startLesson()   // CountingMultiplication0
-multiplicationOperands.startLesson() // CountingMultiplication1
+multiplicationConstruction.startLesson() // MultiplicationConstruction0
+division.startLesson(id)       // CountingDivision0 / CountingDivision1
 letterSounds.startLesson()     // LetterSounds0
 phonemes.startLesson()         // Phonemes0
 reading.startLesson()          // Reading0
@@ -279,14 +319,26 @@ All persisted state lives in one `SharedPreferences` file named
                                         Set/save through
                                         `Storage.loadWinStreak/saveWinStreak`.
 - `ttt.{player|cpu|draw}Score`       — aggregate scoreboard.
-- `math.streak.<x>.<y>`              — 16×16 addition cell *grid* (a
+- `math.streak.<x>.<y>`              — 20×20 addition cell *grid* (a
                                         coverage map, NOT a win streak),
                                         shared by every addition variant
                                         (Counting, Vertical, Horizontal,
                                         Number Line) at both difficulties.
 - `math.{correct|wrong}`             — lifetime counters.
-- `subtraction.streak.<x>.<y>`       — 16×16 subtraction cell grid (shared
+- `subtraction.streak.<x>.<y>`       — 20×20 subtraction cell grid (shared
                                         by every subtraction variant).
+                                        Counting Subtraction 1 reaches
+                                        op1 = 16, so the grids are the
+                                        0..19 the docs specify, not 0..15.
+- `diveq.streak.<lvl>.<x>.<y>`       — division coverage for the symbolic
+                                        presentations, one grid per level,
+                                        separate from the counting lesson's.
+- `division.streak.<lvl>.<x>.<y>`    — 2×25×7 division coverage grid,
+                                        level × dividend × divisor. Only the
+                                        cells that divide evenly are ever
+                                        written, so it is sparse by design.
+                                        Each level keeps its own slice.
+- `division.{correct|wrong}`         — lifetime counters.
 - `binary.streak.<lvl>.<op>.<a>.<b>` — binary AND/OR/XOR coverage grid.
 - `binary.{correct|wrong}`           — lifetime counters.
 - `multiplication.streak.<a>.<b>`    — counting-multiplication (product)

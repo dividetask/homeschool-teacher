@@ -33,8 +33,13 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.dividetask.homeschoolteacher.binary.BinaryOperationsViewModel
 import com.dividetask.homeschoolteacher.binary.BinaryOperator
 import com.dividetask.homeschoolteacher.chess.ChessViewModel
+import com.dividetask.homeschoolteacher.division.CountingDivisionViewModel
+import com.dividetask.homeschoolteacher.division.MAX_DIVISOR
+import com.dividetask.homeschoolteacher.division.divisionCells
 import com.dividetask.homeschoolteacher.multiplication.CountingMultiplicationViewModel
-import com.dividetask.homeschoolteacher.multiplication.MultiplicationOperandsViewModel
+import com.dividetask.homeschoolteacher.multiplication.MultiplicationConstructionViewModel
+import com.dividetask.homeschoolteacher.practice.GridOperation
+import com.dividetask.homeschoolteacher.practice.PracticeGrid
 import com.dividetask.homeschoolteacher.lesson.LessonDefinition
 import com.dividetask.homeschoolteacher.lesson.LessonId
 import com.dividetask.homeschoolteacher.lesson.Lessons
@@ -62,7 +67,8 @@ fun ProgressScreen(
     math: MathViewModel,
     binary: BinaryOperationsViewModel,
     multiplication: CountingMultiplicationViewModel,
-    multiplicationOperands: MultiplicationOperandsViewModel,
+    multiplicationConstruction: MultiplicationConstructionViewModel,
+    division: CountingDivisionViewModel,
     letterSounds: LetterSoundsViewModel,
     phonemes: PhonemesViewModel,
     reading: ReadingViewModel,
@@ -108,10 +114,14 @@ fun ProgressScreen(
     val multiplicationStreaks by multiplication.streaks.collectAsStateWithLifecycle()
     val multiplicationState by multiplication.state.collectAsStateWithLifecycle()
 
-    val operandsStreaks by multiplicationOperands.streaks.collectAsStateWithLifecycle()
-    val operandsState by multiplicationOperands.state.collectAsStateWithLifecycle()
+    val operandsStreaks by multiplicationConstruction.streaks.collectAsStateWithLifecycle()
+    val operandsState by multiplicationConstruction.state.collectAsStateWithLifecycle()
+
+    val divisionStreaks by division.streaks.collectAsStateWithLifecycle()
+    val divisionState by division.state.collectAsStateWithLifecycle()
 
     val subtractionStreaks by math.subtractionGrid.collectAsStateWithLifecycle()
+    val divisionEquationStreaks by math.divisionGrid.collectAsStateWithLifecycle()
     val multEquationStreaks by math.multiplicationGrid.collectAsStateWithLifecycle()
 
     // Per-lesson math streak (cells AND streak >= 4 are both required to
@@ -123,10 +133,17 @@ fun ProgressScreen(
         LessonId.MathNumberLine,
         LessonId.CountingSubtraction0, LessonId.HorizontalSubtraction0,
         LessonId.VerticalSubtraction0, LessonId.NumberLineSubtraction0,
+        LessonId.CountingSubtraction1,
         LessonId.HorizontalMultiplication0, LessonId.VerticalMultiplication0,
         LessonId.NumberLineMultiplication0,
         LessonId.HorizontalMultiplication1, LessonId.VerticalMultiplication1,
         LessonId.NumberLineMultiplication1,
+        LessonId.HorizontalDivision0,
+        LessonId.VerticalDivision0,
+        LessonId.NumberLineDivision0,
+        LessonId.HorizontalDivision1,
+        LessonId.VerticalDivision1,
+        LessonId.NumberLineDivision1,
     ).associateWith { id ->
         // collectAsStateWithLifecycle inside a loop isn't possible here,
         // so we read the StateFlow's current value. The grid + lifetime
@@ -278,11 +295,12 @@ fun ProgressScreen(
                 text = "Addition streak grid (rows = left, columns = right). " +
                     "Every addition variant writes the same cells, but each " +
                     "variant also keeps its own consecutive-correct streak " +
-                    "above — both have to land before a variant passes.",
+                    "above — both have to land before a variant passes." +
+                    EASY_CELL_NOTE,
                 fontSize = 12.sp,
                 color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f),
             )
-            MathStreakGrid(mathStreaks)
+            MathStreakGrid(mathStreaks, GridOperation.Add, rows = 8, cols = 8)
         }
 
         Section(LessonId.HorizontalAddition0) {
@@ -334,11 +352,12 @@ fun ProgressScreen(
             Text(
                 text = "Subtraction streak grid (rows = op1 ∈ 4..9, " +
                     "columns = op2 ∈ 0..4). All four subtraction variants " +
-                    "share these cells but each keeps its own streak.",
+                    "share these cells but each keeps its own streak." +
+                    EASY_CELL_NOTE,
                 fontSize = 12.sp,
                 color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f),
             )
-            MathStreakGrid(subtractionStreaks)
+            MathStreakGrid(subtractionStreaks, GridOperation.Subtract, rows = 16, cols = 8)
         }
 
         Section(LessonId.HorizontalSubtraction0) {
@@ -353,23 +372,36 @@ fun ProgressScreen(
             InfoRow("Correct streak", "${mathLessonStreaks[LessonId.NumberLineSubtraction0]} / 4")
         }
 
+        Section(LessonId.CountingSubtraction1) {
+            InfoRow("Correct streak", "${mathLessonStreaks[LessonId.CountingSubtraction1]} / 4")
+            Text(
+                text = "Level 1: op1 ∈ 8..16, op2 ∈ 0..8 — the inverse of " +
+                    "Addition Level 1, whose sums land in that same range. " +
+                    "Shares the subtraction grid above (its 8..16 slice)." +
+                    EASY_CELL_NOTE,
+                fontSize = 12.sp,
+                color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f),
+            )
+        }
+
         Section(LessonId.CountingMultiplication0) {
             InfoRow("Correct (lifetime)", multiplicationState.correctCount.toString())
             InfoRow("Wrong (lifetime)", multiplicationState.wrongCount.toString())
             Text(
-                text = "Streak grid for op1 × op2 (op1, op2 ∈ 0..4)",
+                text = "Streak grid for op1 × op2 (op1, op2 ∈ 0..4)." +
+                    EASY_CELL_NOTE,
                 fontSize = 12.sp,
                 color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f),
             )
             MultiplicationStreakGrid(multiplicationStreaks)
         }
 
-        Section(LessonId.CountingMultiplication1) {
+        Section(LessonId.MultiplicationConstruction0) {
             InfoRow("Correct (lifetime)", operandsState.correctCount.toString())
             InfoRow("Wrong (lifetime)", operandsState.wrongCount.toString())
             Text(
                 text = "Identify the operands — grid for op1 × op2 " +
-                    "(op1, op2 ∈ 1..4)",
+                    "(op1, op2 ∈ 1..4)." + EASY_CELL_NOTE,
                 fontSize = 12.sp,
                 color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f),
             )
@@ -381,7 +413,7 @@ fun ProgressScreen(
             Text(
                 text = "Multiplication (product) grid, op1 × op2 ∈ 0..4. " +
                     "Shared by the three symbolic multiplication screens; " +
-                    "each also keeps its own streak.",
+                    "each also keeps its own streak." + EASY_CELL_NOTE,
                 fontSize = 12.sp,
                 color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f),
             )
@@ -413,6 +445,81 @@ fun ProgressScreen(
 
         Section(LessonId.NumberLineMultiplication1) {
             InfoRow("Correct streak", "${mathLessonStreaks[LessonId.NumberLineMultiplication1]} / 4")
+        }
+
+        Section(LessonId.CountingDivision0) {
+            InfoRow("Correct (lifetime)", divisionState.correctCount.toString())
+            InfoRow("Wrong (lifetime)", divisionState.wrongCount.toString())
+            InfoRow(
+                "Correct streak",
+                "${division.lessonStreak(LessonId.CountingDivision0).value} / 4",
+            )
+            Text(
+                text = "Streak grid for dividend ÷ divisor. Only the cells " +
+                    "that divide evenly are ever asked, so the blanks are " +
+                    "expected — mastery is judged over the marked cells only." +
+                    EASY_CELL_NOTE,
+                fontSize = 12.sp,
+                color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f),
+            )
+            DivisionStreakGrid(divisionStreaks.getOrNull(0).orEmpty(), level = 0)
+        }
+
+        Section(LessonId.CountingDivision1) {
+            InfoRow(
+                "Correct streak",
+                "${division.lessonStreak(LessonId.CountingDivision1).value} / 4",
+            )
+            Text(
+                text = "Same problems as Level 0, but the screen always puts " +
+                    "out eight pens instead of one per group, so the sharing no " +
+                    "longer hands over the answer. Keeps its own coverage — " +
+                    "Level 0's does not count towards it.",
+                fontSize = 12.sp,
+                color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f),
+            )
+            DivisionStreakGrid(divisionStreaks.getOrNull(1).orEmpty(), level = 1)
+        }
+
+        Section(LessonId.NumberLineDivision0) {
+            InfoRow("Correct streak", "${mathLessonStreaks[LessonId.NumberLineDivision0]} / 4")
+            Text(
+                text = "Division from the numbers alone, without the pens. " +
+                    "The three symbolic presentations share this grid but " +
+                    "keep their own streaks, and it is separate from the " +
+                    "counting lesson's — sharing animals out is not the " +
+                    "same skill." + EASY_CELL_NOTE,
+                fontSize = 12.sp,
+                color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f),
+            )
+            DivisionStreakGrid(divisionEquationStreaks.getOrNull(0).orEmpty(), level = 0)
+        }
+
+        Section(LessonId.HorizontalDivision0) {
+            InfoRow("Correct streak", "${mathLessonStreaks[LessonId.HorizontalDivision0]} / 4")
+        }
+
+        Section(LessonId.VerticalDivision0) {
+            InfoRow("Correct streak", "${mathLessonStreaks[LessonId.VerticalDivision0]} / 4")
+        }
+
+        Section(LessonId.NumberLineDivision1) {
+            InfoRow("Correct streak", "${mathLessonStreaks[LessonId.NumberLineDivision1]} / 4")
+            Text(
+                text = "The Level 1 slice of the same grid: divisor and " +
+                    "answer up to 8, dividend up to 40." + EASY_CELL_NOTE,
+                fontSize = 12.sp,
+                color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f),
+            )
+            DivisionStreakGrid(divisionEquationStreaks.getOrNull(1).orEmpty(), level = 1)
+        }
+
+        Section(LessonId.HorizontalDivision1) {
+            InfoRow("Correct streak", "${mathLessonStreaks[LessonId.HorizontalDivision1]} / 4")
+        }
+
+        Section(LessonId.VerticalDivision1) {
+            InfoRow("Correct streak", "${mathLessonStreaks[LessonId.VerticalDivision1]} / 4")
         }
 
         Section(LessonId.Reading0) {
@@ -606,11 +713,28 @@ private fun InfoRow(label: String, value: String) {
     }
 }
 
+/**
+ * Appended to every coverage-grid caption: the easy cells (a zero
+ * operand, multiplying or dividing by one) are damped both in how much
+ * they have to be answered and in how often they come up.
+ */
+private const val EASY_CELL_NOTE =
+    " Easy cells — the ones a learner gets right on sight — go green " +
+        "after one correct answer instead of two, and come up half as often."
+
+/**
+ * Coverage for one arithmetic grid. [rows] and [cols] bound it to the
+ * cells the lessons can actually reach — the stored array is wider than
+ * any lesson needs, and drawing all of it would be a wall of zeros.
+ */
 @Composable
-private fun MathStreakGrid(streaks: List<List<Int>>) {
+private fun MathStreakGrid(
+    streaks: List<List<Int>>,
+    operation: GridOperation,
+    rows: Int,
+    cols: Int,
+) {
     if (streaks.isEmpty()) return
-    val rows = streaks.size
-    val cols = streaks[0].size
     Column(
         modifier = Modifier.fillMaxWidth(),
         verticalArrangement = Arrangement.spacedBy(2.dp),
@@ -620,18 +744,22 @@ private fun MathStreakGrid(streaks: List<List<Int>>) {
             horizontalArrangement = Arrangement.spacedBy(2.dp),
         ) {
             Box(modifier = Modifier.heightIn(min = 22.dp).padding(end = 2.dp))
-            (0 until cols).forEach { c ->
+            (0..cols).forEach { c ->
                 HeaderCell(c.toString(), modifier = Modifier.weight(1f))
             }
         }
-        (0 until rows).forEach { r ->
+        (0..rows).forEach { r ->
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(2.dp),
             ) {
                 HeaderCell(r.toString())
-                (0 until cols).forEach { c ->
-                    StreakCell(streaks[r][c], modifier = Modifier.weight(1f))
+                (0..cols).forEach { c ->
+                    StreakCell(
+                        streaks.getOrNull(r)?.getOrNull(c) ?: 0,
+                        modifier = Modifier.weight(1f),
+                        target = PracticeGrid.target(operation, r, c),
+                    )
                 }
             }
         }
@@ -657,12 +785,21 @@ private fun HeaderCell(text: String, modifier: Modifier = Modifier) {
     }
 }
 
+/**
+ * One coverage cell. Green once it has reached [target] — which is 1 for
+ * the easy cells (a zero operand, multiplying by one, dividing by one)
+ * and 2 for the rest — amber part-way there, red at zero.
+ */
 @Composable
-private fun StreakCell(value: Int, modifier: Modifier = Modifier) {
+private fun StreakCell(
+    value: Int,
+    modifier: Modifier = Modifier,
+    target: Int = PracticeGrid.CELL_TARGET,
+) {
     val bg = when {
+        value >= target -> Color(0xFF22C55E).copy(alpha = 0.35f)
         value == 0 -> Color(0xFFEF4444).copy(alpha = 0.35f)
-        value == 1 -> Color(0xFFF59E0B).copy(alpha = 0.35f)
-        else -> Color(0xFF22C55E).copy(alpha = 0.35f)
+        else -> Color(0xFFF59E0B).copy(alpha = 0.35f)
     }
     Box(
         modifier = modifier
@@ -969,6 +1106,53 @@ private fun PhonemesTable(streaks: Map<String, Int>) {    Column(
     }
 }
 
+/**
+ * Coverage for dividend ÷ divisor at one level. Rows are the dividends
+ * that level can ask, columns are divisors, and any pair the level never
+ * asks is drawn as a blank.
+ */
+@Composable
+private fun DivisionStreakGrid(streaks: List<List<Int>>, level: Int) {
+    if (streaks.isEmpty()) return
+    val askable = divisionCells(level).toSet()
+    val dividends = askable.map { it.first }.distinct().sorted()
+    Column(
+        modifier = Modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(2.dp),
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(2.dp),
+        ) {
+            Box(modifier = Modifier.heightIn(min = 22.dp).padding(end = 2.dp))
+            (1..MAX_DIVISOR).forEach { c ->
+                HeaderCell(c.toString(), modifier = Modifier.weight(1f))
+            }
+        }
+        dividends.forEach { dividend ->
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(2.dp),
+            ) {
+                HeaderCell(dividend.toString())
+                (1..MAX_DIVISOR).forEach { divisor ->
+                    if (dividend to divisor in askable) {
+                        StreakCell(
+                            streaks.getOrNull(dividend)?.getOrNull(divisor) ?: 0,
+                            modifier = Modifier.weight(1f),
+                            target = PracticeGrid.target(
+                                GridOperation.Divide, dividend, divisor,
+                            ),
+                        )
+                    } else {
+                        Box(modifier = Modifier.weight(1f).heightIn(min = 22.dp))
+                    }
+                }
+            }
+        }
+    }
+}
+
 @Composable
 private fun MultiplicationStreakGrid(streaks: List<List<Int>>, minOperand: Int = 0) {
     if (streaks.isEmpty()) return
@@ -996,6 +1180,7 @@ private fun MultiplicationStreakGrid(streaks: List<List<Int>>, minOperand: Int =
                     StreakCell(
                         streaks.getOrNull(r)?.getOrNull(c) ?: 0,
                         modifier = Modifier.weight(1f),
+                        target = PracticeGrid.target(GridOperation.Multiply, r, c),
                     )
                 }
             }
