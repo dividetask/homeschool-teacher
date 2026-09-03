@@ -20,7 +20,7 @@ logic.
 """
 
 from dataclasses import dataclass, field
-from typing import Dict, Optional, Tuple
+from typing import Dict, Iterable, List, Optional, Tuple
 
 # Every sheet carries exactly this many problems. One number rather than
 # a range: a sheet that comes out short means its blocks outgrew the
@@ -268,3 +268,87 @@ def get(key: str, level: int) -> Sheet:
             f"no worksheet '{key}' at level {level} (levels for {key}: {available})"
         )
     return BY_SLUG[slug]
+
+
+# --- curriculum order -----------------------------------------------------
+#
+# The order sheets print in when a run builds several of them into one
+# PDF: easiest first, so the document reads as a workbook a child can
+# work front to back.
+#
+# It is written out rather than derived, because difficulty here is not a
+# property of the operand ranges — it is the app's unlock chain
+# (../docs/lessons.md § Lesson catalog), which threads levels and
+# presentations together: Number Line Addition 1 comes before Counting
+# Addition 1, and Binary 0 opens as soon as Addition Level 0 is done.
+# This list follows that table, with each `-construction` sheet placed
+# right after the counting sheet it builds on — same picture, more asked
+# of the child.
+#
+# Every sheet must appear here exactly once; the check below fails the
+# import if a new sheet is added to _SHEETS without being placed.
+CURRICULUM = (
+    "addition-counting-level0",
+    "addition-construction-level0",
+    "addition-horizontal-level0",
+    "addition-vertical-level0",
+    "addition-numberline-level0",
+    "addition-numberline-level1",
+    "addition-counting-level1",
+    "addition-construction-level1",
+    "addition-horizontal-level1",
+    "addition-vertical-level1",
+    "binary-level0",
+    "binary-level1",
+    "subtraction-counting-level0",
+    "subtraction-construction-level0",
+    "subtraction-horizontal-level0",
+    "subtraction-vertical-level0",
+    "subtraction-numberline-level0",
+    "subtraction-counting-level1",
+    "subtraction-construction-level1",
+    "multiplication-counting-level0",
+    "multiplication-construction-level0",
+    "multiplication-numberline-level0",
+    "multiplication-horizontal-level0",
+    "multiplication-vertical-level0",
+    "multiplication-horizontal-level1",
+    "multiplication-vertical-level1",
+    "multiplication-numberline-level1",
+    "division-counting-level0",
+    "division-construction-level0",
+    "division-counting-level1",
+    "division-construction-level1",
+)
+
+_RANK = {slug: i for i, slug in enumerate(CURRICULUM)}
+
+_unplaced = [s.slug for s in _SHEETS if s.slug not in _RANK]
+_unknown = [slug for slug in CURRICULUM if slug not in BY_SLUG]
+if _unplaced or _unknown:
+    trouble = []
+    if _unplaced:
+        trouble.append("missing from CURRICULUM: " + ", ".join(_unplaced))
+    if _unknown:
+        trouble.append("in CURRICULUM but not a sheet: " + ", ".join(_unknown))
+    raise ValueError(
+        "catalog.py: CURRICULUM must list every sheet exactly once — "
+        + "; ".join(trouble)
+    )
+del _unplaced, _unknown
+
+
+def difficulty(sheet: Sheet) -> int:
+    """Where ``sheet`` sits in the curriculum; lower is easier."""
+    return _RANK[sheet.slug]
+
+
+def in_difficulty_order(sheets: Iterable[Sheet]) -> List[Sheet]:
+    """The given sheets, easiest first, with any repeat dropped.
+
+    A repeat would otherwise print the same worksheet twice — asking for
+    `addition-counting addition-counting` is a slip, not a request for two
+    copies (that is what a second run, or `--seed`, is for).
+    """
+    unique = {s.slug: s for s in sheets}
+    return sorted(unique.values(), key=difficulty)

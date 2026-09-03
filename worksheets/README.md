@@ -10,6 +10,9 @@ drills exactly what the on-screen lesson drills.
 Each sheet is filled with as many problems as the page holds, and every
 run reshuffles — the same command twice gives two different worksheets.
 
+One run writes **one PDF**, whether you asked for a sheet or for all of
+them: each worksheet is a page, and the pages come out easiest first.
+
 ## Setup
 
 ```
@@ -36,7 +39,8 @@ when you generate a sheet.
 ./worksheets.py --list                     # what's available
 ./worksheets.py addition-horizontal        # every level of one sheet
 ./worksheets.py division-counting --level 0
-./worksheets.py --all --out ~/worksheets   # the whole set
+./worksheets.py --all --out ~/worksheets   # the whole set, one PDF
+./worksheets.py --all --out ~/term1.pdf    # ...named yourself
 ```
 
 `--list` needs no dependencies at all — ReportLab is only imported when a
@@ -56,14 +60,34 @@ shipping thin.
 builds every sheet several times over and reports the counts. A sheet
 whose count varies between shuffles has a block outgrowing its shape.
 
-PDFs land in `./out` — relative to **where you ran the command**, not to
-this directory — unless `--out` says otherwise. They're named
-`<sheet>-level<N>.pdf`, and pages are US Letter. Every run prints the
-absolute directory it wrote to, so there's no guessing; note that `out/`
-is gitignored, so `git status` won't show them.
+The PDF lands at `./out/worksheets.pdf` — relative to **where you ran the
+command**, not to this directory — unless `--out` says otherwise. `--out`
+takes either a directory to drop `worksheets.pdf` into or a path ending
+in `.pdf` to name the file. Pages are US Letter, each one footed with its
+sheet slug, and a batch carries PDF bookmarks so a reader can jump to a
+worksheet without scrolling thirty pages. Every run prints the absolute
+path it wrote, so there's no guessing; note that `out/` is gitignored, so
+`git status` won't show it.
 
-`--seed N` fixes the shuffle, so a sheet can be regenerated exactly —
-useful for printing a second copy of one a child already started.
+`--seed N` fixes the shuffle, so a run can be regenerated exactly —
+useful for printing a second copy of one a child already started. Each
+sheet still gets its own shuffle within the run (the seed is offset by
+the slug's CRC), so one seed doesn't mean one problem set repeated down
+the document.
+
+### The order the pages come out
+
+Pages are ordered by difficulty, not by the order you typed them:
+`catalog.py`'s `CURRICULUM` lists every sheet from easiest to hardest,
+following the app's own unlock chain (`../docs/lessons.md` § Lesson
+catalog). So Number Line Addition 1 prints before Counting Addition 1,
+Binary sits after the Level 0 addition sheets, and each `-construction`
+sheet follows the counting sheet it builds on. A sheet named twice in one
+command prints once — for a second copy, run the command again.
+
+`CURRICULUM` has to list every sheet exactly once; adding a `Sheet` to
+`catalog.py` without placing it there fails the import with a message
+saying which slug is unplaced.
 
 There are no answer keys: every sheet is problems only.
 
@@ -197,7 +221,8 @@ A few sheets are worth calling out:
 
 ```
 worksheets.py   CLI: resolves sheet names, drives the build
-catalog.py      which sheets exist and their operand ranges
+catalog.py      which sheets exist, their operand ranges, and the
+                curriculum order the pages print in
 problems.py     random problem streams (a shuffled pass over the whole
                 problem space, so a page covers as much of it as it can
                 before repeating)
@@ -206,7 +231,8 @@ blocks.py       one block renderer per presentation style
 fonts/          vendored font subsets — see fonts/SOURCE.md
 ```
 
-To add a worksheet: add a `Sheet` to `catalog.py`, and a block class in
+To add a worksheet: add a `Sheet` to `catalog.py`, place its slug in that
+file's `CURRICULUM` where the lesson unlocks, and add a block class in
 `blocks.py` if it needs a presentation none of the existing ones cover.
 `worksheets.py` maps `Sheet.style` to the block class.
 
